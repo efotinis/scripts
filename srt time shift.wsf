@@ -1,0 +1,214 @@
+<job id="EFSRTTimeShift">
+  <script language="VBScript">
+
+    Function InputBoxJS(prompt, title, default)
+      InputBoxJS = InputBox(prompt, title, default)
+    End Function
+
+  </script>
+  
+  <script language="JScript">
+  
+    var APP_NAME = "SRT Time Shift";
+
+    // Return a complete spec (full path & random name) for a temporary file, or "" on error.
+    //  FileSystemObject fso:   a FileSystemObject object
+    function TempFileSpec(fso) {
+      try {
+        var TEMPORARYFOLDER = 2;
+        var tempFolder = fso.GetSpecialFolder(TEMPORARYFOLDER);
+        return tempFolder.Path + "\\" + fso.GetTempName();
+      }
+      catch (x) {
+        return "";
+      }
+    }
+
+    /*
+    // Return a TextStream of a temporary file or null on failure.
+    //  FileSystemObject fso:   a FileSystemObject object
+    //  bool unicode:           whether to create a unicode file (false means ansi)
+    function CreateTempFile(fso, unicode) {
+      try {
+        var TEMPORARYFOLDER = 2;
+        var tempFolder = fso.GetSpecialFolder(TEMPORARYFOLDER);
+        var tempName = fso.GetTempName();
+        return tempFolder.CreateTextFile(tempName, true, unicode);
+      }
+      catch (x) {
+        return null;
+      }
+    }
+    */
+    
+    function ErrMsg(wssh, s) {
+      var MB_ICONSTOP = 16;
+      wssh.Popup(s, 0, APP_NAME, MB_ICONSTOP);
+    }
+    
+    function ReadSRTRecord(f) {
+      var a = new Array;
+      var s;
+      do {
+        s = f.ReadLine();
+        a.push(s);
+      } while (!f.AtEndOfStream && s)
+      return a;
+    }
+
+    function WriteSRTRecord(f, a) {
+      try {
+        for (var x in a)
+          f.WriteLine(a[x]);
+        return true;
+      }
+      catch (x) {
+        return false;
+      }
+    }
+    
+    /*
+    function SRTRecord() {
+      this.lines = null;
+      this.read = function(f) {
+        lines = new Array;
+        while (!f.AtEndOfStream) {
+          var s = f.ReadLine();
+          lines.push(s);
+          if (!s)
+            break;
+        }
+      }
+      this.write = function(f) {
+        try {
+          for (var x in lines)
+            f.WriteLine(lines[x]);
+          return true;
+        }
+        catch (x) {
+          return false;
+        }
+      }
+    }
+    */
+
+    // ------------------------
+    // Return a string representation of number 'x', padded with zeroes to reach the specified length.
+    // If the specified length is too small to represent the whole number, the number is not truncuated.
+    // ------------------------
+    function PadZero(x, strLen) {
+      var s = x.toString();
+      while (s.length < strLen)
+        s = "0" + s;
+      return s;
+    }
+
+    // Convert "00:29:10,502" to total number of msec.
+    function TimeStrToMsec(s) {
+      //var wssh = WScript.CreateObject("WScript.Shell");
+      //wssh.Popup(s);
+
+      var hrs  = parseInt(s.substr(0, 2), 10);
+      var min  = parseInt(s.substr(3, 2), 10);
+      var sec  = parseInt(s.substr(6, 2), 10);
+      var msec = parseInt(s.substr(9, 3), 10);
+      return ((hrs*60 + min)*60 + sec)*1000 + msec;
+    }
+
+    // Convert total number of msec to "00:29:10,502".
+    function MsecToTimeStr(msec) {
+      //var sec  = Math.floor(msec / 1000);  msec %= 1000;
+      //var min  = Math.floor(sec  / 60);    sec  %= 60;
+      //var hrs  = Math.floor(min  / 60);    min  %= 60;
+      var hrs = Math.floor(msec / 3600000);  msec %= 3600000;
+      var min = Math.floor(msec /  60000);   msec %=   60000;
+      var sec = Math.floor(msec /   1000);   msec %=    1000;
+      return PadZero(hrs,2) + ":" + PadZero(min,2) + ":" + PadZero(sec,2) + "," + PadZero(msec,3);
+    }
+
+    function ShiftTime(s, shiftMsec) {
+      //0  3  6  9       17 20 23 26
+      //00:29:10,502 --> 00:29:12,060
+      var msec1 = TimeStrToMsec(s.substr( 0, 12)) + shiftMsec;
+      var msec2 = TimeStrToMsec(s.substr(17, 12)) + shiftMsec;
+      return MsecToTimeStr(msec1) + " --> " + MsecToTimeStr(msec2);
+    }
+    
+    function ShiftSRTRecord(a, shiftMsec) {
+      if (a.length >= 2)
+        a[1] = ShiftTime(a[1], shiftMsec);
+    }
+
+    function main() {
+      var wssh = WScript.CreateObject("WScript.Shell");
+      var fso = new ActiveXObject("Scripting.FileSystemObject");
+      
+      //var tmp = CreateTempFile(fso, false);
+      //wssh.Popup(TempFileSpec(fso));
+      //fso.CreateTextFile("", false, false);
+      //return;
+
+
+      //var inFileName = InputBoxJS("Input file", APP_NAME, "");
+      var inFileName = "E:\\documents\\scripts\\Black adder 2.6.srt";
+      if (!inFileName)
+        return;
+        
+      //var outFileName = InputBoxJS("Output file", APP_NAME, inFileName);
+      var outFileName = "E:\\documents\\scripts\\Black adder 2.6 (out).srt";
+      if (!outFileName)
+        return;
+        
+      var shiftMsec = InputBoxJS("Time shift (msec)", APP_NAME, "0");
+      if (!shiftMsec)
+        return;
+        
+      shiftMsec = parseInt(shiftMsec, 10);
+      if (isNaN(shiftMsec)) {
+        ErrMsg(wssh, "Invalid time shift.");
+        return;
+      }
+      
+      var inFile;
+      try {
+        //wssh.Popup(inFileName);
+        var FORREADING = 1;
+        inFile = fso.OpenTextFile(inFileName, FORREADING);  // ANSI; don't create
+      }
+      catch (x) {
+        ErrMsg(wssh, "Could not open input file.");
+        return;
+      }
+      
+      var tmpFileName, tmpFile;
+      try {
+        // if TempFileSpec() fails, it will return "", and cause CreateTextFile to fail too
+        //tmpFileName = TempFileSpec(fso);
+        tmpFileName = "E:\\documents\\scripts\\Black adder 2.6 (tmp).srt";
+        tmpFile = fso.CreateTextFile(tmpFileName);  // ANSI; don't overwrite
+      }
+      catch (x) {
+        ErrMsg(wssh, "Could not create temporary file.");
+        return;
+      }
+      
+      while (!inFile.AtEndOfStream) {
+        var a = ReadSRTRecord(inFile);
+        ShiftSRTRecord(a, shiftMsec);
+        if (!WriteSRTRecord(tmpFile, a)) {
+          ErrMsg(wssh, "File write failed.");
+          return;
+        }
+      }
+      
+      inFile.Close();
+      tmpFile.Close();
+      //tmpFile.
+
+      wssh.Popup("OK!");
+    }
+    
+    main();
+
+  </script>
+</job>

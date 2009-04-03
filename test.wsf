@@ -1,0 +1,99 @@
+<job id="test">
+
+  <script language="VBScript">
+    Function InputBoxJS(prompt, title, def)
+      InputBoxJS = InputBox(prompt, title, def)
+    End Function
+  </script>
+
+  <script language="JScript">
+
+    /*
+    var fso = new ActiveXObject("Scripting.FileSystemObject");
+
+    var GB = 1024*1024*1024;
+    var s = "";
+    for (var e = new Enumerator(fso.Drives); !e.atEnd(); e.moveNext()) {
+      var drive = e.item();
+      if (drive.IsReady) {
+        s += drive + " " + drive.VolumeName + " " + drive.ShareName + " " + drive.TotalSize/GB + "\r\n";
+      }
+    }
+
+    WScript.Echo(s);
+    */
+
+    /*
+    var x = InputBoxJS("What is my favourite number?", "Foo!", "42?");
+    WScript.Echo("You said:", x);
+    
+    var wssh = new ActiveXObject("WScript.Shell");
+    wssh.Popup("You have 5 seconds to comply", 5);
+    */
+    
+    /*
+    cat = dog;
+    
+    function ltrim(s, c) {
+    }
+LTrim(string)
+RTrim(string)
+Trim(string)
+    */
+    String.prototype.ltrim = function(chars) {
+      this._trim(chars, 0);
+    }
+    String.prototype.rtrim = function(chars) {
+      this._trim(chars, 1);
+    }
+    String.prototype.trim = function(chars) {
+      this._trim(chars, 2);
+    }
+    String.prototype._trim = function(chars, mode) {
+      if (mode < 0 || mode > 2)
+        return;
+      switch (typeof(chars)) {
+        case "undefined":
+          chars = "\f\n\r\t\v";
+          break;
+        case "string":
+          break;
+        default:
+          try {
+            chars = chars.toString();
+          }
+          catch (x) {
+            return;
+          }
+          break;
+      }
+      //WScript.echo(chars);
+      
+      var beg = 0;
+      var end = this.length;
+      
+      if (mode != 1)
+        while (beg < end)
+          if (chars.indexOf(this[beg]) != -1)
+            ++beg;
+          else
+            break;
+      
+      if (mode != 2)
+        while (beg < end)
+          if (chars.indexOf(this[end - 1]) != -1)
+            --end;
+          else
+            break;
+
+      this.valueOf = this.substring(beg, end);
+    }
+    
+    
+    var s = "  test ";
+    s.ltrim();
+    WScript.echo('"' + s + '"');
+
+  </script>
+  
+</job>

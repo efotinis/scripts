@@ -1,0 +1,3 @@
+@ECHO OFF & SETLOCAL ENABLEEXTENSIONS
+CSCRIPT /NOLOGO "c:\program files\(misc)\SFV_check.wsf" "%~1"
+IF ERRORLEVEL 1 PAUSE

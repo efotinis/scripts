@@ -1,0 +1,176 @@
+<job id="test">
+<script language="VBScript">
+
+
+const HKCR = &H80000000
+const WshRunning = 0
+
+
+' Enum a regkey using WMI.
+' It's in VBScript, because JScript can't pass the 3rd arg to EnumKey by ref.
+'   machine  string   Remote computer name or "." for local.
+'   hkey     int      Root key.
+'   path     string   Subkey.
+'   return   array    Strings of subkey names. Use VBArray to access in JScript.
+Function getSubkeys_WMI(machine, hkey, path)
+  Set oReg = GetObject("winmgmts:{impersonationLevel=impersonate}!\\" & machine & "\root\default:StdRegProv")
+  Dim aSubKeys
+  oReg.EnumKey hkey, path, aSubKeys
+  getSubkeys_WMI = aSubKeys
+End Function
+
+
+</script>
+<script language="JScript">
+
+
+var fso = new ActiveXObject("Scripting.FileSystemObject");
+var wssh = new ActiveXObject("WScript.Shell");
+
+
+//WScript.Echo("");
+
+var root = HKCR;
+var rootStr = "HKCR";
+var appsPath = "Applications";
+var cmdSubpath = "shell\\open\\command";
+
+var a = getSubkeys_RegExe(fso.BuildPath(rootStr, appsPath));
+if (a == null) {
+  var msg = "Could not query subkeys with REG.EXE.\n" + 
+            "Using WMI instead.\n\n" + 
+            "Note that WMI may not return all existing subkeys."
+  wssh.Popup(msg, 0, WScript.Name);
+  a = VBArray(getSubkeys_WMI(".", root, appsPath)).toArray();
+}
+
+
+var badKeys = [];
+for (var i = 0; i < a.length; ++i) {
+  //if (a[i] == "metapad.exe") WScript.Echo("!");
+  var path = buildPath([rootStr, appsPath, a[i]]);
+  var p1 = fso.BuildPath(path, "NoOpenWith");
+  var p2 = fso.BuildPath(path, "NoStartPage");
+  if (tryRegRead(p1) != null || tryRegRead(p2) != null) continue;  // ignore it
+  var s = tryRegRead(fso.BuildPath(path, cmdSubpath) + "\\");
+  if (s == null) continue;  // hmm... nothing here
+  s = wssh.ExpandEnvironmentStrings(s);
+  if (!findExeFromCmd(s)) badKeys.push(path);
+}
+wssh.Popup(badKeys.join("\n"), 0, 
+  "Number of keys with invalid command paths: " + badKeys.length);
+
+
+function getSubkeys_RegExe(path) {
+  // run REG.EXE and get output, stripping blanks lines
+  var output = [];
+
+  try {
+    var exec = wssh.Exec("reg.exe query " + path);
+    while (exec.Status == WshRunning) {
+      WScript.Sleep(100);
+      while (!exec.StdOut.AtEndOfStream) {
+        var s = exec.StdOut.ReadLine();
+        if (s != "") output.push(s);
+      }
+    }
+  }
+  catch (x) {
+    return null;
+  }
+  
+  // check errors
+  if (exec.ExitCode != 0 ||  // 0 == success
+      output.length < 2  ||  // at least the "!" header & the name of the key itself
+      output[0].substr(0, 9) != "! REG.EXE")  // the "!" header
+        return null;
+        
+  var expPathLen = output[1].length + 1;  // length of path after expanding shorthands (like HKLM), including trailing backslash
+  var i = 2;  // line index
+  while (i < output.length && output[i].substr(0, 1) == " ")
+    ++i;  // skip values (lines prefixed by spaces)
+
+  var ret = [];
+  while (i < output.length)
+    ret.push(output[i++].substr(expPathLen));
+  
+  return ret;
+}
+
+
+// Builds a path from a string array of subparts.
+// E.g. buildPath(["1", "2\3", "\4"]) --> "1\2\3\4"
+//    arr     array   String parts.
+//    return  string  Concatenated path.
+function buildPath(arr) {
+  var ret = "";
+  var len = arr.length;
+  if (len == 0) return ret;
+  ret = arr[0];
+  for (var i = 1; i < len; ++i)
+    ret = fso.BuildPath(ret, arr[i]);
+  return ret;
+}
+
+
+function tryRegRead(path) {
+  try {
+    return wssh.RegRead(path);
+  }
+  catch (x) {
+    return null;
+  }
+}
+
+
+function findExeFromCmd(s) {
+  if (s.length == 0) return false;
+
+  //if (s.indexOf("\"D:\new downloads\text ") != -1) WScript.Echo(s);
+
+  // format: "path" ...
+  if (s.charAt(0) == '"') {
+    var i = s.indexOf('"', 1);
+    if (i == -1) return false;  // no closing quotes
+    return fso.FileExists(s.substr(1, i - 1));
+  }
+
+  // format: RUNDLL32[.EXE] path,...
+  var runDllPath = getRunDllPath(s);
+  if (runDllPath != null)
+    return fso.FileExists(runDllPath);
+    
+  // format: path ...
+  return heuristicPathScan(s);
+}
+
+
+function getRunDllPath(s) {
+  var i = s.indexOf(" ");
+  if (i == -1) return null;
+  var tok = s.substr(0, i).toUpperCase();
+  if (tok != "RUNDLL32" && tok != "RUNDLL32.EXE") return null;
+  var j = s.indexOf(",", i);  // there should be a comma before the exported func name
+  if (j == -1) j = s.length;
+  return trim(s.substring(i, j));
+}
+
+
+function heuristicPathScan(s) {
+  for (var curLen = 0; curLen < s.length; /**/) {
+    var i = s.indexOf(" ", curLen);
+    if (i == -1) i = s.length;
+    if (fso.FileExists(s.substr(0, i))) return true;
+    curLen = i + 1;
+  }
+  return false;
+}
+
+
+function trim(s) {
+  return s.replace(/^\s+/, "").replace(/\s+$/, "");
+}
+
+
+</script>
+</job>
