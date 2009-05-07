@@ -9,7 +9,12 @@ from TrIDLib import TrIDLib, Error as TrIDError
 
 # modify these if needed to point to the DLL and the defpack
 #DLL_PATH = DEFS_PATH = os.path.dirname(sys.argv[0])
-DLL_PATH = DEFS_PATH = os.path.join(os.environ['ProgramFiles'], 'TrID')
+if os.environ['ComputerName'].lower() == 'efcore':
+    #DLL_PATH = DEFS_PATH = r'C:\Users\Elias\Program Files\TrID'
+    raise OSError('cannot use 32-bit DLL in 64-bit Python')
+    # TODO: ask author for 64-bit dll version
+else:
+    DLL_PATH = DEFS_PATH = os.path.join(os.environ['ProgramFiles'], 'TrID')
 
 
 def showhelp():

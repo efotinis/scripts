@@ -1,4 +1,4 @@
-"""Automatically launch NFSMWRes, start NFSMW, and close NFSMWRes.
+"""Automatically start NFSMWRes, launch NFSMW, and close NFSMWRes.
 
 MFSMW must be installed.
 NFSMWRes must be in the game dir and properly configured.
