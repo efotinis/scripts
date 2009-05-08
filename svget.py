@@ -60,7 +60,11 @@ Server dir scraper.
 
 Actions:
   -l            Display listing.
-  -g            Display extension groups info (count/size).
+  -g ORDER      Display extension groups info (count/size).
+                Order is one of:
+                    n: name(default), c: count, s: size
+                and (optionally):
+                    +: ascending(default), -: descending
   -d            Download files.
 
 Filters:
@@ -71,7 +75,7 @@ Filters:
 '''[1:-1] % locals()
 
 Options = collections.namedtuple('Options',
-    'help topurl outdir cachefile extensions listing groups download missing')
+    'help topurl outdir cachefile extensions listing groups groupsorder download missing')
 
 def getoptions(args):
     opt = {
@@ -82,12 +86,13 @@ def getoptions(args):
         'extensions': [],
         'listing': False,
         'groups': False,
+        'groupsorder': parse_groups_order('n+'),
         'download': False,
         'missing':None}
 
     # use gnu_getopt to allow switches after first param
     try:
-        switches, params = getopt.gnu_getopt(args, '?o:c:x:lgdmM')
+        switches, params = getopt.gnu_getopt(args, '?o:c:x:lg:dmM')
     except getopt.error as x:
         x.msg += '; use -? for help'
         raise x
@@ -109,6 +114,7 @@ def getoptions(args):
             opt['listing'] = True
         elif sw == '-g':
             opt['groups'] = True
+            opt['groupsorder'] = parse_groups_order(val)
         elif sw == '-d':
             opt['download'] = True
         elif sw == '-m':
@@ -124,6 +130,26 @@ def getoptions(args):
         for ext in map(string.lower, opt['extensions']))
 
     return Options(**opt)
+
+
+def parse_groups_order(s):
+    fields = {
+        'n': lambda x: x.name,
+        'c': lambda x: x.count,
+        's': lambda x: x.size}
+    orders = {
+        '+': True,
+        '-': False}
+    field = fields['n']
+    order = orders['+']
+    for c in s:
+        if c in fields:
+            field = fields[c]
+        elif c in orders:
+            order = orders[c]
+        else:
+            raise getopt.error('invalid groups order: "%s"' % s)
+    return field, order
 
 
 def operation_with_retry(opname, retries, func, args=(), kwargs=None):
@@ -145,7 +171,7 @@ def read_with_retry(conn, size, retries):
 
 
 def open_with_retry(url_or_req, timeout, retries):
-    return operation_with_retry('open', retries, conn.read, (url_or_req,), {'timeout':timeout})
+    return operation_with_retry('open', retries, urllib2.urlopen, (url_or_req,), {'timeout':timeout})
 
 
 def download_resumable_file(src, dst):
@@ -221,8 +247,11 @@ print 'files: %d' % (totalfiles,)
 print 'size: %.0f MiB' % (totalsize/2**20,)
 
 if opt.groups:
-    for ext, (cnt, size) in exts.iteritems():
-        print '  %-10s  %4d  %4d MiB' % (ext, cnt, size/2**20)
+    GroupItem = collections.namedtuple('GroupItem', 'name count size')
+    items = [GroupItem(ext, cnt, size) for ext, (cnt, size) in exts.iteritems()]
+    items.sort(key=opt.groupsorder[0], reverse=not opt.groupsorder[1])
+    for item in items:
+        print '  %-10s  %4d  %4d MiB' % (item.name, item.count, item.size/2**20)
 
 if opt.download:
     cursize = 0
