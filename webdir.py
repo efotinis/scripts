@@ -4,6 +4,7 @@ import urllib2
 import BeautifulSoup
 import re
 import collections
+import sys
 
 # item information:
 # - name [string]: dirs have trailing '/'
@@ -11,13 +12,39 @@ import collections
 # - size [int]: approximate
 Item = collections.namedtuple('Item', 'name date size')
 
+class PageError(Exception):
+    def __init__(self, httperror):
+        """httperror may be (str,url,code,msg) instead of an
+        HTTPError object (to bypass the unpickling of Exceptions
+        problem)"""
+        if isinstance(httperror, urllib2.HTTPError):
+            Exception.__init__(self, str(httperror))
+            self.url = httperror.url
+            self.code = httperror.code
+            self.msg = httperror.msg
+        else:
+            Exception.__init__(self, httperror[0])
+            self.url, self.code, self.msg = httperror[1:]
+
 def stdreader(url):
     """Default page reader, returning a page's contents.
     Can be replaced with a custom (eg. caching) one."""
-    return urllib2.urlopen(url).read()
+    try:
+        return urllib2.urlopen(url).read()
+    except HTTPError as err:
+        raise PageError(err)
 
-def walk(top, reader=stdreader):
-    _url, items = pagelist(top, reader)
+def stdhandler(err):
+    """Default error handler, printing exception to stderr."""
+    print >>sys.stderr, err
+
+def walk(top, reader=stdreader, handler=stdhandler):
+    try:
+        html = reader(top)
+        _url, items = pagelist(html)
+    except PageError as err:
+        handler(err)
+        return
     dirs, files = [], []
     for item in items:
         if item.name.endswith('/'):  # dir entry
@@ -28,13 +55,12 @@ def walk(top, reader=stdreader):
             files += [item]
     yield top, dirs, files
     for dir in dirs:
-        for x,y,z in walk(top + dir.name, reader):
+        for x,y,z in walk(top + dir.name, reader, handler):
             yield x,y,z
 
 _rxheader = re.compile(r'Index of (.*)')
 
-def pagelist(url, reader=stdreader):
-    html = reader(url)
+def pagelist(html):
     soup = BeautifulSoup.BeautifulSoup(html)
     body = soup.body
     curpath = _rxheader.match(body.h1.string).group(1)

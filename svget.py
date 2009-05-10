@@ -11,8 +11,8 @@ import collections
 import webdir
 import CommonTools
 
-TIMEOUT = 10  # timeout in seconds for urllib2's blocking operations
-TIMEOUT_RETRIES = 3  # times to retry timeouts
+TIMEOUT = 20  # timeout in seconds for urllib2's blocking operations
+TIMEOUT_RETRIES = 5  # times to retry timeouts
 
 
 def safename(s):
@@ -21,28 +21,63 @@ def safename(s):
 
 
 class Cache(object):
+
+    class Error(object):
+        def __init__(self, httperror):
+            self.code = httperror.code
+            self.msg = httperror.msg
+            self.str = str(httperror)
+        def __str__(self):
+            return self.str
+
     def __init__(self, fpath):
         self.fpath = fpath
         try:
             self.pages = pickle.load(open(self.fpath, 'rb'))
+            for url, data in self.pages.iteritems():
+                if isinstance(data, tuple):
+                    self.pages[url] = webdir.PageError(data)
         except IOError:
             self.pages = {}
+
     def clear(self):
         self.pages = {}
+
     def flush(self):
-        pickle.dump(self.pages, open(self.fpath, 'wb'), pickle.HIGHEST_PROTOCOL)
+        pages = self.pages.copy()
+        for url, data in pages.iteritems():
+            if isinstance(data, webdir.PageError):
+                pages[url] = (str(data), data.url, data.code, data.msg)
+        pickle.dump(pages, open(self.fpath, 'wb'), pickle.HIGHEST_PROTOCOL)
+
     def __getitem__(self, url):
         try:
-            return self.pages[url]
+            x = self.pages[url]
+            if isinstance(x, webdir.PageError):
+                raise x
+            else:
+                return x
         except KeyError:
-            data = urllib2.urlopen(url, timeout=TIMEOUT).read()
-            self.pages[url] = data
-            return data
+            try:
+                data = urllib2.urlopen(url, timeout=TIMEOUT).read()
+                self.pages[url] = data
+                return data
+            except urllib2.HTTPError as err:
+                err = webdir.PageError(err)
+                self.pages[url] = err
+                raise err
+
 
 def makeCachedReader(cache):
     def reader(url):
         return cache[url]
     return reader
+
+def makeCachedHandler(cache):
+    def handler(err):
+        print err.url
+        print ' ', err
+    return handler
 
 def percent(cur, total):
     total = total or 1
@@ -126,7 +161,7 @@ def getoptions(args):
         opt['cachefile'] = os.path.join(opt['outdir'], 'pagecache.dat')
 
     opt['extensions'] = frozenset(
-        ext if (ext and ext.startswith('.')) else '.'+ext
+        ext if (not ext or ext.startswith('.')) else '.'+ext
         for ext in map(string.lower, opt['extensions']))
 
     return Options(**opt)
@@ -152,53 +187,101 @@ def parse_groups_order(s):
     return field, order
 
 
-def operation_with_retry(opname, retries, func, args=(), kwargs=None):
-    while True:
-        try:
-            return func(*args, **(kwargs or {}))
-        except socket.timeout:
-            print opname + ' timed-out...',
-            if retries > 0:
-                print 'retrying'
-                retries -= 1
-            else:
-                print 'aborting'
-                raise
-
-
-def read_with_retry(conn, size, retries):
-    return operation_with_retry('read', retries, conn.read, (size,), {})
-
-
-def open_with_retry(url_or_req, timeout, retries):
-    return operation_with_retry('open', retries, urllib2.urlopen, (url_or_req,), {'timeout':timeout})
+##def operation_with_retry(opname, retries, func, args=(), kwargs=None):
+##    while True:
+##        try:
+##            return func(*args, **(kwargs or {}))
+##        except (socket.timeout, urllib2.URLError) as err:
+##            # urlopen raises urllib2.URLError(reason=socket.timeout),
+##            # while conn.read raises socket.timeout
+##            if isinstance(err, urllib2.URLError) and not isinstance(err.reason, socket.timeout):
+##                raise
+##            print opname + ' timed-out...',
+##            if retries > 0:
+##                print 'retrying'
+##                retries -= 1
+##            else:
+##                print 'aborting'
+##                raise
+##
+##
+##def read_with_retry(conn, size, retries):
+##    return operation_with_retry('read', retries, conn.read, (size,), {})
+##
+##
+##def open_with_retry(url_or_req, timeout, retries):
+##    return operation_with_retry('open', retries, urllib2.urlopen, (url_or_req,), {'timeout':timeout})
 
 
 def download_resumable_file(src, dst):
+    retries_left = TIMEOUT_RETRIES
     partial_dst = dst + '.PARTIAL'
-    if os.path.exists(partial_dst):
-        start = os.path.getsize(partial_dst)
-        f = open(partial_dst, 'a+b')
-    else:
-        start = 0
-        f = open(partial_dst, 'ab')
-    req = urllib2.Request(src, headers={'Range':'bytes=%d-'%start})
-    conn = open_with_retry(req, TIMEOUT, TIMEOUT_RETRIES)
-    while True:
+    completed = False
+    while not completed:
+        if os.path.exists(partial_dst):
+            start = os.path.getsize(partial_dst)
+            f = open(partial_dst, 'a+b')
+        else:
+            start = 0
+            f = open(partial_dst, 'ab')
         try:
-            s = read_with_retry(conn, 4096, TIMEOUT_RETRIES)
-        except socket.timeout:
-            return
-        if not s: break
-        f.write(s)
-    f.close()
+            req = urllib2.Request(src, headers={'Range':'bytes=%d-'%start})
+            conn = urllib2.urlopen(req, timeout=TIMEOUT)
+            while True:
+                s = conn.read(4096)
+                if not s:
+                    completed = True
+                    break
+                f.write(s)
+        except (socket.timeout, urllib2.URLError) as err:
+            # urlopen raises urllib2.URLError(reason=socket.timeout),
+            # while conn.read raises socket.timeout
+            if isinstance(err, urllib2.URLError) and not isinstance(err.reason, socket.timeout):
+                # some error other than timeout
+                print err
+                return
+            print '  timeout...',
+            if retries_left > 0:
+                print 'retry'
+                retries_left -= 1
+            else:
+                print 'abort'
+                return
+        finally:
+            f.close()
     os.rename(partial_dst, dst)
+            
+
+##def download_resumable_file(src, dst):
+##    partial_dst = dst + '.PARTIAL'
+##    if os.path.exists(partial_dst):
+##        start = os.path.getsize(partial_dst)
+##        f = open(partial_dst, 'a+b')
+##    else:
+##        start = 0
+##        f = open(partial_dst, 'ab')
+##    try:
+##        req = urllib2.Request(src, headers={'Range':'bytes=%d-'%start})
+##        conn = open_with_retry(req, TIMEOUT, TIMEOUT_RETRIES)
+##        while True:
+##            s = read_with_retry(conn, 4096, TIMEOUT_RETRIES)
+##            if not s: break
+##            f.write(s)
+##    except urllib2.URLError as err:
+##        print err
+##        return
+##    f.close()
+##    os.rename(partial_dst, dst)
             
 
 ##url = 'http://kietouney.free.fr/accueil.JPG'
 ##dst = r'c:\users\elias\desktop\test.jpg'
 ##download_resumable_file(url, dst)
 ##sys.exit()
+
+##os.chdir(r'C:\Users\Elias\Desktop\server_scrape')
+##sys.argv[1:] = 'http://clduchemin.free.fr/ -o clduchemin.free.fr'.split()
+
 
 try:
     opt = getoptions(sys.argv[1:])
@@ -220,7 +303,7 @@ totalsize = 0
 totalfiles = 0
 exts = collections.defaultdict(lambda: [0,0])
 try:
-    for url, dirs, files in webdir.walk(opt.topurl, makeCachedReader(cache)):
+    for url, dirs, files in webdir.walk(opt.topurl, reader=makeCachedReader(cache), handler=makeCachedHandler(cache)):
         relpath = url[len(opt.topurl):]
         print urllib2.unquote(url)
         for f in files:
@@ -256,7 +339,7 @@ if opt.groups:
 if opt.download:
     cursize = 0
     print 'getting files...'
-    for url, dirs, files in webdir.walk(opt.topurl, makeCachedReader(cache)):
+    for url, dirs, files in webdir.walk(opt.topurl, reader=makeCachedReader(cache), handler=makeCachedHandler(cache)):
         relpath = url[len(opt.topurl):]
         curoutdir = safename(urllib2.unquote(os.path.join(opt.outdir, relpath)))
         for f in files:
