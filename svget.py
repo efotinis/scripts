@@ -327,14 +327,14 @@ finally:
     cache.flush()
 
 print 'files: %d' % (totalfiles,)
-print 'size: %.0f MiB' % (totalsize/2**20,)
+print 'size: %s (%d bytes)' % (CommonTools.prettysize(totalsize), totalsize)
 
 if opt.groups:
     GroupItem = collections.namedtuple('GroupItem', 'name count size')
     items = [GroupItem(ext, cnt, size) for ext, (cnt, size) in exts.iteritems()]
     items.sort(key=opt.groupsorder[0], reverse=not opt.groupsorder[1])
     for item in items:
-        print '  %-10s  %4d  %4d MiB' % (item.name, item.count, item.size/2**20)
+        print '  %-10s  %4d  %8s (%12d bytes)' % (item.name, item.count, CommonTools.prettysize(item.size), item.size)
 
 if opt.download:
     cursize = 0
@@ -351,10 +351,10 @@ if opt.download:
                     if not os.path.exists(curoutdir):
                         os.makedirs(curoutdir)
                     src = url + f.name
-                    CommonTools.uprint('%s %s [%.0f KiB]' % (
+                    CommonTools.uprint('%s %s [%s]' % (
                         percent(cursize, totalsize),
                         src,
-                        f.size/(2.0**10)))
+                        CommonTools.prettysize(f.size)))
                     if not os.path.exists(dst):
                         download_resumable_file(src, dst)
                     cursize += f.size

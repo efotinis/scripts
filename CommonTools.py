@@ -125,15 +125,38 @@ def gotoDesktop():
     os.chdir(getDesktop())
 
 
-def prettysize(n):
-    # TODO: doc
-    if n < 1024:
+def prettysize(n, iec=False):
+    """Convert size to string with 3 significant digits and unit.
+    Negative sizes get a '-' prefix. iec==True inserts an 'i'."""
+    n = int(n)
+    if n < 0:
+        return '-' + prettysize(-n)
+    elif n == 1:
+        return '1 byte'
+    elif n < 1000:
         return '%d bytes' % n
     for unit in 'KMGTPEZY':
         n /= 1024.0
-        if n < 1024:
-            return '%.2f %ciB' % (n, unit)
-    return '%.2f %ciB' % (n*1024.0, 'Y')
+        if n < 1000:
+            break
+    else:
+        # ran out of units; revert to last one
+        n *= 1024.0
+    if n < 999.5:
+        s = '%.2f' % n  # has at least 3 digits
+        t = ''
+        digits = 0
+        i = 0
+        while digits < 3:
+            t += s[i]
+            if s[i].isdigit():
+                digits += 1
+            i += 1
+        t = t.rstrip('.')
+        return '%s %c%sB' % (t, 'i' if iec else '', unit)
+    else:
+        # for sizes > 1000 YB, show all digits
+        return '%d %c%sB' % (int(n), 'i' if iec else '', unit)
 
 
 def fsize(f):
