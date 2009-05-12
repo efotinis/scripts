@@ -26,6 +26,9 @@ class PageError(Exception):
             Exception.__init__(self, httperror[0])
             self.url, self.code, self.msg = httperror[1:]
 
+class UnknownListingFormat(Exception):
+    pass
+
 def stdreader(url):
     """Default page reader, returning a page's contents.
     Can be replaced with a custom (eg. caching) one."""
@@ -41,8 +44,9 @@ def stdhandler(err):
 def walk(top, reader=stdreader, handler=stdhandler):
     try:
         html = reader(top)
+        print '*' * 10, top
         _url, items = pagelist(html)
-    except PageError as err:
+    except (PageError, UnknownListingFormat) as err:
         handler(err)
         return
     dirs, files = [], []
@@ -72,7 +76,7 @@ def pagelist(html):
         rows = body.table.findAll('tr')
         return curpath, _dirItemsFromTableRows(rows)
     else:
-        raise RuntimeError('unknown page format')
+        raise UnknownListingFormat
 
 def _dirItemsFromTableRows(rows):
     for tr in rows:
@@ -89,28 +93,41 @@ def _dirItemsFromTableRows(rows):
         yield Item(name, date, str2size(size))
 
 _rxpreitem = re.compile(r'''\s+
-    (\d{2}-[a-z]{3}-\d{4}\ \d{2}:\d{2})  # date/time
+    (\d{2}-[a-z]{3}-\d{4}\ \d{2}:\d{2})?  # date/time; optional
     \s+
     ([\d+.]+[kmg]?|-)  # size
     .*\n''', re.IGNORECASE | re.VERBOSE)
 
 def _dirItemsFromPre(pre):
-    children = pre.childGenerator()
-    for item in children:
-        if not item.string and item.name == 'hr':
-            children.next()  # skip '\n'
-            break
-    while True:
-        try:
-            children.next()  # <img>
-            children.next()  # ' '
-            a = children.next()  # <a>
-            info = children.next()  # '   dd-MMM-yyyy hh:mm   size  descr\n'
-            name = a['href']
-            date, size = _rxpreitem.match(info).groups()
-            yield Item(name, date, str2size(size))
-        except StopIteration:
-            break
+    # the '\n' after the <hr> isn't always present
+##    children = pre.childGenerator()
+##    for item in children:
+##        if not item.string and item.name == 'hr':
+##            children.next()  # skip '\n'
+##            break
+##    while True:
+##        try:
+##            children.next()  # <img>
+##            children.next()  # ' '
+##            a = children.next()  # <a>
+##            info = children.next()  # '   dd-MMM-yyyy hh:mm   size  descr\n'
+##            name = a['href']
+##            date, size = _rxpreitem.match(info).groups()
+##            yield Item(name, date, str2size(size))
+##        except StopIteration:
+##            break
+
+    # the entries start with <img> and are between 2 <hr>
+    items = pre.findAll(set(('img','hr')))
+    hr_indices = [i for i,x in enumerate(items) if x.name == 'hr']
+    assert len(hr_indices) == 2, '<pre> listing must have exactly 2 <hr>s'
+    i, j = hr_indices
+    for img in items[i+1:j]:
+        a = img.next.next  # skip ' '
+        info = a.nextSibling  # '   dd-MMM-yyyy hh:mm   size  descr\n'
+        name = a['href']
+        date, size = _rxpreitem.match(info).groups()
+        yield Item(name, date, str2size(size))
 
 _rxsize = re.compile(r'(-)|([0-9.]+)([kmg]?)', re.IGNORECASE)
 _unitmult = {'':1, 'k':2**10, 'm':2**20, 'g':2**30}
@@ -119,3 +136,10 @@ def str2size(s):
     """Convert size string to bytes. Accepts a single dash and trailing units."""
     dash, num, unit = _rxsize.match(s).groups()
     return 0 if dash else int(float(num) * _unitmult[unit.lower()])
+
+if __name__ == '__main__':
+    #html = urllib2.urlopen('http://nfig.hd.free.fr/util/').read()
+    path, items = pagelist(html)
+    print path
+    for item in items:
+        print item

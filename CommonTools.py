@@ -153,10 +153,10 @@ def prettysize(n, iec=False):
                 digits += 1
             i += 1
         t = t.rstrip('.')
-        return '%s %c%sB' % (t, 'i' if iec else '', unit)
+        return '%s %c%sB' % (t, unit, 'i' if iec else '')
     else:
         # for sizes > 1000 YB, show all digits
-        return '%d %c%sB' % (int(n), 'i' if iec else '', unit)
+        return '%d %c%sB' % (int(n), unit, 'i' if iec else '')
 
 
 def fsize(f):
