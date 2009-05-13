@@ -12,42 +12,36 @@ import sys
 # - size [int]: approximate
 Item = collections.namedtuple('Item', 'name date size')
 
-class PageError(Exception):
-    def __init__(self, httperror):
-        """httperror may be (str,url,code,msg) instead of an
-        HTTPError object (to bypass the unpickling of Exceptions
-        problem)"""
-        if isinstance(httperror, urllib2.HTTPError):
-            Exception.__init__(self, str(httperror))
-            self.url = httperror.url
-            self.code = httperror.code
-            self.msg = httperror.msg
-        else:
-            Exception.__init__(self, httperror[0])
-            self.url, self.code, self.msg = httperror[1:]
-
-class UnknownListingFormat(Exception):
+class Error(Exception):
+    """Base module error."""
     pass
+
+class LoadError(Error):
+    """HTTP error (4xx/5xx)."""
+    pass    
+
+class FormatError(Error):
+    """Unrecognized listing format."""
+    pass    
 
 def stdreader(url):
     """Default page reader, returning a page's contents.
     Can be replaced with a custom (eg. caching) one."""
     try:
         return urllib2.urlopen(url).read()
-    except HTTPError as err:
-        raise PageError(err)
+    except urllib2.HTTPError as err:
+        raise LoadError(str(err))
 
-def stdhandler(err):
-    """Default error handler, printing exception to stderr."""
-    print >>sys.stderr, err
+def stdhandler(err, url):
+    """Default error handler prints to stderr."""
+    print >>sys.stderr, err, url
 
 def walk(top, reader=stdreader, handler=stdhandler):
     try:
         html = reader(top)
-        print '*' * 10, top
         _url, items = pagelist(html)
-    except (PageError, UnknownListingFormat) as err:
-        handler(err)
+    except Error as err:
+        handler(err, top)
         return
     dirs, files = [], []
     for item in items:
@@ -67,7 +61,16 @@ _rxheader = re.compile(r'Index of (.*)')
 def pagelist(html):
     soup = BeautifulSoup.BeautifulSoup(html)
     body = soup.body
-    curpath = _rxheader.match(body.h1.string).group(1)
+    try:
+        if body.h1.string == 'Index of locally available sites:':
+            # HTTrack index page
+            # e.g. http://nfig.hd.free.fr/util/WSML/wsmo/
+            raise AttributeError
+        curpath = _rxheader.match(body.h1.string).group(1)
+    except (AttributeError, TypeError):
+        # TypeError is raised when contents of <h1> are not a simpe string
+        # e.g. http://nfig.hd.free.fr/util/material/ontology/OWL restrictions_fichiers/
+        raise FormatError('no <h1> found')
     if body.pre:
         # Apache, eg: http://aldo061.free.fr/
         return curpath, _dirItemsFromPre(body.pre)
@@ -76,7 +79,7 @@ def pagelist(html):
         rows = body.table.findAll('tr')
         return curpath, _dirItemsFromTableRows(rows)
     else:
-        raise UnknownListingFormat
+        raise FormatError('unknown listing format')
 
 def _dirItemsFromTableRows(rows):
     for tr in rows:
@@ -99,24 +102,6 @@ _rxpreitem = re.compile(r'''\s+
     .*\n''', re.IGNORECASE | re.VERBOSE)
 
 def _dirItemsFromPre(pre):
-    # the '\n' after the <hr> isn't always present
-##    children = pre.childGenerator()
-##    for item in children:
-##        if not item.string and item.name == 'hr':
-##            children.next()  # skip '\n'
-##            break
-##    while True:
-##        try:
-##            children.next()  # <img>
-##            children.next()  # ' '
-##            a = children.next()  # <a>
-##            info = children.next()  # '   dd-MMM-yyyy hh:mm   size  descr\n'
-##            name = a['href']
-##            date, size = _rxpreitem.match(info).groups()
-##            yield Item(name, date, str2size(size))
-##        except StopIteration:
-##            break
-
     # the entries start with <img> and are between 2 <hr>
     items = pre.findAll(set(('img','hr')))
     hr_indices = [i for i,x in enumerate(items) if x.name == 'hr']
