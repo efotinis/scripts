@@ -11,6 +11,7 @@ import win32api
 
 import webdir
 import CommonTools
+import console_stuff
 
 TIMEOUT = 20  # timeout in seconds for urllib2's blocking operations
 TIMEOUT_RETRIES = 5  # times to retry timeouts
@@ -56,17 +57,6 @@ class Cache(object):
                 raise err
 
 
-def makeCachedReader(cache):
-    def reader(url):
-        return cache[url]
-    return reader
-
-def makeCachedHandler(cache):
-    def handler(err, url):
-        CommonTools.uprint(url)
-        print ' ', err
-    return handler
-
 def percent(cur, total):
     total = total or 1
     return str(int(round(100.0 * cur / total))) + '%'
@@ -84,11 +74,12 @@ Server dir scraper.
   -a            Beep when downloading completes.
 
                 ---- Actions ----
-  -l            Display listing.
+  -t            Display tree structure.
+  -l            Display file listing.
   -g ORDER      Display extension groups info (count/size).
                 Order is one of:
                     n: name(default), c: count, s: size
-                and (optionally):
+                and:
                     +: ascending(default), -: descending
   -d            Download files.
 
@@ -96,8 +87,8 @@ Server dir scraper.
   -x EXTLIST    List of extensions to process, separated by ';'.
                 Leading dot is optional. Default is all.
                 Multiple values are accumulated.
-  -m            Missing (not downloaded or incomplete) files.
-  -M            Existing files.
+  -D STATUS     Download status. One or more of:
+                    d: fully downloaded, p: partial, n: not downloaded.
   --irx RX      Regexp of names to include.
   --erx RX      Regexp of names to exclude.
                 Multiple regexps are accumulated.
@@ -105,6 +96,16 @@ Server dir scraper.
   --rxci        Subsequent regexps are case-insensitive (default).
                     
 '''[1:-1] % locals()
+
+
+def existstate(path):
+    """Get file exist state: 'd': downloaded, 'p': partial, 'n': missing."""
+    if os.path.exists(path):
+        return 'd'
+    elif os.path.exists(path + PARTIAL_SUFFIX):
+        return 'p'
+    else:
+        return 'n'
 
 
 class Options(object):
@@ -119,15 +120,16 @@ class Options(object):
         self.groups = False
         self.groupsorder = self._parse_groups_order('n+')
         self.download = False
-        self.missing = None
         self.regexps = []
         self.beep = False
+        self.showtree = False
+        self.downloadstatus = self._parse_download_status('dpn')
 
         regex_casesens = False    
 
         # use gnu_getopt to allow switches after first param
         switches, params = getopt.gnu_getopt(args,
-            '?o:c:x:lg:dmMa',
+            '?o:c:x:lg:datD:',
             'irx= erx= rxcs rxci'.split())
 
         if len(params) != 1:
@@ -150,10 +152,6 @@ class Options(object):
                 self.groupsorder = self._parse_groups_order(val)
             elif sw == '-d':
                 self.download = True
-            elif sw == '-m':
-                self.missing = True
-            elif sw == '-M':
-                self.missing = False
             elif sw in ('--irx', '--erx'):
                 try:
                     self.regexps += [(
@@ -167,6 +165,10 @@ class Options(object):
                 regex_casesens = False
             elif sw == '-a':
                 self.beep = True
+            elif sw == '-t':
+                self.showtree = True
+            elif sw == '-D':
+                self.downloadstatus = self._parse_download_status(val)
 
         if not self.cachefile:
             self.cachefile = os.path.join(self.outdir, DEF_CACHEFILE)
@@ -195,19 +197,32 @@ class Options(object):
                 raise getopt.error('invalid groups order: "%s"' % s)
         return field, order
 
-    def filter(self, name):
-        """Test filename against all filters."""
-        ext = os.path.splitext(f.name)[1].lower()
-        return (not self.extensions or ext in self.extensions) and \
-            self._test_regexps(f.name)
+    @staticmethod
+    def _parse_download_status(s):
+        ret = frozenset(s)
+        if ret.issubset(frozenset('dpn')):
+            return ret
+        else:
+            raise getopt.error('invalid download status: "%s"' % s)
 
-    def _test_regexps(self, s):
+    def filter(self, relpath, fname):
+        """Test filename against all filters."""
+        ext = os.path.splitext(fname)[1].lower()
+        return (not self.extensions or ext in self.extensions) and \
+            self._test_regexps(fname) and \
+            self._test_existance(relpath, fname)
+
+    def _test_regexps(self, fname):
         for must_match, rx in self.regexps:
-            matched = bool(rx.search(s))
+            matched = bool(rx.search(fname))
             if matched != must_match:
                 return False
         # all checks succeeded or no checks specified; it's a match
         return True
+
+    def _test_existance(self, relpath, fname):
+        dst = safename(urllib2.unquote(os.path.join(self.outdir, relpath + f.name)))
+        return existstate(dst) in opt.downloadstatus
 
 
 def download_resumable_file(src, dst):
@@ -236,6 +251,9 @@ def download_resumable_file(src, dst):
         except (socket.timeout, urllib2.URLError) as err:
             # urlopen raises urllib2.URLError(reason=socket.timeout),
             # while conn.read raises socket.timeout
+            # (also got an httplib.BadStatusLine once, which didn't show up
+            # when retrying the download; should we retry on that too or
+            # on all httplib.HTTPExceptions?)
             if isinstance(err, urllib2.URLError) and not isinstance(err.reason, socket.timeout):
                 # some error other than timeout
                 print err
@@ -256,6 +274,63 @@ def download_resumable_file(src, dst):
 ##sys.argv[1:] = 'http://nfig.hd.free.fr/util/ -gn'.split()
 
 
+
+def no_dups(a):
+    st = set()
+    ret = []
+    for x in a:
+        if x not in st:
+            ret += [x]
+            st.add(x)
+    return ret
+
+Dir = collections.namedtuple('Dir', 'name children'.split())
+
+def add(tree, parts):
+    if parts:
+        for child in tree.children:
+            if child.name == parts[0]:
+                break
+        else:
+            child = Dir(parts[0], [])
+            tree.children.append(child)
+        add(child, parts[1:])
+
+EMPTY_IDENT = '    '
+FULL_IDENT = '|   '
+CHILD = '+-- '
+LAST_CHILD = '*-- '
+
+EMPTY_IDENT = u'    '
+FULL_IDENT = u'\u2502   '
+CHILD = u'\u251c\u2500\u2500 '
+LAST_CHILD = u'\u2514\u2500\u2500 '
+
+
+def dump(children, idents):
+    for child in children:
+        islast = child is children[-1]
+        s = ''
+        s += ''.join([FULL_IDENT, EMPTY_IDENT][i] for i in idents)
+        s += LAST_CHILD if islast else CHILD
+        s += urllib2.unquote(child.name)
+        CommonTools.uprint(s)
+        dump(child.children, idents[:] + [islast])
+
+
+def test(dirs):
+    if dirs[0] == '':
+        dirs = dirs[1:]
+
+    tree = Dir('', [])
+    for d in dirs:
+        parts = [s for s in d.split('/') if s]
+        add(tree, parts)
+
+    dump(tree.children, [])
+
+
+
 try:
     opt = Options(sys.argv[1:])
 except getopt.error as x:
@@ -271,46 +346,93 @@ if not os.path.exists(cachedir):
     os.makedirs(cachedir)
 cache = Cache(opt.cachefile)
 
+def squeezeprint(pfx, sfx, conwidth):
+    maxsfxlen = conwidth - 1 - len(pfx) - 3  # 3 for '...', 1 to avoid wrapping
+    if len(sfx) > maxsfxlen:
+        sfx = '...' + sfx[-maxsfxlen:]
+    CommonTools.uprint(pfx + sfx)
+
+def myreader(cache):
+    def reader(url):
+        return cache[url]
+    return reader
+
+def myhandler(cache, spo):
+    def handler(err, url):
+        spo.restore()
+        CommonTools.uprint(url)
+        print ' ', err
+        spo.reset()
+    return handler
+
 try:
-    print 'getting listings...'
     totalsize = 0
     totalfiles = 0
-    exts = collections.defaultdict(lambda: [0,0])
     filtered_items = []
+
+    spo = console_stuff.SamePosOutputTry()
+    conwidth = console_stuff.consolewidth()
     try:
-        for url, dirs, files in webdir.walk(opt.topurl, reader=makeCachedReader(cache), handler=makeCachedHandler(cache)):
+        for url, dirs, files in webdir.walk(opt.topurl, reader=myreader(cache), handler=myhandler(cache, spo)):
             relpath = url[len(opt.topurl):]
-            CommonTools.uprint(urllib2.unquote(url))
+            spo.restore(True)
+            squeezeprint('reading: ', urllib2.unquote(url), conwidth)
             for f in files:
-                if opt.filter(f.name):
-                    dst = safename(urllib2.unquote(os.path.join(opt.outdir, relpath + f.name)))
-                    exists = os.path.exists(dst)
-                    if opt.missing is None or opt.missing != exists:
-                        ext = os.path.splitext(f.name)[1].lower()
-                        exts[ext][0] += 1
-                        exts[ext][1] += f.size
-                        totalfiles += 1
-                        totalsize += f.size
-                        filtered_items += [(relpath, f)]
-                        if opt.listing:
-                            partial = not exists and os.path.exists(dst + PARTIAL_SUFFIX)
-                            CommonTools.uprint('  %s %10s %c %s' % (
-                                f.date,
-                                f.size,
-                                '*' if exists else '%' if partial else ' ',
-                                urllib2.unquote(f.name)))
+                if opt.filter(relpath, f.name):
+                    totalfiles += 1
+                    totalsize += f.size
+                    filtered_items += [(relpath, f)]
     finally:
         cache.flush()
+        spo.restore(True)
 
-    print 'files: %d' % (totalfiles,)
-    print 'size: %s (%d bytes)' % (CommonTools.prettysize(totalsize), totalsize)
+    if opt.showtree:
+        print
+        print '---- Tree ----'
+        print opt.topurl
+        dirs = [relpath for relpath, item in filtered_items]
+        dirs = no_dups(dirs)
+        test(dirs)
+
+    if opt.listing:
+        print
+        print '---- List ----'
+        currelpath = None
+        for relpath, f in filtered_items:
+            # lazy-print path only when it changes
+            if currelpath != relpath:
+                if currelpath is not None:
+                    print
+                CommonTools.uprint(opt.topurl + relpath)
+                currelpath = relpath
+            dst = safename(urllib2.unquote(os.path.join(opt.outdir, relpath + f.name)))
+            exists = os.path.exists(dst)
+            partial = not exists and os.path.exists(dst + PARTIAL_SUFFIX)
+            CommonTools.uprint('  %s %10s %c %s' % (
+                f.date,
+                f.size,
+                '*' if exists else '%' if partial else ' ',
+                urllib2.unquote(f.name)))
 
     if opt.groups:
+        print
+        print '---- Groups ----'
+        exts = collections.defaultdict(lambda: [0,0])
+        for relpath, f in filtered_items:
+            ext = os.path.splitext(f.name)[1].lower()
+            exts[ext][0] += 1
+            exts[ext][1] += f.size
+
         GroupItem = collections.namedtuple('GroupItem', 'name count size')
         items = [GroupItem(ext, cnt, size) for ext, (cnt, size) in exts.iteritems()]
         items.sort(key=opt.groupsorder[0], reverse=not opt.groupsorder[1])
         for item in items:
-            CommonTools.uprint('  %-12s  %4d  %9s (%12d bytes)' % (item.name, item.count, CommonTools.prettysize(item.size), item.size))
+            CommonTools.uprint('%-12s  %4d  %9s (%12d bytes)' % (item.name, item.count, CommonTools.prettysize(item.size), item.size))
+
+    print
+    print '---- Summary ----'
+    print 'files: %d' % (totalfiles,)
+    print 'size: %s (%d bytes)' % (CommonTools.prettysize(totalsize), totalsize)
 
     if opt.download:
         cursize = 0

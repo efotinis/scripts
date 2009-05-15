@@ -105,10 +105,15 @@ def _dirItemsFromPre(pre):
     # the entries start with <img> and are between 2 <hr>
     items = pre.findAll(set(('img','hr')))
     hr_indices = [i for i,x in enumerate(items) if x.name == 'hr']
-    assert len(hr_indices) == 2, '<pre> listing must have exactly 2 <hr>s'
+    # sometimes the second <hr> is right after the </pre>
+    # eg: http://david.gharib.free.fr/
+    assert 1 <= len(hr_indices) <= 2, '<pre> listing must have exactly 1 or 2 <hr>s'
+    if (len(hr_indices) == 1):
+        hr_indices += [None]  # will slice list to the end
     i, j = hr_indices
     for img in items[i+1:j]:
         a = img.next.next  # skip ' '
+        # descr is usually truncuated so it's pretty useless
         info = a.nextSibling  # '   dd-MMM-yyyy hh:mm   size  descr\n'
         name = a['href']
         date, size = _rxpreitem.match(info).groups()
