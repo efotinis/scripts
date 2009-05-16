@@ -88,8 +88,7 @@ def uprint(s):
 
 
 def splitunits(n, units):
-    """
-    Split a number to a tuple of units. E.g.:
+    """Split a number to a tuple of units.
 
     # split 125sec to 2min:5sec
     >>> splitunits(125, (60,))

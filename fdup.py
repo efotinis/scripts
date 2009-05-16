@@ -21,7 +21,7 @@ class Status:
         self.lastPrintTime = time.time()
         self.interval = interval
         self.counter = counter
-        self.cursor = console_stuff.SamePosOutputTry()
+        self.cursor = console_stuff.SamePosOutput(fallback=True)
     def __enter__(self):
         return self
     def __exit__(self, exc_type, exc_value, traceback):

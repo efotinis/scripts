@@ -8,6 +8,7 @@ import socket
 import pickle
 import collections
 import win32api
+import time
 
 import webdir
 import CommonTools
@@ -16,7 +17,6 @@ import console_stuff
 TIMEOUT = 20  # timeout in seconds for urllib2's blocking operations
 TIMEOUT_RETRIES = 5  # times to retry timeouts
 PARTIAL_SUFFIX = '.PARTIAL'  # appended to partial downloads
-BUFFER_SIZE = 4096  # socket read buffer size
 DEF_CACHEFILE = 'PAGECACHE'
 
 
@@ -72,6 +72,7 @@ Server dir scraper.
   -o OUTDIR     Output directory (default '.')
   -c CACHEFILE  Page cache file (default '<OUTDIR>\%(defcachefile)s')
   -a            Beep when downloading completes.
+  -b            Read buffer size in KB (default=4).
 
                 ---- Actions ----
   -t            Display tree structure.
@@ -124,12 +125,13 @@ class Options(object):
         self.beep = False
         self.showtree = False
         self.downloadstatus = self._parse_download_status('dpn')
+        self.bufsize = 4 * 1024
 
         regex_casesens = False    
 
         # use gnu_getopt to allow switches after first param
         switches, params = getopt.gnu_getopt(args,
-            '?o:c:x:lg:datD:',
+            '?o:c:x:lg:datD:b:',
             'irx= erx= rxcs rxci'.split())
 
         if len(params) != 1:
@@ -169,6 +171,14 @@ class Options(object):
                 self.showtree = True
             elif sw == '-D':
                 self.downloadstatus = self._parse_download_status(val)
+            elif sw == '-b':
+                try:
+                    self.bufsize = int(val)
+                    if self.bufsize < 1:
+                        raise ValueError
+                    self.bufsize *= 1024
+                except ValueError:
+                    raise getopt.error('invalid buffer size: "%s"' % val)
 
         if not self.cachefile:
             self.cachefile = os.path.join(self.outdir, DEF_CACHEFILE)
@@ -225,7 +235,24 @@ class Options(object):
         return existstate(dst) in opt.downloadstatus
 
 
-def download_resumable_file(src, dst):
+class MovingAverage:
+    def __init__(self, winsize):
+        self.winsize = winsize
+        self.data = []
+    def add(self, x, t):
+        self.data.insert(0, (x, t))
+    def get(self):
+        xsum, tsum = 0, 0
+        for i, (x, t) in enumerate(self.data):
+            xsum += x
+            tsum += t
+            if tsum >= self.winsize:
+                break
+        self.data[i+1:] = []
+        return xsum/tsum if tsum else 0
+
+
+def download_resumable_file(src, dst, bufsize):
     retries_left = TIMEOUT_RETRIES
     partial_dst = dst + PARTIAL_SUFFIX
     completed = False
@@ -239,14 +266,47 @@ def download_resumable_file(src, dst):
         else:
             start = 0
             f = open(partial_dst, 'ab')
+        spo = console_stuff.SamePosOutput(fallback=True)
+
         try:
             req = urllib2.Request(src, headers={'Range':'bytes=%d-'%start})
             conn = urllib2.urlopen(req, timeout=TIMEOUT)
+            #print conn.headers.dict
+
+            s = conn.headers['content-range']
+            m = re.match(r'^(\w+) (?:(\d+)-(\d+)|(\*))/(\d+|\*)$', s)
+            assert m, 'invalid HTTP header: content-range = %s' % s
+##            print m.groups()
+##            spo.reset()
+            unit, first, last, unspecified_range, length = m.groups()
+            assert unit == 'bytes' and length != '*'
+
+            bytes_total = int(length)
+            bytes_downloaded = start
+        
+            movavg = MovingAverage(30)
             while True:
-                s = conn.read(BUFFER_SIZE)
+                dt = time.clock()
+                s = conn.read(bufsize)
+                dt = time.clock() - dt
                 if not s:
                     completed = True
                     break
+                bytes_downloaded += len(s)
+                movavg.add(len(s), dt)
+                spo.restore(eolclear=True)
+
+                speed = movavg.get()
+
+                eta = (bytes_total - bytes_downloaded) / speed if speed else 0
+                sec, min, hr = CommonTools.splitunits(eta, (60,60))
+                eta = '%d:%02d:%02d' % (hr, min, sec)
+                
+                print '  %s of %s - %.1f KB/s - ETA %s' % (
+                    CommonTools.prettysize(bytes_downloaded),
+                    CommonTools.prettysize(bytes_total),
+                    speed/1024,
+                    eta)
                 f.write(s)
         except (socket.timeout, urllib2.URLError) as err:
             # urlopen raises urllib2.URLError(reason=socket.timeout),
@@ -254,24 +314,31 @@ def download_resumable_file(src, dst):
             # (also got an httplib.BadStatusLine once, which didn't show up
             # when retrying the download; should we retry on that too or
             # on all httplib.HTTPExceptions?)
+            if isinstance(err, urllib2.HTTPError):
+                # FIXME: also got some HTTPErrors (no reason member);
+                #        just print it to see what's it all about
+                print '*' * 40
+                print err
+                print '*' * 40
+                sys.exit(1)
             if isinstance(err, urllib2.URLError) and not isinstance(err.reason, socket.timeout):
                 # some error other than timeout
                 print err
                 return
+            spo.restore(eolclear=True)
             print '  timeout...',
             if retries_left > 0:
                 print 'retry'
                 retries_left -= 1
+                spo.reset()
             else:
                 print 'abort'
                 return
         finally:
             f.close()
+            spo.restore(eolclear=True)
     os.rename(partial_dst, dst)
             
-
-##os.chdir(r'C:\Users\Elias\Desktop\server_scrape')
-##sys.argv[1:] = 'http://nfig.hd.free.fr/util/ -gn'.split()
 
 
 
@@ -359,7 +426,7 @@ def myreader(cache):
 
 def myhandler(cache, spo):
     def handler(err, url):
-        spo.restore()
+        spo.restore(eolclear=True)
         CommonTools.uprint(url)
         print ' ', err
         spo.reset()
@@ -370,12 +437,12 @@ try:
     totalfiles = 0
     filtered_items = []
 
-    spo = console_stuff.SamePosOutputTry()
-    conwidth = console_stuff.consolewidth()
+    spo = console_stuff.SamePosOutput(fallback=True)
+    conwidth = console_stuff.consolesize()[0]
     try:
         for url, dirs, files in webdir.walk(opt.topurl, reader=myreader(cache), handler=myhandler(cache, spo)):
             relpath = url[len(opt.topurl):]
-            spo.restore(True)
+            spo.restore(eolclear=True)
             squeezeprint('reading: ', urllib2.unquote(url), conwidth)
             for f in files:
                 if opt.filter(relpath, f.name):
@@ -384,7 +451,7 @@ try:
                     filtered_items += [(relpath, f)]
     finally:
         cache.flush()
-        spo.restore(True)
+        spo.restore(eolclear=True)
 
     if opt.showtree:
         print
@@ -449,7 +516,7 @@ try:
                     src,
                     CommonTools.prettysize(f.size)))
                 if not os.path.exists(dst):
-                    download_resumable_file(src, dst)
+                    download_resumable_file(src, dst, opt.bufsize)
                 cursize += f.size
         finally:
             if opt.beep:

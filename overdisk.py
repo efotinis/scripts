@@ -8,7 +8,7 @@ import os, re, sys, operator, time
 import AutoComplete, FindFileW
 from collections import defaultdict
 from CommonTools import uprint
-from console_stuff import SamePosOutputTry
+from console_stuff import SamePosOutput
 import win32file
 import WinTime
 
@@ -266,7 +266,7 @@ def getCandidatePaths(state, seed):
 
 class ScanStatus:
     def __init__(self, root):
-        self.spo = SamePosOutputTry()
+        self.spo = SamePosOutput(fallback=True)
         self.root = root
     def update(self, s):
         self.spo.restore(True)
@@ -278,7 +278,7 @@ class ScanStatus:
         """Print a static line and continue updates to the next line."""
         self.spo.restore(True)
         print s
-        self.spo = SamePosOutputTry()
+        self.spo.reset()
 
 
 def main(args):

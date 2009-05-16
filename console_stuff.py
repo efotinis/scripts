@@ -37,7 +37,7 @@ class SamePosOutput:
         if self.h == win32file.INVALID_HANDLE_VALUE:
             return
         self.h.SetConsoleCursorPosition(self.pos)
-        if clearToEol:
+        if eolclear:
             info = self.h.GetConsoleScreenBufferInfo()
             lenToEol = info['MaximumWindowSize'].X - self.pos.X
             self.h.FillConsoleOutputAttribute(info['Attributes'],
