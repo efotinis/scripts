@@ -21,11 +21,16 @@ DEF_CACHEFILE = 'PAGECACHE'
 
 
 def safename(s):
-    """Replace invalid filename chars with '_'."""
+    """Replace invalid filename chars with '_' (excl. slashes)."""
     return re.sub(r'[*?:<>|"]', '_', s)
 
 
 class Cache(object):
+    """Load/create an HTML page cache.
+
+    This is a mapping of URLs to HTML strings.
+    URLs that fail to load raise webdir.Error.
+    """
 
     def __init__(self, fpath):
         self.fpath = fpath
@@ -35,12 +40,15 @@ class Cache(object):
             self.pages = {}
 
     def clear(self):
+        """Clear cache."""
         self.pages = {}
 
     def flush(self):
+        """Write to disk."""
         pickle.dump(self.pages, open(self.fpath, 'wb'), pickle.HIGHEST_PROTOCOL)
 
     def __getitem__(self, url):
+        """Get cached page (load if necessary). May throw webdir.Error."""
         try:
             x = self.pages[url]
             if isinstance(x, webdir.Error):
@@ -55,13 +63,26 @@ class Cache(object):
                 err = webdir.LoadError(str(err))
                 self.pages[url] = err
                 raise err
+            # Note that when urlopen times out, we get this (not an HTTPError):
+            # ...
+            #   File "C:\Program Files\Python26\lib\urllib2.py", line 1105, in do_open
+            #     raise URLError(err)
+            # urllib2.URLError: <urlopen error timed out>
 
 
-def percent(cur, total):
+def percent(value, total):
+    """Int percent string of value over total.
+
+    Example:
+    >>> percent(10, 50)
+    '20%'
+    """
     total = total or 1
-    return str(int(round(100.0 * cur / total))) + '%'
+    return str(int(round(100.0 * value / total))) + '%'
+
 
 def showhelp():
+    """Print help."""
     scriptname = CommonTools.scriptname()
     defcachefile = DEF_CACHEFILE
     print '''
@@ -73,6 +94,7 @@ Server dir scraper.
   -c CACHEFILE  Page cache file (default '<OUTDIR>\%(defcachefile)s')
   -a            Beep when downloading completes.
   -b            Read buffer size in KB (default=4).
+  --ile         Ignore listing errors.
 
                 ---- Actions ----
   -t            Display tree structure.
@@ -110,6 +132,7 @@ def existstate(path):
 
 
 class Options(object):
+    """Script options."""
 
     def __init__(self, args):
         self.help = False
@@ -126,13 +149,14 @@ class Options(object):
         self.showtree = False
         self.downloadstatus = self._parse_download_status('dpn')
         self.bufsize = 4 * 1024
+        self.ignorelisterrors = False
 
         regex_casesens = False    
 
         # use gnu_getopt to allow switches after first param
         switches, params = getopt.gnu_getopt(args,
             '?o:c:x:lg:datD:b:',
-            'irx= erx= rxcs rxci'.split())
+            'irx= erx= rxcs rxci ile'.split())
 
         if len(params) != 1:
             raise getopt.error('exactly one param required')
@@ -179,6 +203,8 @@ class Options(object):
                     self.bufsize *= 1024
                 except ValueError:
                     raise getopt.error('invalid buffer size: "%s"' % val)
+            elif sw == '--ile':
+                self.ignorelisterrors = True
 
         if not self.cachefile:
             self.cachefile = os.path.join(self.outdir, DEF_CACHEFILE)
@@ -223,6 +249,7 @@ class Options(object):
             self._test_existance(relpath, fname)
 
     def _test_regexps(self, fname):
+        """Test filename against all regexps."""
         for must_match, rx in self.regexps:
             matched = bool(rx.search(fname))
             if matched != must_match:
@@ -231,34 +258,54 @@ class Options(object):
         return True
 
     def _test_existance(self, relpath, fname):
+        """Test filename against exist flags."""
         dst = safename(urllib2.unquote(os.path.join(self.outdir, relpath + f.name)))
         return existstate(dst) in opt.downloadstatus
 
 
 class MovingAverage:
+    """Moving avarage (unweighted) calculator."""
+    
     def __init__(self, winsize):
         self.winsize = winsize
         self.data = []
+        
     def add(self, x, t):
+        """Add data."""
         self.data.insert(0, (x, t))
+        
     def get(self):
+        """Get current average."""
         xsum, tsum = 0, 0
         for i, (x, t) in enumerate(self.data):
             xsum += x
             tsum += t
             if tsum >= self.winsize:
                 break
+        # discard data outside window
         self.data[i+1:] = []
         return xsum/tsum if tsum else 0
 
 
-def download_resumable_file(src, dst, bufsize):
+def download_resumable_file(src, dst, bufsize, totalsize, totaldone):
+    """Download file with resume support.
+
+    Returns a 3-tuple of sizes:
+        - initial partial size (may be 0)
+        - bytes downloaded (equal to filesize below if completed)
+        - exact filesize from HTTP headers (None if connection could not be opened)
+    """
     retries_left = TIMEOUT_RETRIES
     partial_dst = dst + PARTIAL_SUFFIX
-    completed = False
+
+    ret_start = None
+    ret_done = None
+    ret_size = None
+
     # It seems that when a socket read times out
     # and we retry the read, the data gets out of sync.
     # So, on read timeouts, we reopen the connection.
+    completed = False
     while not completed:
         if os.path.exists(partial_dst):
             start = os.path.getsize(partial_dst)
@@ -266,23 +313,26 @@ def download_resumable_file(src, dst, bufsize):
         else:
             start = 0
             f = open(partial_dst, 'ab')
+        if ret_start is None:
+            ret_start = start
+            ret_done = start
+
         spo = console_stuff.SamePosOutput(fallback=True)
 
         try:
             req = urllib2.Request(src, headers={'Range':'bytes=%d-'%start})
             conn = urllib2.urlopen(req, timeout=TIMEOUT)
-            #print conn.headers.dict
 
+            # get total size from header
             s = conn.headers['content-range']
             m = re.match(r'^(\w+) (?:(\d+)-(\d+)|(\*))/(\d+|\*)$', s)
             assert m, 'invalid HTTP header: content-range = %s' % s
-##            print m.groups()
-##            spo.reset()
             unit, first, last, unspecified_range, length = m.groups()
             assert unit == 'bytes' and length != '*'
 
-            bytes_total = int(length)
-            bytes_downloaded = start
+            filesize = int(length)
+            filedone = start
+            ret_size = filesize
         
             movavg = MovingAverage(30)
             while True:
@@ -292,22 +342,36 @@ def download_resumable_file(src, dst, bufsize):
                 if not s:
                     completed = True
                     break
-                bytes_downloaded += len(s)
-                movavg.add(len(s), dt)
-                spo.restore(eolclear=True)
 
+                filedone += len(s)
+                totaldone += len(s)
+                ret_done += len(s)
+
+                movavg.add(len(s), dt)
                 speed = movavg.get()
 
-                eta = (bytes_total - bytes_downloaded) / speed if speed else 0
-                sec, min, hr = CommonTools.splitunits(eta, (60,60))
-                eta = '%d:%02d:%02d' % (hr, min, sec)
-                
-                print '  %s of %s - %.1f KB/s - ETA %s' % (
-                    CommonTools.prettysize(bytes_downloaded),
-                    CommonTools.prettysize(bytes_total),
+                file_eta = (filesize - filedone) / speed if speed else 0
+                sec, min, hr = CommonTools.splitunits(file_eta, (60,60))
+                file_eta = '%d:%02d:%02d' % (hr, min, sec)
+
+                total_eta = (totalsize - totaldone) / speed if speed else 0
+                sec, min, hr = CommonTools.splitunits(total_eta, (60,60))
+                total_eta = '%d:%02d:%02d' % (hr, min, sec)
+
+                spo.restore(eolclear=True)
+                print '  %.1f KB/s - File: %s of %s (%s) %s - Total: %s of %s (%s) %s' % (
                     speed/1024,
-                    eta)
+                    CommonTools.prettysize(filedone),
+                    CommonTools.prettysize(filesize),
+                    percent(filedone, filesize),
+                    file_eta,
+                    CommonTools.prettysize(totaldone),
+                    CommonTools.prettysize(totalsize),
+                    percent(totaldone, totalsize),
+                    total_eta)
+
                 f.write(s)
+
         except (socket.timeout, urllib2.URLError) as err:
             # urlopen raises urllib2.URLError(reason=socket.timeout),
             # while conn.read raises socket.timeout
@@ -320,24 +384,30 @@ def download_resumable_file(src, dst, bufsize):
                 print '*' * 40
                 print err
                 print '*' * 40
-                sys.exit(1)
+                #return False
+                return ret_start, ret_done, ret_size
             if isinstance(err, urllib2.URLError) and not isinstance(err.reason, socket.timeout):
                 # some error other than timeout
                 print err
-                return
+                #return False
+                return ret_start, ret_done, ret_size
             spo.restore(eolclear=True)
             print '  timeout...',
             if retries_left > 0:
                 print 'retry'
-                retries_left -= 1
                 spo.reset()
+                retries_left -= 1
             else:
                 print 'abort'
-                return
+                spo.reset()
+                #return False
+                return ret_start, ret_done, ret_size
         finally:
             f.close()
             spo.restore(eolclear=True)
     os.rename(partial_dst, dst)
+    #return True
+    return ret_start, ret_done, ret_size
             
 
 
@@ -424,23 +494,44 @@ def myreader(cache):
         return cache[url]
     return reader
 
-def myhandler(cache, spo):
+def myhandler(cache, spo, ignore):
     def handler(err, url):
-        spo.restore(eolclear=True)
-        CommonTools.uprint(url)
-        print ' ', err
-        spo.reset()
+        if not ignore:
+            spo.restore(eolclear=True)
+            CommonTools.uprint(url)
+            print ' ', err
+            spo.reset()
     return handler
+
+rxdate = re.compile(r'^(\d{2})-([a-z]{3})-(\d{4}) (\d{2}):(\d{2})$', re.IGNORECASE)
+months = dict(zip('jan feb mar apr may jun jul aug sep oct nov dec'.split(), range(1,13)))
+
+def compressdate(s):
+    """Convert date string from 'dd-MMM-yyyy hh:mm' to 'yyyyMMdd-hhmm'."""
+    d,mo,y,h,m = rxdate.match(s).groups()
+    return '%s%02d%s-%s%s' % (y, months[mo.lower()], d, h, m)
+    
+
+def getdownloadedsize(fpath):
+    """Get size of downloaded file or current partial size."""
+    if os.path.exists(fpath):
+        return os.path.getsize(fpath)
+    elif os.path.exists(fpath + PARTIAL_SUFFIX):
+        return os.path.getsize(fpath + PARTIAL_SUFFIX)
+    else:
+        return 0
+
 
 try:
     totalsize = 0
+    totaldone = 0  # incl. partial downloads and skipped due to timeouts
     totalfiles = 0
     filtered_items = []
 
     spo = console_stuff.SamePosOutput(fallback=True)
     conwidth = console_stuff.consolesize()[0]
     try:
-        for url, dirs, files in webdir.walk(opt.topurl, reader=myreader(cache), handler=myhandler(cache, spo)):
+        for url, dirs, files in webdir.walk(opt.topurl, reader=myreader(cache), handler=myhandler(cache, spo, opt.ignorelisterrors)):
             relpath = url[len(opt.topurl):]
             spo.restore(eolclear=True)
             squeezeprint('reading: ', urllib2.unquote(url), conwidth)
@@ -448,6 +539,8 @@ try:
                 if opt.filter(relpath, f.name):
                     totalfiles += 1
                     totalsize += f.size
+                    dst = safename(urllib2.unquote(os.path.join(opt.outdir, relpath + f.name)))
+                    totaldone += getdownloadedsize(dst)
                     filtered_items += [(relpath, f)]
     finally:
         cache.flush()
@@ -476,7 +569,7 @@ try:
             exists = os.path.exists(dst)
             partial = not exists and os.path.exists(dst + PARTIAL_SUFFIX)
             CommonTools.uprint('  %s %10s %c %s' % (
-                f.date,
+                compressdate(f.date),
                 f.size,
                 '*' if exists else '%' if partial else ' ',
                 urllib2.unquote(f.name)))
@@ -502,8 +595,9 @@ try:
     print 'size: %s (%d bytes)' % (CommonTools.prettysize(totalsize), totalsize)
 
     if opt.download:
-        cursize = 0
-        print 'getting files...'
+        print
+        print '---- Download ----'
+        incomplete = []
         try:
             for relpath, f in filtered_items:
                 curoutdir = safename(urllib2.unquote(os.path.join(opt.outdir, relpath)))
@@ -511,14 +605,23 @@ try:
                     os.makedirs(curoutdir)
                 src = opt.topurl + relpath + f.name
                 dst = safename(urllib2.unquote(os.path.join(opt.outdir, relpath + f.name)))
-                CommonTools.uprint('%s %s [%s]' % (
-                    percent(cursize, totalsize),
-                    src,
-                    CommonTools.prettysize(f.size)))
+                CommonTools.uprint(src)
                 if not os.path.exists(dst):
-                    download_resumable_file(src, dst, opt.bufsize)
-                cursize += f.size
+##                    if not download_resumable_file(src, dst, opt.bufsize, totalsize, totaldone):
+##                        incomplete += [dst]
+                    start, done, size = download_resumable_file(src, dst, opt.bufsize, totalsize, totaldone)
+                    if done != size:  # even if size is None
+                        incomplete += [dst]
+                    # subtract the initial partial size
+                    # and add the whole file size (whether completed or not)
+                    totaldone -= start
+                    totaldone += size or f.size
+                    
         finally:
+            if incomplete:
+                print 'Incomplete files:', len(incomplete)
+                for s in incomplete:
+                    CommonTools.uprint('  ' + s)
             if opt.beep:
                 win32api.MessageBeep(-1)
             
