@@ -21,8 +21,16 @@ DEF_CACHEFILE = 'PAGECACHE'
 
 
 def safename(s):
-    """Replace invalid filename chars with '_' (excl. slashes)."""
-    return re.sub(r'[*?:<>|"]', '_', s)
+    """Make a path safe for local filesystem.
+
+    Changes:
+        - '/' -> '\\'
+        - invalid chars -> '_'
+        - trim surrounding whitespace from individual path elements
+    """
+    s = s.replace('/', '\\')
+    s = re.sub(r'[*?:<>|"]', '_', s)
+    return '\\'.join(part.strip() for part in s.split('\\'))
 
 
 class Cache(object):
@@ -277,6 +285,7 @@ class MovingAverage:
     def get(self):
         """Get current average."""
         xsum, tsum = 0, 0
+        i = 0  # init in case data is empty
         for i, (x, t) in enumerate(self.data):
             xsum += x
             tsum += t
@@ -287,7 +296,7 @@ class MovingAverage:
         return xsum/tsum if tsum else 0
 
 
-def download_resumable_file(src, dst, bufsize, totalsize, totaldone):
+def download_resumable_file(src, dst, bufsize, totalsize, totaldone, movavg):
     """Download file with resume support.
 
     Returns a 3-tuple of sizes:
@@ -334,20 +343,8 @@ def download_resumable_file(src, dst, bufsize, totalsize, totaldone):
             filedone = start
             ret_size = filesize
         
-            movavg = MovingAverage(30)
+            #movavg = MovingAverage(30)
             while True:
-                dt = time.clock()
-                s = conn.read(bufsize)
-                dt = time.clock() - dt
-                if not s:
-                    completed = True
-                    break
-
-                filedone += len(s)
-                totaldone += len(s)
-                ret_done += len(s)
-
-                movavg.add(len(s), dt)
                 speed = movavg.get()
 
                 file_eta = (filesize - filedone) / speed if speed else 0
@@ -369,6 +366,19 @@ def download_resumable_file(src, dst, bufsize, totalsize, totaldone):
                     CommonTools.prettysize(totalsize),
                     percent(totaldone, totalsize),
                     total_eta)
+
+                dt = time.clock()
+                s = conn.read(bufsize)
+                dt = time.clock() - dt
+                if not s:
+                    completed = True
+                    break
+
+                filedone += len(s)
+                totaldone += len(s)
+                ret_done += len(s)
+
+                movavg.add(len(s), dt)
 
                 f.write(s)
 
@@ -412,26 +422,23 @@ def download_resumable_file(src, dst, bufsize, totalsize, totaldone):
 
 
 
-def no_dups(a):
-    st = set()
-    ret = []
-    for x in a:
-        if x not in st:
-            ret += [x]
-            st.add(x)
-    return ret
-
-Dir = collections.namedtuple('Dir', 'name children'.split())
-
-def add(tree, parts):
-    if parts:
-        for child in tree.children:
-            if child.name == parts[0]:
+class Dir(object):
+    def __init__(self, name):
+        self.name = name
+        self.count = 0
+        self.size = 0
+        self.subs = []
+    def __getitem__(self, relpath):
+        if not relpath:
+            return self
+        s1, s2 = relpath.split('/', 1)
+        for sub in self.subs:
+            if sub.name == s1:
                 break
         else:
-            child = Dir(parts[0], [])
-            tree.children.append(child)
-        add(child, parts[1:])
+            sub = Dir(s1)
+            self.subs += [sub]
+        return sub[s2]
 
 EMPTY_IDENT = '    '
 FULL_IDENT = '|   '
@@ -444,28 +451,16 @@ CHILD = u'\u251c\u2500\u2500 '
 LAST_CHILD = u'\u2514\u2500\u2500 '
 
 
-def dump(children, idents):
-    for child in children:
-        islast = child is children[-1]
-        s = ''
-        s += ''.join([FULL_IDENT, EMPTY_IDENT][i] for i in idents)
-        s += LAST_CHILD if islast else CHILD
-        s += urllib2.unquote(child.name)
-        CommonTools.uprint(s)
-        dump(child.children, idents[:] + [islast])
+def printtree(dirobj, idents):
+    s = '%9s in %-5d  ' % (CommonTools.prettysize(dirobj.size), dirobj.count)
+    s += ''.join((EMPTY_IDENT, FULL_IDENT)[i] for i in idents[:-1])
+    if idents:
+        s += (LAST_CHILD, CHILD)[idents[-1]]
+    s += urllib2.unquote(dirobj.name)
+    CommonTools.uprint(s)
 
-
-def test(dirs):
-    if dirs[0] == '':
-        dirs = dirs[1:]
-
-    tree = Dir('', [])
-    for d in dirs:
-        parts = [s for s in d.split('/') if s]
-        add(tree, parts)
-
-    dump(tree.children, [])
-
+    for sub in dirobj.subs:
+        printtree(sub, idents + [sub is not dirobj.subs[-1]])
 
 
 try:
@@ -549,10 +544,16 @@ try:
     if opt.showtree:
         print
         print '---- Tree ----'
-        print opt.topurl
-        dirs = [relpath for relpath, item in filtered_items]
-        dirs = no_dups(dirs)
-        test(dirs)
+        root = Dir('')
+        for relpath, item in filtered_items:
+            dir = root[relpath]
+            dir.count += 1
+            dir.size += item.size
+        root.name = opt.topurl
+        printtree(root, [])
+
+
+
 
     if opt.listing:
         print
@@ -598,6 +599,7 @@ try:
         print
         print '---- Download ----'
         incomplete = []
+        movavg = MovingAverage(30)  # speed counter
         try:
             for relpath, f in filtered_items:
                 curoutdir = safename(urllib2.unquote(os.path.join(opt.outdir, relpath)))
@@ -605,18 +607,15 @@ try:
                     os.makedirs(curoutdir)
                 src = opt.topurl + relpath + f.name
                 dst = safename(urllib2.unquote(os.path.join(opt.outdir, relpath + f.name)))
-                CommonTools.uprint(src)
+                CommonTools.uprint(safename(urllib2.unquote(relpath + f.name)))
                 if not os.path.exists(dst):
-##                    if not download_resumable_file(src, dst, opt.bufsize, totalsize, totaldone):
-##                        incomplete += [dst]
-                    start, done, size = download_resumable_file(src, dst, opt.bufsize, totalsize, totaldone)
+                    start, done, size = download_resumable_file(src, dst, opt.bufsize, totalsize, totaldone, movavg)
                     if done != size:  # even if size is None
                         incomplete += [dst]
                     # subtract the initial partial size
                     # and add the whole file size (whether completed or not)
                     totaldone -= start
                     totaldone += size or f.size
-                    
         finally:
             if incomplete:
                 print 'Incomplete files:', len(incomplete)
