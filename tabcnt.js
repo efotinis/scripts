@@ -1,5 +1,5 @@
-/*
-*/
+// TODO: convert to Python
+
 var fso = new ActiveXObject("Scripting.FileSystemObject");
 var ForReading = 1;
 
@@ -23,4 +23,3 @@ for (var n = 0; n < args.length; ++n) {
   //WScript.Echo((foundTab ? "*" : " ") + " " + fname);
   if (foundTab) WScript.Echo(fname);
 }
-

@@ -1,3 +1,6 @@
+# TODO: make a real fortune script using linux fortunes
+# see <http://en.wikipedia.org/wiki/Fortune_(Unix)>
+
 import random
 
 responses = """

@@ -1,0 +1,30 @@
+;= Errorlevel macros: display, set to 0, set to 1.
+el=echo %ErrorLevel%
+el0=time /t > NUL
+el1=verify foo > nul 2>&1
+
+;= Make new directory and go to it.
+nd=md $1 & cd $1
+
+;= Exit console.
+x=exit
+
+;= Print/set number of console rows/cols.
+rows=if '$1'=='' (mode con | find /i "lines:") else (mode con lines=$1)
+cols=if '$1'=='' (mode con | find /i "columns:") else (mode con cols=$1)
+
+;= Various command prompts (none, unix, line).
+prno=prompt ^$g$s
+prux=prompt %UserName%@%ComputerName%^$g^$s
+prln=prompt ______________________________________________________________________________^$_^$p^$g
+
+;= Start Device Manager with non-present devices support.
+devmgr=(set devmgr_show_nonpresent_devices=1)$t(start devmgmt.msc)
+
+;= Launch programs.
+clisp="%ProgramFiles%\clisp\base\lisp.exe" -B "%ProgramFiles%/clisp/" -M "%ProgramFiles%\clisp\/base/lispinit.mem" %*
+fd="%ProgramFiles%\filedisk\filedisk.exe" $*
+py="%ProgramFiles%\Python26\python.exe"
+
+;= Remove dummy macro used for above comments.
+;=

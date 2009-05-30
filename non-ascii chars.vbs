@@ -1,3 +1,5 @@
+' TODO: convert to Python (with option to read input from clipboard)
+
 title = "Non-ASCII character finder"
 s = InputBox("Enter string", title)
 msg = ""

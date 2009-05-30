@@ -1,2 +1,0 @@
-lame="c:\program Files\lame3.98.2\lame.exe" $*
-mp3frames="D:\WORK\programming\AutoM3U_prj\mp3 frames\mp3frames.py" $*

@@ -5,6 +5,9 @@
 //    /E  locate in Explorer
 //    /C  count of files to select
 //
+
+// TODO: convert to Python
+
 var fso = new ActiveXObject("Scripting.FileSystemObject");
 var wssh = new ActiveXObject("WScript.Shell");
 

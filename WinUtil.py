@@ -5,6 +5,7 @@ import ctypes
 import win32gui, win32process, win32process, win32con
 import SharedLib
 
+# TODO: use ctypes.wintypes
 
 BOOL = ctypes.c_int
 UINT = DWORD = ctypes.c_uint

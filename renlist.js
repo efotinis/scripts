@@ -5,6 +5,8 @@
 //
 // EF 2005-07-15
 
+// TODO: convert to Python
+
 var fso = new ActiveXObject("Scripting.FileSystemObject");
 var ForReading = 1;
 
