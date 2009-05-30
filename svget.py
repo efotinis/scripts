@@ -9,6 +9,8 @@ import pickle
 import collections
 import win32api
 import time
+import win32console
+import random
 
 import webdir
 import CommonTools
@@ -18,6 +20,7 @@ TIMEOUT = 20  # timeout in seconds for urllib2's blocking operations
 TIMEOUT_RETRIES = 5  # times to retry timeouts
 PARTIAL_SUFFIX = '.PARTIAL'  # appended to partial downloads
 DEF_CACHEFILE = 'PAGECACHE'
+IGNORE_DIRS = ['_vti_cnf/']
 
 
 def safename(s):
@@ -93,16 +96,20 @@ def showhelp():
     """Print help."""
     scriptname = CommonTools.scriptname()
     defcachefile = DEF_CACHEFILE
+    ignoredirs = ', '.join(IGNORE_DIRS)
     print '''
 Server dir scraper.
 
 %(scriptname)s [options] URL
 
-  -o OUTDIR     Output directory (default '.')
-  -c CACHEFILE  Page cache file (default '<OUTDIR>\%(defcachefile)s')
+  -o OUTDIR     Output directory (default '.').
+  -c CACHEFILE  Page cache file (default '<OUTDIR>\%(defcachefile)s').
   -a            Beep when downloading completes.
   -b            Read buffer size in KB (default=4).
   --ile         Ignore listing errors.
+  --shuffle     Download files in random order (default is listing order).
+  --all         Include these directories, which are normally ignored:
+                    %(ignoredirs)s
 
                 ---- Actions ----
   -t            Display tree structure.
@@ -158,13 +165,15 @@ class Options(object):
         self.downloadstatus = self._parse_download_status('dpn')
         self.bufsize = 4 * 1024
         self.ignorelisterrors = False
+        self.shuffle = False
+        self.includeall = False
 
         regex_casesens = False    
 
         # use gnu_getopt to allow switches after first param
         switches, params = getopt.gnu_getopt(args,
             '?o:c:x:lg:datD:b:',
-            'irx= erx= rxcs rxci ile'.split())
+            'irx= erx= rxcs rxci ile shuffle all'.split())
 
         if len(params) != 1:
             raise getopt.error('exactly one param required')
@@ -213,6 +222,10 @@ class Options(object):
                     raise getopt.error('invalid buffer size: "%s"' % val)
             elif sw == '--ile':
                 self.ignorelisterrors = True
+            elif sw == '--shuffle':
+                self.shuffle = True
+            elif sw == '--all':
+                self.includeall = True
 
         if not self.cachefile:
             self.cachefile = os.path.join(self.outdir, DEF_CACHEFILE)
@@ -296,6 +309,10 @@ class MovingAverage:
         return xsum/tsum if tsum else 0
 
 
+def prettysize_compact(n, iec=False):
+    return CommonTools.prettysize(n, iec).replace('bytes', '').rstrip('B').replace(' ', '')
+
+
 def download_resumable_file(src, dst, bufsize, totalsize, totaldone, movavg):
     """Download file with resume support.
 
@@ -343,7 +360,6 @@ def download_resumable_file(src, dst, bufsize, totalsize, totaldone, movavg):
             filedone = start
             ret_size = filesize
         
-            #movavg = MovingAverage(30)
             while True:
                 speed = movavg.get()
 
@@ -356,14 +372,14 @@ def download_resumable_file(src, dst, bufsize, totalsize, totaldone, movavg):
                 total_eta = '%d:%02d:%02d' % (hr, min, sec)
 
                 spo.restore(eolclear=True)
-                print '  %.1f KB/s - File: %s of %s (%s) %s - Total: %s of %s (%s) %s' % (
+                print '  %.1f KB/s, File: %s/%s (%s) %s, Total: %s/%s (%s) %s' % (
                     speed/1024,
-                    CommonTools.prettysize(filedone),
-                    CommonTools.prettysize(filesize),
+                    prettysize_compact(filedone),
+                    prettysize_compact(filesize),
                     percent(filedone, filesize),
                     file_eta,
-                    CommonTools.prettysize(totaldone),
-                    CommonTools.prettysize(totalsize),
+                    prettysize_compact(totaldone),
+                    prettysize_compact(totalsize),
                     percent(totaldone, totalsize),
                     total_eta)
 
@@ -394,12 +410,10 @@ def download_resumable_file(src, dst, bufsize, totalsize, totaldone, movavg):
                 print '*' * 40
                 print err
                 print '*' * 40
-                #return False
                 return ret_start, ret_done, ret_size
             if isinstance(err, urllib2.URLError) and not isinstance(err.reason, socket.timeout):
                 # some error other than timeout
                 print err
-                #return False
                 return ret_start, ret_done, ret_size
             spo.restore(eolclear=True)
             print '  timeout...',
@@ -410,13 +424,11 @@ def download_resumable_file(src, dst, bufsize, totalsize, totaldone, movavg):
             else:
                 print 'abort'
                 spo.reset()
-                #return False
                 return ret_start, ret_done, ret_size
         finally:
             f.close()
             spo.restore(eolclear=True)
     os.rename(partial_dst, dst)
-    #return True
     return ret_start, ret_done, ret_size
             
 
@@ -517,6 +529,20 @@ def getdownloadedsize(fpath):
         return 0
 
 
+class ColorOutput(object):
+    def __init__(self):
+        self.buf = win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
+    def close(self):
+        self.buf.Close()
+    def write(self, fg, bg, text):
+        oldattr = self.buf.GetConsoleScreenBufferInfo()['Attributes']
+        self.buf.SetConsoleTextAttribute(fg + bg*16)
+        self.buf.WriteConsole(text)
+        self.buf.SetConsoleTextAttribute(oldattr)
+    def writeln(self, fg, bg, text):
+        self.write(fg, bg, text + '\n')
+
+
 try:
     totalsize = 0
     totaldone = 0  # incl. partial downloads and skipped due to timeouts
@@ -537,6 +563,11 @@ try:
                     dst = safename(urllib2.unquote(os.path.join(opt.outdir, relpath + f.name)))
                     totaldone += getdownloadedsize(dst)
                     filtered_items += [(relpath, f)]
+            if not opt.includeall:
+                # remove ignored dirs so they are not walked into
+                for i in range(len(dirs)-1, -1, -1):
+                    if dirs[i].name in IGNORE_DIRS:
+                        dirs[i:i+1] = []
     finally:
         cache.flush()
         spo.restore(eolclear=True)
@@ -551,9 +582,6 @@ try:
             dir.size += item.size
         root.name = opt.topurl
         printtree(root, [])
-
-
-
 
     if opt.listing:
         print
@@ -584,10 +612,29 @@ try:
             exts[ext][0] += 1
             exts[ext][1] += f.size
 
+        BLACK,BLUE,GREEN,CYAN,RED,MAGENTA,YELLOW,GRAY = range(8)
+
+        filetypes = {
+            'video':     [BLUE, 'avi mov mpeg mpg wmv'],
+            'audio':     [YELLOW, 'm4a mp3 wav wma'],
+            'documents': [GREEN, 'doc pdf pps xls'],
+            'images':    [RED, 'bmp gif jpeg jpg pcx png tga tif tiff'],
+            'archives':  [GRAY, '7z ace bzip gz rar tar zip']}
+##        for s in filetypes:
+##            filetypes[s][1] = filetypes[s][1].split()
+        extclrs = {}
+        for clr, extlist in filetypes.values():
+            for ext in extlist.split():
+                extclrs[ext] = clr
+
+        clrout = ColorOutput()
+
         GroupItem = collections.namedtuple('GroupItem', 'name count size')
         items = [GroupItem(ext, cnt, size) for ext, (cnt, size) in exts.iteritems()]
         items.sort(key=opt.groupsorder[0], reverse=not opt.groupsorder[1])
         for item in items:
+            clrout.write(0, extclrs.get(item.name.lstrip('.').lower(), 0), '  ')
+            sys.stdout.write(' ')
             CommonTools.uprint('%-12s  %4d  %9s (%12d bytes)' % (item.name, item.count, CommonTools.prettysize(item.size), item.size))
 
     print
@@ -598,6 +645,8 @@ try:
     if opt.download:
         print
         print '---- Download ----'
+        if opt.shuffle:
+            random.shuffle(filtered_items)
         incomplete = []
         movavg = MovingAverage(30)  # speed counter
         try:
