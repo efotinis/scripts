@@ -18,13 +18,17 @@ prno=prompt ^$g$s
 prux=prompt %UserName%@%ComputerName%^$g^$s
 prln=prompt ______________________________________________________________________________^$_^$p^$g
 
+;= endless loop (e.g. forever do @echo foo)
+forever=for /l %_ in (0,0,0) $*
+
 ;= Start Device Manager with non-present devices support.
 devmgr=(set devmgr_show_nonpresent_devices=1)$t(start devmgmt.msc)
 
 ;= Launch programs.
-clisp="%ProgramFiles%\clisp\base\lisp.exe" -B "%ProgramFiles%/clisp/" -M "%ProgramFiles%\clisp\/base/lispinit.mem" %*
+clisp="%ProgramFiles%\clisp\base\lisp.exe" -B "%ProgramFiles%/clisp/" -M "%ProgramFiles%\clisp\/base/lispinit.mem" $*
 fd="%ProgramFiles%\filedisk\filedisk.exe" $*
-py="%ProgramFiles%\Python26\python.exe"
+py="%ProgramFiles%\Python26\python.exe" $*
+sr="%ProgramFiles(x86)%\Streamripper\streamripper.exe" $*
 
 ;= Remove dummy macro used for above comments.
 ;=
