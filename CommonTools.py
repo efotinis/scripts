@@ -1,14 +1,4 @@
-"""Common functions for "tool" scripts.
-
-2007.11.23 EF: created
-2008.03.09 EF: added 'uprint'
-2008.08.03 EF: added 'splitunits'
-2008.09.12 EF: added 'gotoDesktop'
-2008.10.02 EF: added 'prettysize'
-2008.10.11 EF: added 'getDesktop'
-2008.12.27 EF: added 'fsize'
-"""
-
+"""Common script utilities."""
 
 import os, sys
 import win32console
@@ -166,3 +156,17 @@ def fsize(f):
         return f.tell()
     finally:
         f.seek(oldpos)
+
+
+def listfiles(path):
+    """Generate names of files."""
+    for s in os.listdir(path):
+        if os.path.isfile(os.path.join(path, s)):
+            yield s
+
+
+def listdirs(path):
+    """Generate names of directories."""
+    for s in os.listdir(path):
+        if os.path.isdir(os.path.join(path, s)):
+            yield s
