@@ -24,11 +24,19 @@ def query():
 
 if __name__ == '__main__':
     args = sys.argv[1:]
+    if len(args) > 1:
+        raise SystemExit('too many parameters')
     if not args:
         print query()
-    elif len(args) == 1:
+    else:
+        ok = True
+        try:
+            ip = query()
+        except urllib2.URLError as x:
+            ok = False
+            ip = '<' + str(x) + '>'
         fn = os.path.expandvars(args[0])
         with open(fn, 'a') as f:
-            print >>f, time.ctime(), '-', query()
-    else:
-        raise SystemExit('too many parameters')
+            print >>f, time.ctime(), '-', ip
+        if not ok:
+            sys.exit(1)
