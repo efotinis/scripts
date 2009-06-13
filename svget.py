@@ -550,7 +550,7 @@ try:
     filtered_items = []
 
     spo = console_stuff.SamePosOutput(fallback=True)
-    conwidth = console_stuff.consolesize()[0]
+    conwidth = console_stuff.consolesize()[1]
     try:
         for url, dirs, files in webdir.walk(opt.topurl, reader=myreader(cache), handler=myhandler(cache, spo, opt.ignorelisterrors)):
             relpath = url[len(opt.topurl):]

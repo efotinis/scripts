@@ -87,7 +87,7 @@ def consolesize():
     """Rows and columns of output console."""
     h = win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
     size = h.GetConsoleScreenBufferInfo()['Size']
-    return size.X, size.Y
+    return size.Y, size.X
 
 
 if __name__ == '__main__':
