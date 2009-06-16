@@ -1,6 +1,7 @@
 """Common script utilities."""
 
 import os, sys
+import contextlib
 import win32console
 shell = shellcon = None  # delay load
 
@@ -170,3 +171,13 @@ def listdirs(path):
     for s in os.listdir(path):
         if os.path.isdir(os.path.join(path, s)):
             yield s
+
+
+@contextlib.contextmanager
+def tempchdir(path=None):
+    """Save and restore the current directory, optionally setting a new one."""
+    oldpath = os.getcwd()
+    if path is not None:
+        os.chdir(path)
+    yield
+    os.chdir(oldpath)
