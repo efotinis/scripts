@@ -4,6 +4,5 @@ IF '%1'=='/?' (
     GOTO :EOF
 )
 CALL C:\DevTools\VS6\VC98\Bin\VCVARS32.BAT
-CALL prompt_sep $g
 TITLE VC6
 SET CL=/nologo

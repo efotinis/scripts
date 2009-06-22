@@ -4,6 +4,5 @@ IF '%1'=='/?' (
     GOTO :EOF
 )
 CALL "%VS90COMNTOOLS%\vsvars32.bat"
-CALL prompt_sep
 TITLE VC9
 SET CL=/nologo

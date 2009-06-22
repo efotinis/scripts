@@ -26,7 +26,7 @@ def getfiles(all=False, offensive=False):
         offensive = True
     elif offensive:
         nonoffensive = False
-    FURTUNE_PATH = r'C:\Users\Elias\Desktop\fortune\fortunes'
+    FURTUNE_PATH = os.path.expandvars('%AppData%\\fortunes')
     # get all files without an extension
 ##    return [os.path.join(FURTUNE_PATH, s) for s in os.listdir(FURTUNE_PATH)
 ##            if not os.path.splitext(s)[1] and os.path.isfile(os.path.join(FURTUNE_PATH, s))]
