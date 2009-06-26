@@ -29,6 +29,7 @@ clisp="%ProgramFiles%\clisp\base\lisp.exe" -B "%ProgramFiles%/clisp/" -M "%Progr
 fd="%ProgramFiles%\filedisk\filedisk.exe" $*
 py="%ProgramFiles%\Python26\python.exe" $*
 sr="%ProgramFiles(x86)%\Streamripper\streamripper.exe" $*
+lame="%UserProfile%\Program Files\lame\lame.exe" $*
 
 ;= Remove dummy macro used for above comments.
 ;=
