@@ -1,122 +1,115 @@
-"""Torrent file parser.
+"""Torrent file reader.
 
-Specs from <http://wiki.theory.org/BitTorrentSpecification>
+When run as a script, it pretty-prints the contents of the torrent files
+specified as arguments (hash values excluded for brevity).
+
+Exceptions thrown from this module:
+- IOError: data read error
+- AssertionError/ValueError: bad data
+
+File format specs taken from:
+    <http://wiki.theory.org/BitTorrentSpecification>
 """
-# 2009.07.03  renamed to torrentfile.py
-# 2008.05.18  created
-
-import os, string
+import os
+import re
 
 
-"""
-ascii_num:  r'-?[1-9][0-9]*'
-
-item:       string | int | list | dict
-
-string:     ascii_num ':' ('ascii_num' bytes)
-int:        'i' ascii_num 'e'
-list:       'l' item+ 'e'
-dict:       'd' pair+ 'e'
-
-pair:       string item
-"""
+intformat = re.compile(r'^(?:0|-?[1-9][0-9]*)$')
 
 
-class Error:
-    def __init__(self, msg, pos):
-        self.msg, self.pos = msg, pos
-    def __str__(self):
-        return '%s (%d)' % (self.msg, self.pos)
+def readexactly(f, size):
+    """Read an exact number of bytes."""
+    ret = f.read(size)
+    if len(ret) != size:
+        raise IOError('unexpected end of data')
+    return ret
 
 
-def getstring(f):
-    s = ''
+def readto(f, delim):
+    """Read up to a delimiter byte.
+
+    The delimiter will be consumed, but it won't appear in the result.
+    """
+    ret = ''
     while True:
-        c = f.read(1)
-        if not c:
-            raise Error('EOF while reading string size', f.tell())
-        if c == ':':
-            break
-        if c not in string.digits:
-            raise Error('invalid string size char', f.tell())
-        s += c
+        c = readexactly(f, 1)
+        if c == delim:
+            return ret
+        ret += c
+
+    
+"""
+bencoding format
+    ascii_num:  r'0|-?[1-9][0-9]*'
+    item:       str | int | list | dict
+    str:        ascii_num ':' ('ascii_num' bytes)
+    int:        'i' ascii_num 'e'
+    list:       'l' item+ 'e'
+    dict:       'd' pair+ 'e'
+    pair:       str item
+"""
+
+
+def readstr(f, lead=''):
+    """Read a bencoded string. Accepts leading bytes that are already read."""
+    size = int(lead + readto(f, ':'))
+    assert size >= 0
+    return readexactly(f, size)
+
+
+def readint(f):
+    """Read a bencoded integer (after leading 'i')."""
+    s = readto(f, 'e')
+    assert intformat.match(s)
+    return int(s, 10)
+
+
+def readlist(f):
+    """Read a bencoded list (after leading 'l')."""
+    ret = []
+    while True:
+        x = readvalue(f, checkend=True)
+        if x is None:
+            return ret
+        ret += [x]
+    
+
+def readdict(f):
+    """Read a bencoded dictionary (after leading 'd')."""
+    ret = {}
+    while True:
+        c = readexactly(f, 1)
+        if c == 'e':
+            return ret
+        key = readstr(f, c)
+        ret[key] = readvalue(f)
+
+
+def readvalue(f, checkend=False):
+    """Read any bencoded value.
+
+    Will return None if next char is 'e' and checkend=True.
+    """
+    c = readexactly(f, 1)
+    if checkend and c == 'e':
+        return None
     try:
-        size = int(s, 10)
-        if size < 0:
-            raise ValueError
-    except ValueError:
-        raise Error('invalid string size', f.tell())
-    s = f.read(size)
-    if len(s) != size:
-        raise Error('EOF while reading string', f.tell())
-    return s
+        return {'i':readint, 'l':readlist, 'd':readdict}[c](f)
+    except KeyError:
+        return readstr(f, c)
 
 
-def getinteger(f):
-    s = ''
-    while True:
-        c = f.read(1)
-        if not c:
-            raise Error('EOF while reading integer', f.tell())
-        if c == 'e':
-            break
-        if c not in string.digits + '-':
-            raise Error('invalid integer char', f.tell())
-        s += c
-    try:
-        return int(s, 10)
-    except ValueError:
-        raise Error('invalid integer', f.tell())
-
-
-def getlist(f):
-    a = []
-    while True:
-        c = f.read(1)
-        if not c:
-            raise Error('EOF while reading list', f.tell())
-        if c == 'e':
-            break
-        a += [getany(f, c)]
-    return a
-
-
-def getdict(f):
-    d = {}
-    while True:
-        c = f.read(1)
-        if not c:
-            raise Error('EOF while reading dict key', f.tell())
-        if c == 'e':
-            break
-        f.seek(-1, os.SEEK_CUR)
-        key = getstring(f)
-        c = f.read(1)
-        if not c:
-            raise Error('EOF while reading dict value', f.tell())
-        value = getany(f, c)
-        d[key] = value
-    return d
-
-
-def getany(f, c):
-    if c == 'i':
-        return getinteger(f)
-    if c == 'l':
-        return getlist(f)
-    if c == 'd':
-        return getdict(f)
-    f.seek(-1, os.SEEK_CUR)
-    return getstring(f)
-
-
-##path = r'C:\Documents and Settings\Elias\Application Data\uTorrent\Norton Ghost 14.0 + Recovery Disk.torrent'
-##f = open(path, 'rb')
-##assert f.read(1) == 'd'
-##d = getdict(f)
-
-
-DIR = r'C:\Documents and Settings\Elias\Application Data\uTorrent'
-a = [s for s in os.listdir(DIR) if os.path.splitext(s)[1].lower() == '.torrent']
-
-
+if __name__ == '__main__':
+    import sys
+    import pprint
+    args = sys.argv[1:]
+    if not args:
+        print 'no torrent files specified'
+    else:
+        for s in args:
+            print s
+            print '-' * 78
+            data = readvalue(open(s, 'rb'))
+            data['info']['pieces'] = '<hash data omitted>'
+            pprint.pprint(data)
+            print
