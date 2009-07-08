@@ -8,7 +8,6 @@
 """Windows Clipboard utilities."""
 
 
-from __future__ import with_statement
 import win32clipboard
 import win32con
 

@@ -3,7 +3,6 @@
 2007-04-13  EF  created
 """
 
-from __future__ import with_statement
 import os, sys, re
 import win32file, win32con
 import DosCmdLine, CommonTools

@@ -1,4 +1,3 @@
-from __future__ import with_statement
 import os
 from contextlib import contextmanager
 import win32api as api, win32gui as gui, win32con as con

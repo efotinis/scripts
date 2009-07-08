@@ -9,7 +9,6 @@
 #             (100s of nanoseconds). That's when I knew it was a sign error.
 #             I lulz'ed a little... :)
 
-from __future__ import with_statement
 import os
 import ctypes
 import win32con

@@ -1,4 +1,3 @@
-from __future__ import with_statement
 import re, ctypes
 import win32api, win32process, win32gui, win32con
 import SharedLib, WinUtil

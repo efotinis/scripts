@@ -8,7 +8,6 @@
                 reversed order of dir freqs (descending)
 """
 
-from __future__ import with_statement
 import os, hashlib, sys, time, collections, string
 import DosCmdLine, CommonTools, console_stuff
 
