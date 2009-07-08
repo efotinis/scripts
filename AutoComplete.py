@@ -1,17 +1,17 @@
 # 2008.07.17  created
 # 2008.07.24  simplified getTokenForCompletion by using CmdLineUtils.tokenize
 
-import win32console as wc
-import win32con as co
-import win32api as api
-import msvcrt as ms
+import win32console
+import win32con
+import win32api
+import msvcrt
 import re
-from CmdLineUtils import tokenize as tokenizeCmdLine
+import CmdLineUtils
 
 
-##cin = wc.GetStdHandle(wc.STD_INPUT_HANDLE)
-##cout = wc.GetStdHandle(wc.STD_OUTPUT_HANDLE)
-gaks = api.GetAsyncKeyState
+##cin = win32console.GetStdHandle(win32console.STD_INPUT_HANDLE)
+##cout = win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
+gaks = win32api.GetAsyncKeyState
 
 
 UP    = '\xe0H'
@@ -46,9 +46,9 @@ def wasPressed(vk):
 
 
 def inkey():
-    s = ms.getch()
+    s = msvcrt.getch()
     if s in '\x00\xe0':
-            s += ms.getch()
+            s += msvcrt.getch()
     return s
 
 
@@ -64,14 +64,14 @@ class ConsoleBuffer:
     '''Console buffer utilities.'''
 
     def __init__(self):
-        self.obj = wc.GetStdHandle(wc.STD_OUTPUT_HANDLE)
+        self.obj = win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
 
     def getCursor(self):
         coords = self.obj.GetConsoleScreenBufferInfo()['CursorPosition']
         return coords.X, coords.Y
 
     def setCursor(self, x, y):        
-        self.obj.SetConsoleCursorPosition(wc.PyCOORDType(x, y))
+        self.obj.SetConsoleCursorPosition(win32console.PyCOORDType(x, y))
 
     def write(self, s):
         self.obj.WriteConsole(s)
@@ -181,7 +181,7 @@ class _Input:
                 self.updateText(oldLen)
 
     def handleTab(self, completerFunc):
-        shift = isPressed(co.VK_SHIFT)
+        shift = isPressed(win32con.VK_SHIFT)
         if self.pos == len(self.line) and self.candidates is not None:
             pass  # keep current candidates
         else:
@@ -190,7 +190,7 @@ class _Input:
             self.candIndex = 0
         if not self.candidates:
             #cout.WriteConsole('\a')
-            api.MessageBeep(-1)
+            win32api.MessageBeep(-1)
         else:
             if shift:
                 self.candIndex -= 1
@@ -211,7 +211,7 @@ class _Input:
 
     def getTokenForCompletion(self):
         s = self.line[:self.pos]  # ignore anything past the cursor
-        for beg, end, token in tokenizeCmdLine(s):
+        for beg, end, token in CmdLineUtils.tokenize(s):
             if beg <= self.pos <= end:
                 return beg, token
         else:

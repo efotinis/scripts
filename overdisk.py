@@ -109,7 +109,7 @@ class Dir(Item):
         try:
             # some folders (like "System Volume Information") cannot be listed
             items = os.listdir(path)
-        except WindowsError, x:
+        except WindowsError as x:
             msg = 'WANRING: could list contents of "%s"; reason: %s' % (path, x.strerror)
             status.staticprint(msg)
             return
@@ -329,7 +329,7 @@ def main(args):
             if cmd in ('q', 'quit'):
                 break
             cmdDispatcher.dispatch(cmd, params)
-        except (CmdError, PathError), x:
+        except (CmdError, PathError) as x:
             uprint('ERROR: ' + str(x))
         finally:
             uprint('')
