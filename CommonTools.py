@@ -89,6 +89,7 @@ def splitunits(n, units):
     >>> splitunits(123456, (60,60,24))
     (36, 17, 10, 1)
     """
+    # FIXME: fails with floats; either fix (s. dt.py) or test for int
     ret = []
     for u in units:
         ret += [n % u]

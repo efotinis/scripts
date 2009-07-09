@@ -31,7 +31,7 @@ def countcombinations(n, m):
 
 
 def countpermutations(n, m):
-    """Count permutaitons of m out of n items."""
+    """Count permutations of m out of n items."""
     if n < m:
         raise ValueError
     return math.factorial(n) / math.factorial(n - m)
