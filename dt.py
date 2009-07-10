@@ -34,10 +34,7 @@ def timestr_to_sec(timestr):
 
 def sec_to_timestr(sec, fracts=True):
     """Convert seconds to a time string. Use fracts=False to round seconds."""
-    # isolate fractional part first, because splitunits() requires an int
-    fraction, seconds = math.modf(sec)
     seconds, minutes, hours = CommonTools.splitunits(seconds, (60, 60))
-    seconds += fraction
     fmt = '%02d:%02d:%06.3f' if fracts else '%02d:%02d:%02.0f'
     return fmt % (hours, minutes, seconds)
 

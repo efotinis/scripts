@@ -1,7 +1,9 @@
 """Common script utilities."""
 
-import os, sys
+import os
+import sys
 import contextlib
+import math
 import win32console
 shell = shellcon = None  # delay load
 
@@ -81,20 +83,27 @@ def uprint(s):
 def splitunits(n, units):
     """Split a number to a tuple of units.
 
+    The number must be non-negative and the units integers > 0.
+    The fractional part (if any) goes to the lowest unit.
+
     # split 125sec to 2min:5sec
     >>> splitunits(125, (60,))
     (5, 2)
     
-    # split 123456sec to 1days:10hrs:17min:36sec
-    >>> splitunits(123456, (60,60,24))
-    (36, 17, 10, 1)
+    # split 123456.7sec to 1days:10hrs:17min:36.7sec
+    >>> splitunits(123456.7, (60,60,24))
+    (36.7, 17, 10, 1)
     """
-    # FIXME: fails with floats; either fix (s. dt.py) or test for int
+    if n < 0:
+        raise ValueError('splitunits() number must be >= 0')
     ret = []
     for u in units:
+        if int(u) != u or u <= 0:
+            raise ValueError('splitunits() units must be ints > 0')
         ret += [n % u]
-        n /= u
-    return tuple(ret + [n])
+        n //= u
+    ret.append(n)
+    return tuple(ret)
 
 
 def loadShell():

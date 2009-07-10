@@ -364,10 +364,12 @@ def download_resumable_file(src, dst, bufsize, totalsize, totaldone, movavg):
                 speed = movavg.get()
 
                 file_eta = (filesize - filedone) / speed if speed else 0
+                if file_eta < 0: file_eta = 0
                 sec, min, hr = CommonTools.splitunits(file_eta, (60,60))
                 file_eta = '%d:%02d:%02d' % (hr, min, sec)
 
                 total_eta = (totalsize - totaldone) / speed if speed else 0
+                if total_eta < 0: total_eta = 0
                 sec, min, hr = CommonTools.splitunits(total_eta, (60,60))
                 total_eta = '%d:%02d:%02d' % (hr, min, sec)
 
