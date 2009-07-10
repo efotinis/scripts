@@ -1,15 +1,14 @@
-# 2007.04.18: created; simple get/setText (CF_TEXT only)
-# 2007.11.27: also handle CF_UNICODETEXT;
-#             added stdFmtNames and enumAllFormats
-
-# 2008.10.19: added Session,hasformat; refactored code using them
-#             renamed items according to PEP8 (e.g. stdFmtNames to standardformats)
-#
 """Windows Clipboard utilities."""
 
-
+from __future__ import print_function
 import win32clipboard
-import win32con
+from win32con import CF_UNICODETEXT, CF_TEXT, CF_LOCALE
+import SharedLib
+from ctypes.wintypes import INT, LCID, LCTYPE, LPSTR
+
+
+GetLocaleInfo = SharedLib.winfunc(
+    'kernel32', 'GetLocaleInfoA', INT, [LCID, LCTYPE, LPSTR, INT])
 
 
 class Session:
@@ -27,27 +26,55 @@ def hasformat(fmt):
     return win32clipboard.IsClipboardFormatAvailable(fmt)
 
 
+def localecodepage(lcid):
+    """Windows codepage number of a LCID.
+
+    Returns None on error, or 0 for Unicode-only locales.
+    """
+    buf = ctypes.create_string_buffer(6)
+    LOCALE_IDEFAULTANSICODEPAGE = 0x00001004
+    res = GetLocaleInfo(lcid, LOCALE_IDEFAULTANSICODEPAGE, buf, len(buf))
+    return int(buf.value) if res else None
+
+
 def gettext():
-    """Get clipboard text (may be unicode), or '' if no text is available."""
+    """Get clipboard text (always Unicode) or None."""
     with Session():
-        s = ''
-        # NT-based system synthesize CF_UNICODETEXT when only CF_TEXT is available.
-        # So, this function will always return a unicode string.
-        # We could use EnumClipboardFormats to make sure we don't get the synth'ed
-        # format, but that's probably not worth it.
-        if hasformat(win32con.CF_UNICODETEXT):
-            s = win32clipboard.GetClipboardData(win32con.CF_UNICODETEXT)
-        elif hasformat(win32con.CF_TEXT):
-            s = win32clipboard.GetClipboardData(win32con.CF_TEXT)
-        return s
+        ret = None
+        # Windows provides automatic conversions between the following:
+        #   on Win9x: CF_TEXT, CF_OEMTEXT
+        #   on NT-based: CF_TEXT, CF_OEMTEXT, CF_UNICODETEXT
+        if hasformat(CF_UNICODETEXT):
+            ret = win32clipboard.GetClipboardData(CF_UNICODETEXT)
+        elif hasformat(CF_TEXT):
+            ret = win32clipboard.GetClipboardData(CF_TEXT)
+            try:
+                lcid = win32clipboard.GetClipboardData(CF_LOCALE)
+                lcid = struct.unpack('L', lcid)[0]
+                cp = localecodepage(lcid)
+                if cp:
+                    ret = ret.decode('cp' + str(cp))
+            except TypeError:
+                # CF_LOCALE not available
+                pass
+            if not isinstance(ret, unicode):
+                ret = ret.decode('mbcs')
+    return ret
 
 
-def settext(s):
-    """Set clipboard text (may be unicode)."""
+def settext(s, lcid=None):
+    """Set clipboard text, with optional locale if not Unicode.
+
+    Unless set manually, Windows uses the current input language for the locale.
+    """
+    if isinstance(s, unicode) and lcid is not None:
+        raise ValueError('locale not allowed for Unicode clipboard text')
     with Session():
         win32clipboard.EmptyClipboard()
-        fmt = win32con.CF_UNICODETEXT if isinstance(s, unicode) else win32con.CF_TEXT
+        fmt = CF_UNICODETEXT if isinstance(s, unicode) else CF_TEXT
         win32clipboard.SetClipboardData(fmt, s)
+        if lcid:
+            win32clipboard.SetClipboardData(CF_LOCALE, struct.pack('L', lcid))
 
 
 # predefined clipboard format names
@@ -93,6 +120,4 @@ def enumformats():
 
 if __name__ == '__main__':
     fmts = [formatname(n) for n in enumformats()]
-    print 'avaiable clipboard formats:', ', '.join(fmts)
-    
-    
+    print('available clipboard formats:', ', '.join(fmts))
