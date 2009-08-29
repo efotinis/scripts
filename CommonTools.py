@@ -5,6 +5,8 @@ import sys
 import contextlib
 import math
 import win32console
+import WinTime
+
 shell = shellcon = None  # delay load
 
 
@@ -169,6 +171,30 @@ def fsize(f):
         f.seek(oldpos)
 
 
+def readexactly(f, size):
+    """Read an exact number of bytes from a file."""
+    ret = f.read(size)
+    if len(ret) != size:
+        raise IOError('unexpected end of data')
+    return ret
+
+
+def readupto(f, delim, keep=False):
+    """Read from a file up to a delimiter byte.
+
+    The delimiter will be consumed, but it won't appear in the result,
+    unless 'keep' is True.
+    """
+    ret = ''
+    while True:
+        c = readexactly(f, 1)
+        if c == delim:
+            if keep:
+                ret += c
+            return ret
+        ret += c
+
+    
 def listfiles(path):
     """Generate names of files."""
     for s in os.listdir(path):
@@ -191,3 +217,24 @@ def tempchdir(path=None):
         os.chdir(path)
     yield
     os.chdir(oldpath)
+
+
+# FIXME: better names
+PY_EPOCH = long(WinTime.pythonEpochToFileTime())  # FILETIME of Python/C epoch
+PY_TIME_SCALE = 1 / 10000000.0  # factor to convert FILETIME to seconds
+
+
+##def winToPyTime(n):
+##    '''Convert a FindFileW.Info date (FILETIME int64)
+##    to Python seconds since the epoch.'''
+##    return (n - PY_EPOCH) * PY_TIME_SCALE
+
+
+def wintime_to_pyseconds(n):
+    """Convert a Windows FILETIME int64 to Python seconds."""
+    return (n - PY_EPOCH) * PY_TIME_SCALE
+
+
+def pyseconds_to_wintime(n):
+    """Convert Python seconds to a Windows FILETIME int64."""
+    return int(n / PY_TIME_SCALE + PY_EPOCH)

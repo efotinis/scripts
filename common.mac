@@ -4,7 +4,7 @@ el0=time /t > NUL
 el1=verify foo > nul 2>&1
 
 ;= Make new directory and go to it.
-nd=md $1 & cd $1
+mcd=md $1 & cd $1
 
 ;= Exit console.
 x=exit

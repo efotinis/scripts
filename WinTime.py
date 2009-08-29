@@ -34,8 +34,8 @@ class FILETIME(ctypes.Structure):
         return self.dwLowDateTime + (self.dwHighDateTime << 32)
         #return long(self.dwLowDateTime & 0xffffffff) | (long(self.dwHighDateTime & 0xffffffff) << 32)
     def init(self, n):
-        self.dwLowDateTime = n & 0xFFFFFFFF
-        self.dwHighDateTime = (n >> 32) & 0xFFFFFFFF
+        self.dwLowDateTime = n & 0xffffffff
+        self.dwHighDateTime = (n >> 32) & 0xffffffff
 
 FileTimeToSystemTime = ctypes.windll.kernel32.FileTimeToSystemTime
 FileTimeToSystemTime.restype = BOOL

@@ -5,39 +5,21 @@ specified as arguments (hash values excluded for brevity).
 
 Exceptions thrown from this module:
 - IOError: data read error
-- AssertionError/ValueError: bad data
+- ValueError: bad data
 
 File format specs taken from:
     <http://wiki.theory.org/BitTorrentSpecification>
 """
+
 import os
 import re
+
+import CommonTools
 
 
 intformat = re.compile(r'^(?:0|-?[1-9][0-9]*)$')
 
 
-def readexactly(f, size):
-    """Read an exact number of bytes."""
-    ret = f.read(size)
-    if len(ret) != size:
-        raise IOError('unexpected end of data')
-    return ret
-
-
-def readto(f, delim):
-    """Read up to a delimiter byte.
-
-    The delimiter will be consumed, but it won't appear in the result.
-    """
-    ret = ''
-    while True:
-        c = readexactly(f, 1)
-        if c == delim:
-            return ret
-        ret += c
-
-    
 """
 bencoding format
     ascii_num:  r'0|-?[1-9][0-9]*'
@@ -52,15 +34,17 @@ bencoding format
 
 def readstr(f, lead=''):
     """Read a bencoded string. Accepts leading bytes that are already read."""
-    size = int(lead + readto(f, ':'))
-    assert size >= 0
-    return readexactly(f, size)
+    size = int(lead + CommonTools.readupto(f, ':'))
+    if size < 0:
+        raise ValueError('bad string size')
+    return CommonTools.readexactly(f, size)
 
 
 def readint(f):
     """Read a bencoded integer (after leading 'i')."""
-    s = readto(f, 'e')
-    assert intformat.match(s)
+    s = CommonTools.readupto(f, 'e')
+    if not intformat.match(s):
+        raise ValueError('bad integer')
     return int(s, 10)
 
 
@@ -78,7 +62,7 @@ def readdict(f):
     """Read a bencoded dictionary (after leading 'd')."""
     ret = {}
     while True:
-        c = readexactly(f, 1)
+        c = CommonTools.readexactly(f, 1)
         if c == 'e':
             return ret
         key = readstr(f, c)
@@ -90,7 +74,7 @@ def readvalue(f, checkend=False):
 
     Will return None if next char is 'e' and checkend=True.
     """
-    c = readexactly(f, 1)
+    c = CommonTools.readexactly(f, 1)
     if checkend and c == 'e':
         return None
     try:
