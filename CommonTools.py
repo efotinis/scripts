@@ -5,7 +5,8 @@ import sys
 import contextlib
 import math
 import win32console
-import WinTime
+
+import win32time
 
 shell = shellcon = None  # delay load
 
@@ -220,7 +221,7 @@ def tempchdir(path=None):
 
 
 # FIXME: better names
-PY_EPOCH = long(WinTime.pythonEpochToFileTime())  # FILETIME of Python/C epoch
+PY_EPOCH = win32time.pythonEpochToFileTime().getvalue()  # FILETIME of Python/C epoch
 PY_TIME_SCALE = 1 / 10000000.0  # factor to convert FILETIME to seconds
 
 
