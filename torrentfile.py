@@ -14,7 +14,7 @@ File format specs taken from:
 import os
 import re
 
-import CommonTools
+import fileutil
 
 
 intformat = re.compile(r'^(?:0|-?[1-9][0-9]*)$')
@@ -34,15 +34,15 @@ bencoding format
 
 def readstr(f, lead=''):
     """Read a bencoded string. Accepts leading bytes that are already read."""
-    size = int(lead + CommonTools.readupto(f, ':'))
+    size = int(lead + fileutil.readupto(f, ':'))
     if size < 0:
         raise ValueError('bad string size')
-    return CommonTools.readexactly(f, size)
+    return fileutil.readexactly(f, size)
 
 
 def readint(f):
     """Read a bencoded integer (after leading 'i')."""
-    s = CommonTools.readupto(f, 'e')
+    s = fileutil.readupto(f, 'e')
     if not intformat.match(s):
         raise ValueError('bad integer')
     return int(s, 10)
@@ -62,7 +62,7 @@ def readdict(f):
     """Read a bencoded dictionary (after leading 'd')."""
     ret = {}
     while True:
-        c = CommonTools.readexactly(f, 1)
+        c = fileutil.readexactly(f, 1)
         if c == 'e':
             return ret
         key = readstr(f, c)
@@ -74,7 +74,7 @@ def readvalue(f, checkend=False):
 
     Will return None if next char is 'e' and checkend=True.
     """
-    c = CommonTools.readexactly(f, 1)
+    c = fileutil.readexactly(f, 1)
     if checkend and c == 'e':
         return None
     try:

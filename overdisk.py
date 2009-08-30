@@ -4,13 +4,20 @@
 # TODO: factor out common code
 
 
-import os, re, sys, operator, time
-import AutoComplete, FindFileW
+import os
+import re
+import sys
+import operator
+import time
 from collections import defaultdict
-from CommonTools import uprint
-from console_stuff import SamePosOutput
+
 import win32file
-import WinTime
+
+import win32time
+import AutoComplete
+import FindFileW
+from console_stuff import SamePosOutput
+from CommonTools import uprint
 
 
 class PathError(ValueError):
@@ -41,7 +48,7 @@ class ExtStats:
 
 
 # FILETIME of Python (and C) epoch
-PY_EPOCH = long(WinTime.pythonEpochToFileTime())
+PY_EPOCH = win32time.pythonEpochToFileTime().getvalue()
 # factor to convert FILETIME to seconds
 TIME_SCALE = 1 / 10000000.0
 

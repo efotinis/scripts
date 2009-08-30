@@ -31,6 +31,7 @@ import re
 import glob
 
 import console_stuff
+import fileutil
 
 EXIT_OK = 0
 EXIT_ERROR = 1  # currently unused
@@ -88,16 +89,8 @@ def main(args):
     return EXIT_OK
 
 
-def fsize(f):
-    oldPos = f.tell()
-    f.seek(0, 2)
-    ret = f.tell()
-    f.seek(oldPos)
-    return ret
-
-    
 def bytesToRead(f, offset, length):
-    fs = fsize(f)
+    fs = fileutil.fsize(f)
     if offset < 0:
         offset = 0
     if offset > fs:

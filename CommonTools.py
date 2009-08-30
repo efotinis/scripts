@@ -162,40 +162,6 @@ def prettysize(n, iec=False):
         return '%d %c%sB' % (int(n), unit, 'i' if iec else '')
 
 
-def fsize(f):
-    """Get size of an open file (must be seekable)."""
-    oldpos = f.tell()
-    try:
-        f.seek(0, os.SEEK_END)
-        return f.tell()
-    finally:
-        f.seek(oldpos)
-
-
-def readexactly(f, size):
-    """Read an exact number of bytes from a file."""
-    ret = f.read(size)
-    if len(ret) != size:
-        raise IOError('unexpected end of data')
-    return ret
-
-
-def readupto(f, delim, keep=False):
-    """Read from a file up to a delimiter byte.
-
-    The delimiter will be consumed, but it won't appear in the result,
-    unless 'keep' is True.
-    """
-    ret = ''
-    while True:
-        c = readexactly(f, 1)
-        if c == delim:
-            if keep:
-                ret += c
-            return ret
-        ret += c
-
-    
 def listfiles(path):
     """Generate names of files."""
     for s in os.listdir(path):
