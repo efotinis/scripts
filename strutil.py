@@ -37,6 +37,6 @@ def rfindall(s, sub, start=None, end=None, overlap=False):
         if i == -1:
             break
         yield i
-        start = i - (1 if overlap else len(sub))
+        end = i - (1 if overlap else len(sub))
 
 
