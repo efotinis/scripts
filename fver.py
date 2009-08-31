@@ -7,7 +7,7 @@
 #       currently only well-known strings are used
 
 import os, sys, win32api
-import DosCmdLine, BitOps, VerResUtils
+import DosCmdLine, binutil, VerResUtils
 
 
 INDENT = 4 * ' '
@@ -167,11 +167,11 @@ def errln(s):
 
 
 def printfixed(d):
-    print INDENT + '        signature:', '0x%08X' % BitOps.unsigned32(d['Signature'])
+    print INDENT + '        signature:', '0x%08X' % binutil.uint32(d['Signature'])
     print INDENT + 'structure version:', verstr32(d['StrucVersion'])
     print INDENT + '     file version:', verstr64(d['FileVersionMS'] << 32 | d['FileVersionLS'])
     print INDENT + '  product version:', verstr64(d['ProductVersionMS'] << 32 | d['ProductVersionLS'])
-    print INDENT + '            flags:', BitOps.flagstr32(d['FileFlags'] & d['FileFlagsMask'], flags)
+    print INDENT + '            flags:', binutil.flagstr(d['FileFlags'] & d['FileFlagsMask'], 32, flags)
     print INDENT + '               OS:', os_str(d['FileOS'])
     print INDENT + '             type:', type_str(d['FileType'], d['FileSubtype'])
     print INDENT + '             date:', d['FileDate'] or ''

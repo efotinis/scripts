@@ -1,7 +1,12 @@
+"""WinAPI time wrappers."""
+
 import time
 import ctypes
 import SharedLib
 from ctypes.wintypes import BOOL, WORD, DWORD, LONG, WCHAR
+
+LPWORD = ctypes.POINTER(WORD)
+ULONGLONG = ctypes.c_uint64
 
 
 class SYSTEMTIME(ctypes.Structure):
@@ -29,21 +34,15 @@ class FILETIME(ctypes.Structure):
         ('dwLowDateTime', DWORD),
         ('dwHighDateTime', DWORD)]
 
-##    def __long__(self):
-##        return self.dwLowDateTime + (self.dwHighDateTime << 32)
-
-##    def init(self):
-##        self.dwLowDateTime = n & 0xffffffff
-##        self.dwHighDateTime = (n >> 32) & 0xffffffff
-##
-
     def __repr__(self):
         return 'FILETIME(low=%d, high=%d)' % (self.dwLowDateTime, self.dwHighDateTime)
     
     def getvalue(self):
+        """Get the underline uint64."""
         return self.dwLowDateTime + (self.dwHighDateTime << 32)
 
     def setvalue(self, n):
+        """Set the underline uint64."""
         self.dwLowDateTime = n & 0xffffffff
         self.dwHighDateTime = (n >> 32) & 0xffffffff
 
@@ -81,6 +80,18 @@ _SystemTimeToTzSpecificLocalTime = kernel32('SystemTimeToTzSpecificLocalTime',
     BOOL, [LPTIME_ZONE_INFORMATION, LPSYSTEMTIME, LPSYSTEMTIME])
 _TzSpecificLocalTimeToSystemTime = kernel32('TzSpecificLocalTimeToSystemTime', 
     BOOL, [LPTIME_ZONE_INFORMATION, LPSYSTEMTIME, LPSYSTEMTIME])
+_DosDateTimeToFileTime = kernel32('DosDateTimeToFileTime',
+    BOOL, [WORD, WORD, LPFILETIME])
+_FileTimeToDosDateTime = kernel32('FileTimeToDosDateTime',
+    BOOL, [LPFILETIME, LPWORD, LPWORD])
+_CompareFileTime = kernel32('CompareFileTime',
+    LONG, [LPFILETIME, LPFILETIME])
+_GetTickCount = kernel32('GetTickCount',
+    DWORD, [])
+_GetTickCount64 = kernel32('GetTickCount64',
+    ULONGLONG, [])
+_GetSystemTimes = kernel32('GetSystemTimes',
+    BOOL, [LPFILETIME, LPFILETIME, LPFILETIME])
 
 
 def toLocalFileTime(ft):
@@ -127,36 +138,28 @@ if __name__ == '__main__':
     test()
 
 '''
+implemented:
+    FileTimeToLocalFileTime / LocalFileTimeToFileTime
+    FileTimeToSystemTime / SystemTimeToFileTime
+    FileTimeToDosDateTime / DosDateTimeToFileTime
+    SystemTimeToTzSpecificLocalTime / TzSpecificLocalTimeToSystemTime
     CompareFileTime
-    DosDateTimeToFileTime
-    FileTimeToDosDateTime
-x   FileTimeToLocalFileTime
-x   FileTimeToSystemTime
-    GetDynamicTimeZoneInformation
-    GetFileTime
-    GetLocalTime
-    GetSystemTime
-    GetSystemTimeAdjustment
-    GetSystemTimeAsFileTime
-    GetSystemTimes
     GetTickCount
     GetTickCount64
-    GetTimeFormat
-    GetTimeZoneInformation
+    GetSystemTimes
+pending:
+    GetDynamicTimeZoneInformation / SetDynamicTimeZoneInformation
+    GetFileTime / SetFileTime
+    GetLocalTime / SetLocalTime
+    GetSystemTime / SetSystemTime
+    GetSystemTimeAsFileTime
+    GetSystemTimeAdjustment / SetSystemTimeAdjustment
+    GetTimeZoneInformation / SetTimeZoneInformation
     GetTimeZoneInformationForYear
-x   LocalFileTimeToFileTime
+    GetTimeFormat
     NtQuerySystemTime
     RtlLocalTimeToSystemTime
     RtlTimeToSecondsSince1970
-    SetDynamicTimeZoneInformation
-    SetFileTime
-    SetLocalTime
-    SetSystemTime
-    SetSystemTimeAdjustment
-    SetTimeZoneInformation
-x   SystemTimeToFileTime
-x   SystemTimeToTzSpecificLocalTime
-x   TzSpecificLocalTimeToSystemTime
 '''
 
 
@@ -197,7 +200,7 @@ def SystemTimeToTzSpecificLocalTime(tz, st):
 
 def TzSpecificLocalTimeToSystemTime(tz, lst):
     st = SYSTEMTIME()
-    if not _TzSpecificLocalTimeToSystemTime (tz, lst, st):
+    if not _TzSpecificLocalTimeToSystemTime(tz, lst, st):
         raise ctypes.WinError()
     return st
 
@@ -208,3 +211,51 @@ def TzSpecificLocalTimeToSystemTime(tz, lst):
 ##
 ##ntdll = SharedLib.WinLib('ntdll')
 ##RtlTimeToSecondsSince1970 = ntdll('RtlTimeToSecondsSince1970', BOOLEAN, [PLARGE_INTEGER, PULONG])
+
+
+def DosDateTimeToFileTime(date, time):
+    ft = FILETIME()
+    if not _DosDateTimeToFileTime(date, time, ft):
+        raise ctypes.WinError()
+    return ft
+
+
+def FileTimeToDosDateTime(ft):
+    date, time = DWORD(), DWORD()
+    if not _FileTimeToDosDateTime(ft, date, time):
+        raise ctypes.WinError()
+    return date, time
+
+
+def CompareFileTime(ft1, ft2):
+    return _CompareFileTime(ft1, ft2)
+
+
+def GetTickCount():
+    return _GetTickCount()
+
+
+def GetTickCount64():
+    return _GetTickCount64()
+
+
+def GetSystemTimes():
+    idle, kernel, user = FILETIME(), FILETIME(), FILETIME()
+    if not _GetSystemTimes(idle, kernel, user):
+        raise ctypes.WinError()
+    return idle, kernel, user
+
+
+##BOOL WINAPI GetFileTime(
+##  __in       HANDLE hFile,
+##  __out_opt  LPFILETIME lpCreationTime,
+##  __out_opt  LPFILETIME lpLastAccessTime,
+##  __out_opt  LPFILETIME lpLastWriteTime
+##);
+##
+##BOOL WINAPI SetFileTime(
+##  __in      HANDLE hFile,
+##  __in_opt  const FILETIME* lpCreationTime,
+##  __in_opt  const FILETIME* lpLastAccessTime,
+##  __in_opt  const FILETIME* lpLastWriteTime
+##);
