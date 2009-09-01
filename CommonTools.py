@@ -181,13 +181,15 @@ def listdirs(path):
 
 
 @contextlib.contextmanager
-def tempchdir(path=None):
-    """Save and restore the current directory, optionally setting a new one."""
-    oldpath = os.getcwd()
+def preserve_cwd(path=None):
+    """Context manager to preserve (and optionally set) the current directory."""
+    orgpath = os.getcwd()
     if path is not None:
         os.chdir(path)
-    yield
-    os.chdir(oldpath)
+    try:
+        yield
+    finally:
+        os.chdir(orgpath)
 
 
 # FIXME: better names

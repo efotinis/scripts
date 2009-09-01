@@ -19,8 +19,10 @@ UpdateResource = SharedLib.winfunc('kernel32', 'UpdateResourceW', BOOL,
 @contextmanager
 def Module(path):
     mod = api.LoadLibrary(path)
-    yield mod
-    api.FreeLibrary(mod)
+    try:
+        yield mod
+    finally:
+        api.FreeLibrary(mod)
 
 
 def dump_resources(mod, restype, outdir):
