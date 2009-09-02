@@ -6,6 +6,8 @@ import contextlib
 import math
 import itertools
 import re
+import collections
+import operator
 
 import win32console
 
@@ -254,3 +256,51 @@ def nukeglobals(keep=None):
     for item in main_globals.keys():
         if not re.match(r'__.+__', item) and item not in keep:
             del main_globals[item]
+
+
+class Counter(object):
+    """Counter of objects, using an optional key.
+
+    Example:
+    >>> c = Counter(key=str.lower)
+    >>> c.addall('abcbcbb')
+    >>> c.dump()
+    1 a
+    2 c
+    4 b
+    """
+    
+    def __init__(self, key=None):
+        self.data = collections.defaultdict(int)
+        self.key = key
+        
+    def add(self, x):
+        """Add an item."""
+        self.data[self.key(x) if self.key else x] += 1
+        
+    def addall(self, seq):
+        """Add a sequence of items."""
+        for x in seq:
+            self.add(x)
+            
+    def clear(self):
+        """Reset all."""
+        self.data.clear()
+        
+    def _data(self):
+        """Return counter/value pairs sorted by counter."""
+        return [(freq, x) for x, freq in sorted(self.data.items(), key=operator.itemgetter(1))]
+    
+    def __iter__(self):
+        """Iterate on counter/value pairs by increasing counter order."""
+        return iter(self._data())
+    
+    def __reversed__(self):
+        """Iterate on counter/value pairs by decreasing counter order."""
+        return reversed(self._data())
+    
+    def dump(self):
+        """Print counters and values."""
+        for freq, x in self:
+            print '%d %s' % (freq, x)
+
