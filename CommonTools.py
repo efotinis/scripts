@@ -195,23 +195,18 @@ def preserve_cwd(path=None):
 
 
 # FIXME: better names
+# TODO: move to win32time
 PY_EPOCH = win32time.pythonEpochToFileTime().getvalue()  # FILETIME of Python/C epoch
 PY_TIME_SCALE = 1 / 10000000.0  # factor to convert FILETIME to seconds
 
 
-##def winToPyTime(n):
-##    '''Convert a FindFileW.Info date (FILETIME int64)
-##    to Python seconds since the epoch.'''
-##    return (n - PY_EPOCH) * PY_TIME_SCALE
-
-
 def wintime_to_pyseconds(n):
-    """Convert a Windows FILETIME int64 to Python seconds."""
+    """Convert a Windows FILETIME uint64 to Python seconds."""
     return (n - PY_EPOCH) * PY_TIME_SCALE
 
 
 def pyseconds_to_wintime(n):
-    """Convert Python seconds to a Windows FILETIME int64."""
+    """Convert Python seconds to a Windows FILETIME uint64."""
     return int(n / PY_TIME_SCALE + PY_EPOCH)
 
 
@@ -288,19 +283,19 @@ class Counter(object):
         self.data.clear()
         
     def _data(self):
-        """Return counter/value pairs sorted by counter."""
-        return [(freq, x) for x, freq in sorted(self.data.items(), key=operator.itemgetter(1))]
+        """Return value/counter pairs sorted by counter."""
+        return sorted(self.data.items(), key=operator.itemgetter(1))
     
     def __iter__(self):
-        """Iterate on counter/value pairs by increasing counter order."""
+        """Iterator of value/counter pairs by increasing counter order."""
         return iter(self._data())
     
     def __reversed__(self):
-        """Iterate on counter/value pairs by decreasing counter order."""
+        """Iterator of value/counter pairs by decreasing counter order."""
         return reversed(self._data())
     
     def dump(self):
-        """Print counters and values."""
-        for freq, x in self:
+        """Print values and counters."""
+        for x, freq in self:
             print '%d %s' % (freq, x)
 

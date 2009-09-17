@@ -35,7 +35,7 @@ class FILETIME(ctypes.Structure):
         ('dwHighDateTime', DWORD)]
 
     def __repr__(self):
-        return 'FILETIME(low=%d, high=%d)' % (self.dwLowDateTime, self.dwHighDateTime)
+        return 'FILETIME(%d)' % (self.getvalue())
     
     def getvalue(self):
         """Get the underline uint64."""
@@ -45,6 +45,8 @@ class FILETIME(ctypes.Structure):
         """Set the underline uint64."""
         self.dwLowDateTime = n & 0xffffffff
         self.dwHighDateTime = (n >> 32) & 0xffffffff
+
+    value = property(getvalue, setvalue, None, '64-bit value')        
 
 
 class TIME_ZONE_INFORMATION(ctypes.Structure):

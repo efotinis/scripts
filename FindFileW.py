@@ -1,39 +1,28 @@
-# 2007.04.17  Created.
-# 2007.09.27  Modified.
-# 2008.01.27  Used SharedLib.
-# 2008.07.23  Fixed subtle bug where DWORD was defined as ctypes.c_int,
-#             instead of ctypes.c_ulong. I was perplexed by the fact that
-#             50% of the time, dates returned from this module where ~419
-#             seconds off. I noticed that 419 = 2^32 / 10^7, 2^32 being
-#             the max DWORD and 10^7 the scale of Windows file times
-#             (100s of nanoseconds). That's when I knew it was a sign error.
-#             I lulz'ed a little... :)
-
 import os
 import ctypes
 import win32con
 import SharedLib
+from ctypes.wintypes import BOOL, DWORD, HANDLE, WCHAR, LPCWSTR
 
-HANDLE = ctypes.c_void_p
-LPWCHAR = ctypes.c_wchar_p
-DWORD = ctypes.c_ulong
-BOOL = ctypes.c_int
-TCHAR = ctypes.c_wchar
-FILETIME = DWORD * 2
+from win32time import FILETIME
+
+
+TCHAR = WCHAR
+LPCTSTR = LPCWSTR
 
 INVALID_HANDLE_VALUE = HANDLE(-1)
 
 class Win32FindDataW(ctypes.Structure):
     _pack_ = 1
     _fields_ = [
-        ('dwFileAttributes', DWORD),
-        ('ftCreationTime',   FILETIME),
-        ('ftLastAccessTime', FILETIME),
-        ('ftLastWriteTime',  FILETIME),
-        ('nFileSizeHigh',    DWORD),
-        ('nFileSizeLow',     DWORD),
-        ('dwReserved0',      DWORD),
-        ('dwReserved1',      DWORD),
+        ('dwFileAttributes',   DWORD),
+        ('ftCreationTime',     FILETIME),
+        ('ftLastAccessTime',   FILETIME),
+        ('ftLastWriteTime',    FILETIME),
+        ('nFileSizeHigh',      DWORD),
+        ('nFileSizeLow',       DWORD),
+        ('dwReserved0',        DWORD),
+        ('dwReserved1',        DWORD),
         ('cFileName',          TCHAR * win32con.MAX_PATH),
         ('cAlternateFileName', TCHAR * 14),
     ]
@@ -44,7 +33,7 @@ class Win32FindDataW(ctypes.Structure):
         return ret
 
 krnl = SharedLib.WinLib('kernel32')
-FindFirstFileW = krnl('FindFirstFileW', HANDLE, [LPWCHAR, ctypes.POINTER(Win32FindDataW)])
+FindFirstFileW = krnl('FindFirstFileW', HANDLE, [LPCTSTR, ctypes.POINTER(Win32FindDataW)])
 FindNextFileW = krnl('FindNextFileW', BOOL, [HANDLE, ctypes.POINTER(Win32FindDataW)])
 FindClose = krnl('FindClose', BOOL, [HANDLE])
 
@@ -101,13 +90,14 @@ class FindFileW:
 def int64(n1, n2):
     return n1 + (n2 << 32)
 
+# TODO: make named_tuple
 class Info:
     def __init__(self, fd=None):
         if fd:
             self.attr = fd.dwFileAttributes
-            self.create = int64(fd.ftCreationTime[0], fd.ftCreationTime[1])
-            self.access = int64(fd.ftLastAccessTime[0], fd.ftLastAccessTime[1])
-            self.modify = int64(fd.ftLastWriteTime[0], fd.ftLastWriteTime[1])
+            self.create = fd.ftCreationTime.value
+            self.access = fd.ftLastAccessTime.value
+            self.modify = fd.ftLastWriteTime.value
             self.size = int64(fd.nFileSizeLow, fd.nFileSizeHigh)
             self.res0 = fd.dwReserved0
             self.res1 = fd.dwReserved1
