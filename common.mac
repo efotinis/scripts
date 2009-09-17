@@ -31,6 +31,7 @@ py="%ProgramFiles%\Python26\python.exe" $*
 sr="%ProgramFiles(x86)%\Streamripper\streamripper.exe" $*
 lame="%UserProfile%\Program Files\lame\lame.exe" $*
 7z="%ProgramFiles%\7-Zip\7z.exe" $*
+upx="%ProgramFiles%\upx\upx.exe" $*
 
 ;= Remove dummy macro used for above comments.
 ;=
