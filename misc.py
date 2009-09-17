@@ -1,99 +1,4 @@
-##import os
-##import FindFileW
-##import WinTime
-##import time
-##
-##
-##def attrToStr(attribs, empty=''):
-##    flags = 'RHS?DAVNTPXCOIE?'
-##    n = 1
-##    ret = ''
-##    for i in xrange(16):
-##        ret += flags[i] if (attribs & n) else empty
-##        n *= 2
-##    return ret
-
-
-
-##FILE_ATTRIBUTE_READONLY            = 1 <<  0
-##FILE_ATTRIBUTE_HIDDEN              = 1 <<  1
-##FILE_ATTRIBUTE_SYSTEM              = 1 <<  2
-##FILE_ATTRIBUTE_DIRECTORY           = 1 <<  4
-##FILE_ATTRIBUTE_ARCHIVE             = 1 <<  5
-##FILE_ATTRIBUTE_DEVICE              = 1 <<  6
-##FILE_ATTRIBUTE_NORMAL              = 1 <<  7
-##FILE_ATTRIBUTE_TEMPORARY           = 1 <<  8
-##FILE_ATTRIBUTE_SPARSE_FILE         = 1 <<  9
-##FILE_ATTRIBUTE_REPARSE_POINT       = 1 << 10
-##FILE_ATTRIBUTE_COMPRESSED          = 1 << 11
-##FILE_ATTRIBUTE_OFFLINE             = 1 << 12
-##FILE_ATTRIBUTE_NOT_CONTENT_INDEXED = 1 << 13
-##FILE_ATTRIBUTE_ENCRYPTED           = 1 << 14
-
-
-##n = 0
-##for dir, info in FindFileW.walk('R:\\'):
-##    #print os.path.join(dir, info.name)
-##    n -= info.size
-
-##a = FindFileW.dirList(r'c:\temp\foo')[0]
-##
-##ft = WinTime.FILETIME()
-##ft.init(a.create)
-##ft = WinTime.toLocalFileTime(ft)
-##xxxxx = long(ft)
-##st = WinTime.SYSTEMTIME()
-##WinTime.FileTimeToSystemTime(ft, st)
-## 
-##print
-##print a.name
-##print st
-##
-##x = xxxxx - long(WinTime.pythonEpochToFileTime())
-##x /= 10000000
-##print time.gmtime(x)
-##
-### Thursday, 15 March, 2007, 01:02:00
-
-
-##a = FindFileW.dirList('r:\\')[0]
-##print a.name
-
-
-##for x in FindFileW.dirList('c:\\'):
-##    print attrToStr(x.attr, '-'), x.name
-##
-##    
-##
-##
-##GetDiskFreeSpaceEx(
-###win32file.GetDriveType('C:\\')
-
-
-import sys
-
-
-def showHelp():
-    print """\
-params:  srcDir outFile descr"""
-
-    
-def errLn(s):
-    sys.stderr.write('ERROR: ' + s + '\n')
-
-    
-def main(args):
-    if '/?' in args:
-        showHelp()
-        return 0
-
-    return 0    
-
-
-
-
-# sys.exit(main(sys.argv[1:]))
-
+import re
 
 
 def strEscape(s, specChars, escChar='\\'):
@@ -123,19 +28,76 @@ def strUnescape(s, escChar='\\'):
     return ret
 
 
-def csvJoin(a):
+
+
+'''
+0   \0  null
+7   \a  alert
+8   \b  backspace
+9   \t  tab
+10  \n  newline
+11  \v  vertical tab
+12  \f  formfeed
+13  \r  carriage return
+34  \"
+39  \'
+63  \?
+92  \\
+
+\xFF
+\uFFFF
+'''
+
+
+ESCAPES = {
+    '\0':'0', '\a':'a', '\b':'b', '\t':'t', '\n':'n', '\v':'v',
+    '\f':'f', '\r':'r', '"':'"', "'":"'", '?':'?', '\\':'\\'}
+
+UNESCAPES = dict((v,k) for k,v in ESCAPES.items())
+
+HEXSTR = re.compile(r'^[0-9a-f]+$', re.IGNORECASE)
+
+
+def escape_str(s):
     ret = ''
-    for s in a:
-        if ret:
-            ret += ','
-        if ',' in s or s[:1] == '"':
-            ret += strEscape(s, ',', '
+    for c in s:
+        x = ESCAPES.get(c)
+        if x:
+            ret += '\\' + x
+        elif ord(c) < 32:
+            ret += '\\x%02x' % ord(c)
+        else:
+            ret += c
+    return ret
 
-
-"""
-abc     abc
-a,bc    "a,bc"
-
-
-"""
-import csv                             
+def unescape_str(s):
+    ret = ''
+    slen = len(s)
+    i = 0
+    while i < slen:
+        if s[i] == '\\':
+            i += 1
+            if i + 1 > slen:
+                raise ValueError('escape char at end of string')
+            if s[i] == 'x':
+                i += 1
+                if i + 2 > slen:
+                    raise ValueError('insufficient chars after \\x escape')
+                xx = s[i:i+2]
+                i += 2
+                try:
+                    if not HEXSTR.match(xx):
+                        raise ValueError
+                    ret += chr(int(xx, 16))
+                except ValueError:
+                    raise ValueError('bad chars after \\x escape')
+            else:
+                xx = UNESCAPES.get(s[i])
+                i += 1
+                if not xx:
+                    raise ValueError('invalid escape at %d' % i)
+                ret += xx
+        else:
+            ret += s[i]
+            i += 1
+    return ret
