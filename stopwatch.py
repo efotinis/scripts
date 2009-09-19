@@ -36,6 +36,10 @@ class StopWatch:
         self.accum = 0
         self.begin = self.timefunc() if autostart else None
 
+    def isrunning(self):
+        """Test whether timer is running."""
+        return self.begin is not None
+
 
 if __name__ == '__main__':
     t = StopWatch()
