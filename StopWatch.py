@@ -1,40 +1,59 @@
-"""Stop watch classes for incremental time tracking."""
+"""Stop watch class."""
 
 import time
 
 
-class Base:
-    """Abstract base timer. timeFunc() must return seconds as float."""
+class StopWatch:
+    """Create stopwatch instance and optionally start timing.
 
-    def __init__(self, timeFunc, autoStart=False):
-        self.timeFunc = timeFunc
-        self.reset(autoStart)
+    Use timefunc to specify a custom function returning seconds.
+    """
+
+    def __init__(self, timefunc=time.clock, autostart=False):
+        self.timefunc = timefunc
+        self.reset(autostart)
 
     def start(self):
+        """Start timing (if stopped)."""
         if self.begin is None:
-            self.begin = self.timeFunc()
+            self.begin = self.timefunc()
 
     def stop(self):
+        """Stop timing (if started)."""
         if self.begin is not None:
-            self.accum += self.timeFunc() - self.begin
+            self.accum += self.timefunc() - self.begin
             self.begin = None
 
     def get(self):
+        """Accumulated time in seconds."""
         if self.begin is None:
             return self.accum
         else:
-            return self.accum + self.timeFunc() - self.begin
+            return self.accum + self.timefunc() - self.begin
 
-    def reset(self, autoStart=False):
+    def reset(self, autostart=False):
+        """Clear accumulator and optionally start timing."""
         self.accum = 0
-        self.begin = self.timeFunc() if autoStart else None
+        self.begin = self.timefunc() if autostart else None
 
 
-def Simple(autoStart=False):
-    """Timer using time.time(); typical resolution in WinNT is ~15ms."""
-    return Base(time.time, autoStart)
+if __name__ == '__main__':
+    t = StopWatch()
 
+    intervals = (10, 50, 200)
+    for msec in intervals:
+        print 'sleeping for %d msec...' % msec,
+        t.reset(autostart=True)
+        time.sleep(msec / 1000.0)
+        t.stop()
+        print '%.2f msec measured' % (t.get() * 1000.0)
 
-def Performance(autoStart=False):
-    """Timer using time.clock(); typical resolution in WinNT is ~1us."""
-    return Base(time.clock, autoStart)
+    print 'resolution in sec:'
+    for i in range(5):
+        t.start()
+        prev = t.get()
+        while True:
+            cur = t.get()
+            if cur > prev:
+                break
+        print '  %.6e' % (cur - prev)
