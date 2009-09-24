@@ -78,6 +78,12 @@ def errln(s):
     sys.stderr.write('ERROR: [%s] %s\n' % (scriptname(), s))
 
 
+def exiterror(msg, status=1):
+    """Print error msg and exit with specified status."""
+    errln(msg)
+    sys.exit(status)
+
+
 def uprint(s):
     """Print a unicode string followed by a newline.
 
