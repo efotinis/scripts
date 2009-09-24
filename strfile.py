@@ -1,3 +1,5 @@
+"""Python implementation of Unix strfile."""
+
 import sys
 import struct
 
