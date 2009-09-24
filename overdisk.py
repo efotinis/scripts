@@ -2,6 +2,9 @@
 # 2008.07.22  added ExtCnt function
 
 # TODO: factor out common code
+# TODO: pretty sizes
+# TODO: commas in dir/file counts
+# TODO: compress dir names to console width by default
 
 
 import os
