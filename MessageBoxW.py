@@ -1,16 +1,7 @@
-"""Unicode MessageBox support.
-
-2007.12.02  created
-"""
+"""Unicode MessageBox support."""
 
 import ctypes
-
-
-INT = ctypes.c_int
-UINT = ctypes.c_uint
-HWND = ctypes.c_void_p
-LPCWSTR = ctypes.c_wchar_p
-HGLOBAL = ctypes.c_void_p
+from ctypes.wintypes import INT, UINT, HWND, LPCWSTR, HGLOBAL
 
 
 MessageBoxW = ctypes.windll.user32.MessageBoxW
@@ -24,4 +15,3 @@ if __name__ == '__main__':
         (0x0434, 'cyrillic'))
     s = '\n'.join('U+%04X: %s (%s)' % (n, unichr(n), s) for n, s in codes)
     MessageBoxW(0, s, u'unicode msg box', 0)
-    
