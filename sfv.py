@@ -291,12 +291,10 @@ a=('HKCR', (
 
 def shellUnregister():
     import _winreg, ctypes
-    DWORD = ctypes.c_ulong
-    HKEY = ctypes.c_void_p
-    LPCTSTR = ctypes.c_wchar
+    from ctypes.wintypes import DWORD, HKEY, LPCWSTR
     SHDeleteKeyW = ctypes.windll.shlwapi.SHDeleteKeyW
     SHDeleteKeyW.restype = DWORD
-    SHDeleteKeyW.argtypes = [HKEY, LPCTSTR]
+    SHDeleteKeyW.argtypes = [HKEY, LPCWSTR]
     HKCR = _winreg.HKEY_CLASSES_ROOT
     n1 = SHDeleteKeyW(HKCR, '.sfv')
     n2 = SHDeleteKeyW(HKCR, 'sfv_auto_file')

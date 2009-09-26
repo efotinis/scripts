@@ -1,14 +1,9 @@
-"""Unicode command line support.
-
-2007.12.02  created
-"""
+"""Unicode command line support."""
 
 import ctypes
 
-
-LPWSTR = LPCWSTR = ctypes.c_wchar_p
-PINT = ctypes.POINTER(ctypes.c_int)
-HGLOBAL = ctypes.c_void_p
+from ctypes.wintypes import INT, LPWSTR, LPCWSTR, HGLOBAL
+PINT = ctypes.POINTER(INT)
 
 
 GetCommandLineW = ctypes.windll.kernel32.GetCommandLineW
@@ -28,7 +23,7 @@ GlobalFree.restype = HGLOBAL
 def getargvw():
     """Return the argv list with Unicode strings."""
     s = GetCommandLineW()
-    count = ctypes.c_int()
+    count = INT()
     array = CommandLineToArgvW(s, ctypes.byref(count))
     if array:
         a = [array[i] for i in range(count.value)]

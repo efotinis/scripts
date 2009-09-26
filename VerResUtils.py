@@ -5,14 +5,9 @@
 
 import ctypes, SharedLib
 
-
-DWORD = ctypes.c_ulong
-LPWSTR = ctypes.c_wchar_p
-UINT = ctypes.c_uint
-BYTE = ctypes.c_byte
-WCHAR = ctypes.c_wchar
+from ctypes.wintypes import BOOL, BYTE, UINT, DWORD, WCHAR, LPWSTR
 TCHAR = ctypes.c_wchar
-BOOL = ctypes.c_long
+
 
 MAX_DEFAULTCHAR = 2
 MAX_LEADBYTES = 12

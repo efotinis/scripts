@@ -1,6 +1,8 @@
 import win32evtlog
 import win32evtlogutil
 import ctypes
+from ctypes.wintypes import BOOL, DWORD, HANDLE, LPVOID
+LPDWORD = ctypes.POINTER(DWORD)
 
 
 class Reader:
@@ -12,11 +14,6 @@ class Reader:
     BACKWARD = win32evtlog.EVENTLOG_BACKWARDS_READ
 
     # getInfo() setup
-    BOOL = ctypes.c_int
-    DWORD = ctypes.c_int
-    HANDLE = ctypes.c_void_p
-    LPVOID = ctypes.c_void_p
-    LPDWORD = ctypes.POINTER(DWORD)
     GetEventLogInformation = ctypes.windll.advapi32.GetEventLogInformation
     GetEventLogInformation.restype = BOOL
     GetEventLogInformation.argtypes = [HANDLE,DWORD,LPVOID,DWORD,LPDWORD]
@@ -24,13 +21,11 @@ class Reader:
     class EVENTLOG_FULL_INFORMATION(ctypes.Structure):
         _pack_ = 1
         _fields_ = [
-            ('dwFull', ctypes.c_int), #DWORD
-        ]
+            ('dwFull', DWORD)]
     # map an info type (eg. EVENTLOG_FULL_INFO)
     # to a structure type and its size (eg. (EVENTLOG_FULL_INFORMATION, 4))
     infoStructMap = {
-        EVENTLOG_FULL_INFO: (EVENTLOG_FULL_INFORMATION, 4)
-        }
+        EVENTLOG_FULL_INFO: (EVENTLOG_FULL_INFORMATION, 4)}
 
 
     def __init__(self):

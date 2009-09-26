@@ -2,15 +2,12 @@
 
 Example:
     import SharedLib, ctypes
-    BOOL = ctypes.c_long
-    UINT = ctypes.c_uint
-    PVOID = ctypes.c_void_p
-
+    from ctypes.wintypes import BOOL, UINT, PVOID
     SystemParametersInfo = SharedLib.winfunc(
-        'user32', 'SystemParametersInfo', BOOL, [UINT,UINT,PVOID,UINT])
+        'user32', 'SystemParametersInfo', BOOL, [UINT,UINT,LPVOID,UINT])
     - or -
     user = SharedLib.WinLib('user32')
-    SystemParametersInfo = user('SystemParametersInfo', BOOL, [UINT,UINT,PVOID,UINT])
+    SystemParametersInfo = user('SystemParametersInfo', BOOL, [UINT,UINT,LPVOID,UINT])
 
 2008.01.27  Created.
 """

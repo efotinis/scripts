@@ -2,12 +2,9 @@ import re, ctypes
 import win32api, win32process, win32gui, win32con
 import SharedLib, WinUtil
 
-
-LPVOID = LPCVOID = ctypes.c_void_p
-HANDLE = LPVOID
-DWORD = ctypes.c_ulong
+from ctypes.wintypes import BOOL, DWORD, LPVOID, LPCVOID, HANDLE
 LPDWORD = ctypes.POINTER(DWORD)
-BOOL = ctypes.c_int
+
 kernel32 = SharedLib.WinLib('kernel32')
 VirtualAllocEx = kernel32('VirtualAllocEx', LPVOID, [HANDLE,LPVOID,DWORD,DWORD,DWORD])
 VirtualFreeEx = kernel32('VirtualFreeEx', BOOL, [HANDLE,LPVOID,DWORD,DWORD])

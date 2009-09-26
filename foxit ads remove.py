@@ -5,12 +5,10 @@ import win32api as api, win32gui as gui, win32con as con
 import ctypes
 import SharedLib
 
-BOOL    = ctypes.c_ulong
-HANDLE  = ctypes.c_void_p
-LPCTSTR = ctypes.c_wchar_p
-WORD    = ctypes.c_ushort
-LPVOID  = ctypes.c_void_p
-DWORD   = ctypes.c_ulong
+from ctypes.wintypes import BOOL, WORD, DWORD, LPVOID, LPCWSTR, HANDLE
+LPCTSTR = LPCWSTR
+
+
 UpdateResource = SharedLib.winfunc('kernel32', 'UpdateResourceW', BOOL,
                                    #[HANDLE, LPCTSTR, LPCTSTR, WORD, LPVOID, DWORD])
                                    [HANDLE, LPCTSTR, DWORD, WORD, LPVOID, DWORD])  # hack to use numeric ID

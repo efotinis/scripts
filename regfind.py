@@ -2,23 +2,16 @@ import sys
 import _winreg
 import ctypes
 
-ERROR_ACCESS_DENIED = 5
-ERROR_NO_MORE_ITEMS = 259
+from winerror import ERROR_ACCESS_DENIED, ERROR_NO_MORE_ITEMS
 
-
-LONG = ctypes.c_long
-HKEY = ctypes.c_void_p
-LPWSTR = ctypes.c_wchar_p
-LPCWSTR = LPWSTR
-DWORD = ctypes.c_ulong
+from ctypes.wintypes import BYTE, LONG, DWORD, LPWSTR, LPCWSTR, HKEY
 REGSAM = DWORD
 FILETIME = DWORD * 2
-BYTE = ctypes.c_ubyte
-
 LPDWORD = ctypes.POINTER(DWORD)
 PHKEY = ctypes.POINTER(HKEY)
 PFILETIME = ctypes.POINTER(FILETIME)
 LPBYTE = ctypes.POINTER(BYTE)
+
 
 RegOpenKeyExW = ctypes.windll.advapi32.RegOpenKeyExW
 RegOpenKeyExW.restype = LONG

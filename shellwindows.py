@@ -9,9 +9,10 @@ Example:
 import ctypes
 import win32com.client
 #import win32com.client.constants
+from ctypes.wintypes import LPVOID
 
 
-PTRSIZE = ctypes.sizeof(ctypes.c_void_p)
+PTRSIZE = ctypes.sizeof(LPVOID)
 
 
 shapp = win32com.client.Dispatch('Shell.Application')

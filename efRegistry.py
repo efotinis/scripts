@@ -4,6 +4,8 @@ import win32con
 import winerror
 import ctypes
 
+from ctypes.wintypes import DWORD, HKEY, LPCWSTR, LPVOID
+
 
 SHDeleteKey = None
 RegCreateKeyEx = None
@@ -127,12 +129,9 @@ def nukeKey(key, sub=''):
     """Delete a key recursively. 'key' can be a string or regkey object."""
     global SHDeleteKey
     if not SHDeleteKey:
-        DWORD = ctypes.c_ulong
-        HKEY = ctypes.c_void_p
-        LPCTSTR = ctypes.c_wchar_p
         SHDeleteKey = ctypes.windll.shlwapi.SHDeleteKeyW  # 4.71+
         SHDeleteKey.restype = DWORD
-        SHDeleteKey.argtypes = [HKEY, LPCTSTR]
+        SHDeleteKey.argtypes = [HKEY, LPCWSTR]
     if isinstance(key, basestring):
         root, sub = os.path.normpath(os.path.join(key, sub)).split('\\', 1)
         key = get_root(root)
@@ -171,8 +170,8 @@ class Key:
 ##            load_RegCreateKeyEx()
 ####        raise Exception('use ctypes to access CreateKeyEx')
 ####        self.key = _winreg.CreateKey(self.key, sub, options, sam)
-##        h = ctypes.c_void_p(0)
-##        dsp = ctypes.c_ulong(0)
+##        h = HKEY(0)
+##        dsp = DWORD(0)
 ##        err = RegCreateKeyEx(key, sub, res, cls, options, sam,
 ##                             security, ctypes.byref(h), ctypes.byref(dsp))
 ##        if err:

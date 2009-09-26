@@ -3,8 +3,8 @@
 import time
 import ctypes
 import SharedLib
-from ctypes.wintypes import BOOL, WORD, DWORD, LONG, WCHAR
 
+from ctypes.wintypes import BOOL, WORD, DWORD, LONG, WCHAR
 LPWORD = ctypes.POINTER(WORD)
 ULONGLONG = ctypes.c_uint64
 
