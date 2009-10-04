@@ -1,58 +1,41 @@
-"""Replace tabs with spaces.
+"""Replace tabs with spaces."""
 
-2007.11.23 EF: created
-"""
+import os
+import sys
+import optparse
 
-import os, sys
-import DosCmdLine, CommonTools
-
-EXIT_OK = 0
-EXIT_ERROR = 1
-EXIT_BAD_PARAM = 2
+import CommonTools
 
 
-def showhelp(switches):
-    s = """\
-Replace tabs with spaces.
-Elias Fotinis 2007
+def parse_cmdline():
+    op = optparse.OptionParser(
+        usage='%prog [options] [INPUT] [OUTPUT]',
+        description='Replace tabs with spaces.',
+        epilog='INPUT/OUTPUT default to STDIN/STDOUT if omitted or set to "".',
+        add_help_option=False)
+    add = op.add_option
+    add('-s', dest='tabsize', type='int', default=8, 
+        help='Tab size. Default is 8.')
+    add('-b', dest='onlybeg', action='store_true', 
+        help='Process tabs only at the beginning of each line.')
+    add('-w', dest='readwhole', action='store_true', 
+        help='Read whole input file and close it before processing. '
+        'Can be used to replace a file in-place.')
+    add('-?', action='help',
+        help=optparse.SUPPRESS_HELP)
+    return op.parse_args()
 
-%s [/S:size] [input] [output]
 
-%s
-
-Exit codes: 0=ok, 1=error, 2=bad param"""
-    name = CommonTools.scriptname().upper()
-    table = '\n'.join(DosCmdLine.helptable(switches))
-    print s % (name, table)
-
-
-def main(args):
-
-    Swtc = DosCmdLine.Switch
-    Flag = DosCmdLine.Flag
-    Misc = lambda name, descr: DosCmdLine.Flag(name, None, descr)
-    switches = (
-        Swtc('S', 'tabsize',
-             'Tab size. Default is 8.',
-             8, converter=int),
-        Flag('B', 'onlybeg',
-             'Process tabs only at the beginning of each line.'),
-        Flag('W', 'readwhole',
-             'Read whole input file and close it before processing.'),
-        Misc(('input', 'output'), 'Input/output files; omit or use "" to specify STDIN/STDOUT.'),
-    )
-    if '/?' in args:
-        showhelp(switches)
-        return EXIT_OK
+if __name__ == '__main__':
     try:
-        opt, params = DosCmdLine.parse(args, switches)
-        if len(params) > 2:
-            raise DosCmdLine.Error('at most 2 params are allowed')
-        params += [''] * (2 - len(params))
-    except DosCmdLine.Error, x:
-        CommonTools.errln(str(x))
-        return EXIT_BAD_PARAM
-
+        opt, args = parse_cmdline()
+        if len(args) > 2:
+            raise optparse.OptParseError('at most 2 params are allowed')
+        while len(args) < 2:
+            args.append('')
+    except optparse.OptParseError as err:
+        CommonTools.exiterror(str(err), 2)
+        
     if opt.onlybeg:
         def expandfunc(s, tabsize):
             # count leading tabs
@@ -66,16 +49,16 @@ def main(args):
         import string
         expandfunc = string.expandtabs
         
-    infile = CommonTools.InFile(params[0])
-    outfile = CommonTools.OutFile(params[1])
-    if opt.readwhole:
-        a = infile.readlines()
-        infile.close()
-        for s in a:
-            outfile.write(expandfunc(s, opt.tabsize))
-    else:
-        for s in infile:
-            outfile.write(expandfunc(s, opt.tabsize))
-
-
-sys.exit(main(sys.argv[1:]))
+    try:
+        infile = CommonTools.InFile(args[0])
+        outfile = CommonTools.OutFile(args[1])
+        if opt.readwhole:
+            a = infile.readlines()
+            infile.close()
+            for s in a:
+                outfile.write(expandfunc(s, opt.tabsize))
+        else:
+            for s in infile:
+                outfile.write(expandfunc(s, opt.tabsize))
+    except IOError as err:
+        CommonTools.exiterror(str(err))
