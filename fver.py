@@ -1,22 +1,25 @@
 """Show file version information."""
 
-# 2008.01.21     created
-# 2008.01.26-27  added /f, /s, /t flags; added display of lang/cp names
-#
 # TODO: enum all the available string values;
 #       currently only well-known strings are used
 
-import os, sys, win32api
-import DosCmdLine, binutil, VerResUtils
+import os
+import sys
+import optparse
+
+import win32api
+
+import binutil
+import VerResUtils
 
 
 INDENT = 4 * ' '
 
 
-def _verstr(num, words):
+def _verstr(num, wordcount):
     """Convert a version number to string; words are 16 bits."""
     a = []
-    for i in range(words):
+    for i in range(wordcount):
         a += [num & 0xffff]
         num >>= 16
     return '.'.join(map(str, reversed(a)))
@@ -200,42 +203,31 @@ def printvalues(fname, opt, showvals):
                 print INDENT + name.rjust(showvals_maxlen) + ':', val
 
 
-def showhelp(switches):
-    print """\
-Display version information of the specified files.
-(C) 2008 Elias Fotinis
-
-FVER [/F] [/S:strings] [/T:xlats] files
-"""
-    DosCmdLine.showlist(switches)
-
-
-def buildswitches():
-    Flag = DosCmdLine.Flag
-    Swch = DosCmdLine.Switch
-    commasplit = lambda s: s.split(',')
-    return [
-        Flag('F', 'fixed',
-             'Include fixed version info.'),
-        Swch('S', 'strings',
-             'Show only the specified, comma-separated strings. '
-             'By default, the 12 predefined ones are shown.',
-             None, converter=commasplit),
-        Flag('T', 'allxlats',
-             'Show all tanslations. By default, only the first is shown.'),
-    ]
+def parse_cmdline():
+    op = optparse.OptionParser(
+        usage='%prog [options] FILES',
+        description='Display Windows version resource information.',
+        epilog=None,
+        add_help_option=False)
+    add = op.add_option
+    add('-f', dest='fixed', action='store_true',
+        help='Include fixed version info.')
+    add('-s', dest='strings', action='append',
+        help='Show only the specified, comma-separated strings. Option is cumulative.'
+             'By default, the 12 predefined ones are shown.')
+    add('-t', dest='allxlats', action='store_true',
+        help='Show all tanslations. By default, only the first is shown.')
+    add('-?', action='help',
+        help=optparse.SUPPRESS_HELP)
+    return op.parse_args()
 
     
 def main(args):
-    switches = buildswitches()
-    if '/?' in args:
-        showhelp(switches)
-        return 0
     try:
-        opt, files = DosCmdLine.parse(args, switches)
-    except DosCmdLine.Error, x:
-        errln(str(x))
-        return 2
+        opt, args = parse_cmdline()
+        opt.strings = [s.strip() for s in ','.join(opt.strings).split(',')]
+    except optparse.OptParseError as err:
+        CommonTools.exiterror(str(err), 2)
 
     showvals = opt.strings or defvalnames  # use predef if none specified
     showvals = [s for s in showvals if s]  # remove empty (bad for GetFileVersionInfo)

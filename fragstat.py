@@ -1,13 +1,11 @@
-# 2007.04.04  created
-# 2007.09.24  utilized DosCmdLine; added some comments
-
 import os
 import re
 import sys
+import optparse
+
 import win32api
 import win32file
 import win32con
-import DosCmdLine
 
 
 def getDriveRoots(types=None):
@@ -56,6 +54,8 @@ def run(cmd):
 
 def parseDefragReport(s):
     """Get DEFRAG's analysis results and return the juicy parts."""
+    # TODO: return a namedtuple
+    # TODO: use verbose regex pattern
     REPORT_RX = re.compile(
         r'^'
         r'(?P<title>.*)\n'
@@ -70,11 +70,8 @@ def parseDefragReport(s):
         'You do not need to defragment this volume.':False,
         'You should defragment this volume.':True}
     mo = re.match(REPORT_RX, s)
-    if not mo:
-        raise Exception('Could not parse defrag report.')
-    return (mo.group('size'), mo.group('free'), mo.group('freePc'),
-            mo.group('fragm'), mo.group('fileFragm'),
-            recommendations.get(mo.group('recommend')))
+    return (mo.group('size'), mo.group('free'), mo.group('freePc'), mo.group('fragm'),
+            mo.group('fileFragm'), recommendations.get(mo.group('recommend'))) if mo else None
     
 
 def runAnalysis():
@@ -93,48 +90,36 @@ def runAnalysis():
             print cerr.strip('\n').split('\n')[0]  # first non-empty line
             error = True
         else:
-            try:
-                #size, free, freePc, fragm, fileFragm, recm = parseDefragReport(cout)
-                a = parseDefragReport(cout)
+            a = parseDefragReport(cout)
+            if a:
                 a = a[:-1] + ({True:'Yes', False:'No', None:'???'}[a[-1]],)
                 print '%10s %10s %4s %4s %4s %s' % a
-            except Exception, x:
-                print x
+            else:
+                print 'Could not parse defrag report.'
                 error = True
     return not error
 
 
-def errln(s):
-    sys.stderr.write('ERROR: ' + s + '\n')
+def parse_cmdline():
+    op = optparse.OptionParser(
+        usage='%prog',
+        description='Display DEFRAG analysis for all fixed drives.',
+        epilog=None,
+        add_help_option=False)
+
+    add = op.add_option
+    add('-?', action='help',
+        help=optparse.SUPPRESS_HELP)
+
+    opt, args = op.parse_args()
+
+    if args:
+        op.error('no params allowed')
+
+    return opt, args
 
 
-def showhelp(switches):
-    print """\
-Display DEFRAG analysis for all fixed drives.
-Elias Fotinis 2007
-
-FRAGSTAT.PY
-"""
-    DosCmdLine.showlist(switches)
-    print """
-Exit codes: 0=ok, 1=error, 2=bad params."""
-
-
-def main(args):
-    switches = (
-        DosCmdLine.Flag('?', 'help', None),
-    )
-    try:
-        opt, params = DosCmdLine.parse(args, switches)
-        if params:
-            raise DosCmdLine.Error('no params allowed')
-    except DosCmdLine.Error, x:
-        errln(str(x))
-        return 2
-    if opt.help:
-        showhelp(switches)
-        return 0
-    return 0 if runAnalysis() else 1
-
-
-sys.exit(main(sys.argv[1:]))
+if __name__ == '__main__':
+    opt, args = parse_cmdline()
+    if not runAnalysis():
+        sys.exit(1)

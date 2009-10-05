@@ -1,21 +1,17 @@
-# 2007.08.02  Created
-# 2007.09.21  minor changes: optparse -> DosCmdLine
+"""Manage HtmlHelp link protocol."""
 
-import os, sys
-import _winreg, efRegistry, DosCmdLine
+import os
+import sys
+import _winreg
+import optparse
 
-EXIT_OK = 0
-EXIT_ERROR = 1
-EXIT_BAD_PARAMS = 2
+import efRegistry
+import CommonTools
 
 
 class CheckError(Exception):
     def __init__(self):
         Exception.__init__(self, 'Handler is not registered.')
-
-
-def errln(s):
-    sys.stderr.write('ERROR: ' + s + '\n')
 
 
 def hhexepath():
@@ -58,40 +54,31 @@ def check():
     print 'Handler is registered.'
 
 
-def showhelp(switches):
-    name = os.path.splitext(os.path.basename(sys.argv[0]))[0].upper()
-    table = '\n'.join(DosCmdLine.helptable(switches))
-    print """\
-Register HH.EXE for launching HtmlHelp links (mk:@MSITStore:...).
-Elias Fotinis 2007
+def parse_cmdline():
+    op = optparse.OptionParser(
+        usage='%prog [options]',
+        description='Register HH.EXE for launching HtmlHelp links (mk:@MSITStore:...).',
+        epilog=None,
+        add_help_option=False)
 
-%s [/R | /U | /C]
+    add = op.add_option
+    add('-r', dest='register', action='store_true', help='Register handler.')
+    add('-u', dest='unregister', action='store_true', help='Unregister handler.')
+    add('-c', dest='check', action='store_true', help='Check handler.')
+    add('-?', action='help', help=optparse.SUPPRESS_HELP)
 
-%s
+    opt, args = op.parse_args()
 
-ERRORLEVEL: 0=success, 1=failure, 2=param error""" % (name, table)
+    if args:
+        op.error('no params are required')
+    if opt.register + opt.unregister + opt.check != 1:
+        op.error('exactly one of -r, -u, or -c is required')
+
+    return opt, args
 
 
-def main(args):
-    try:
-        Flag = DosCmdLine.Flag
-        switches = (
-            Flag('?', 'help', None),
-            Flag('R', 'register', 'Register handler.'),
-            Flag('U', 'unregister', 'Unregister handler.'),
-            Flag('C', 'check', 'Check handler.'),
-        )
-        opt, params = DosCmdLine.parse(args, switches)
-        if opt.help:
-            showhelp(switches)
-            return EXIT_OK
-        if params:
-            raise DosCmdLine.Error('no params are required')
-        if opt.register + opt.unregister + opt.check != 1:
-            raise DosCmdLine.Error('one (and only one) of /R, /U and /C is required')
-    except DosCmdLine.Error, x:
-        errln(str(x))
-        return EXIT_BAD_PARAMS
+if __name__ == '__main__':
+    opt, args = parse_cmdline()
     try:
         if opt.register:
             register()
@@ -99,10 +86,5 @@ def main(args):
             unregister()
         else:
             check()
-        return EXIT_OK
-    except (CheckError, WindowsError), x:
-        errln(str(x))
-        return EXIT_ERROR
-
-
-sys.exit(main(sys.argv[1:]))
+    except (CheckError, WindowsError) as x:
+        CommonTools.exiterror(str(x))
