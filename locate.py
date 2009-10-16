@@ -1,7 +1,7 @@
-##    2005.05.20  created
-##    2007.09.18  converted from C++ to Python
+import os
+import sys
 
-import os, sys, DosCmdLine
+import DosCmdLine
 
 
 def get_envlist(s):

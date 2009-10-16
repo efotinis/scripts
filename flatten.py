@@ -50,6 +50,7 @@ def parse_cmdline():
                'The files of each directory are moved to that directory, unless -o is used. '
                'Name collisions are resolved by appending a unique number in parentheses after the original file name.',
         add_help_option=False)
+
     add = op.add_option
     add('-o', dest='outdir', 
         help='Output directory; will be created if needed. If omitted, files '
@@ -66,17 +67,18 @@ def parse_cmdline():
              'keep the dir names as part of the output.')
     add('-?', action='help',
         help=optparse.SUPPRESS_HELP)
-    return op.parse_args()
+
+    opt, args = op.parse_args()
+
+    if not args:
+        op.error('at least one directory must be specified')
+    args = map(unicode, args)  # necessary for proper dir listings
+
+    return opt, args
 
 
 if __name__ == '__main__':
-    try:
-        opt, args = parse_cmdline()
-        if not args:
-            raise optparse.OptParseError('at least one directory must be specified')
-        args = map(unicode, args)  # necessary for proper dir listings
-    except optparse.OptParseError as err:
-        CommonTools.exiterror(str(err), 2)
+    opt, args = parse_cmdline()
 
     if opt.join is not None:
         # TODO: implement this

@@ -41,26 +41,6 @@ def finddups(files):
             yield group
 
 
-##dir = u'F:\\docs\\internet\\----'
-##finddups(dirfiles(dir, recurse=True))
-
-##dir1 = u'F:\\docs\\internet\\----\\_mail & usenet archive -- recovered data --\\TEI'
-##dir2 = u'F:\\docs\\internet\\----\\_mail & usenet archive -- recovered data --\\(more 2)\\TEI'
-##grp1 = [os.path.join(dir1, s) for s in os.listdir(dir1)]
-##grp2 = [os.path.join(dir2, s) for s in os.listdir(dir2)]
-##finddups(grp1 + grp2)
-
-
-##compareDirs(dir1, dir2)
-
-##s1 = 'c:\\temp\\foo.bar'
-##s2 = 'c:\\temp\\' + ('foo' * 760) + '.bar'
-##file(s1, 'w').close()
-##
-##import shutil
-##shutil.move(s1, s2)
-
-
 ## Move files with identical contents found on *all* of the specified dirs
 ## to a new subdir under their current location.
 def moveCommonToSub(dirs, subdirName):
@@ -90,19 +70,8 @@ def moveCommonToSub(dirs, subdirName):
                 sizeMap[size] += [(i, f)]
 
 
-##    for x in sizeMap[1215]:
-##        print x
-##    print couldBeCommon(getIndexes(sizeMap[1215]))
-##    return
-
     # get possibly valid groups
     sizeGroups = [x for x in sizeMap.values() if couldBeCommon(getIndexes(x))]
-
-##    print sizeGroups
-##    test = u'BC++ 5.02 RTL κώδικας.nws'
-##    testl = [t[1] for t in sizeGroups]
-##    print test in testl
-##    print testl
 
     # then, test each size group by md5
     print 'Finding duplicates...'
@@ -130,25 +99,5 @@ def moveCommonToSub(dirs, subdirName):
                 src = os.path.join(dirs[item[0]], item[1])
                 dst = os.path.join(dirs[item[0]], subdirName, item[1])
                 shutil.move(src, dst)
-##                print src
-##                print dst
-##            print
 
     print 'Done'        
-
-
-##pfx = u'F:\\docs\\internet\\----\\_mail & usenet archive -- recovered data --'
-##dirs = [\
-##    os.path.join(pfx, u'grk.comp.software'),\
-##    os.path.join(pfx, u'(more 2)\\grk.comp.software.dbx')\
-##]
-##
-###for s in dirs: findDupsInDir(s)
-##moveCommonToSub(dirs, u'common')
-
-
-##root = r'D:\2burn'
-##for a in finddups(dirfiles(root, True)):
-##    for s in a:
-##        print s
-##    print
