@@ -90,8 +90,11 @@ _CompareFileTime = kernel32('CompareFileTime',
     LONG, [LPFILETIME, LPFILETIME])
 _GetTickCount = kernel32('GetTickCount',
     DWORD, [])
-_GetTickCount64 = kernel32('GetTickCount64',
-    ULONGLONG, [])
+try:
+    _GetTickCount64 = kernel32('GetTickCount64',
+        ULONGLONG, [])
+except AttributeError:
+    _GetTickCount64 = None
 _GetSystemTimes = kernel32('GetSystemTimes',
     BOOL, [LPFILETIME, LPFILETIME, LPFILETIME])
 
@@ -238,7 +241,10 @@ def GetTickCount():
 
 
 def GetTickCount64():
-    return _GetTickCount64()
+    if _GetTickCount64:
+        return _GetTickCount64()
+    else:
+        raise NotImplementedError
 
 
 def GetSystemTimes():
