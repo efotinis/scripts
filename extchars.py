@@ -1,52 +1,41 @@
-# 2007.06.27  Created.
-# 2008.01.28  Generalized; added help switch.
+"""Test files for non-ASCII chars."""
 
-import os, re, sys, codecs, DosCmdLine
+import os
+import re
+import sys
+import codecs
+import optparse
 from glob import glob
+
+import CommonTools
+
 
 BOMS = (codecs.BOM_BE, codecs.BOM_LE, codecs.BOM_UTF8)
 
 
-def showhelp(switches):
-    name = os.path.splitext(os.path.basename(sys.argv[0]))[0].upper()
-    print """\
-Scan text files for extended (non-ASCII) chars.
-v2008.01.28 - (C) 2007-2008 Elias Fotinis
+def parse_cmdline():
+    op = optparse.OptionParser(
+        usage='%prog [options] FILES',
+        description='Scan text files for extended, non-ASCII chars.',
+        epilog='FILES is one or more files/dirs to check; glob-style wildcards accepted. '
+               'If a file contains extended characters, its name is printed, followed by '
+               'a list of the characters. Returns 0 if all files are ASCII, 1 otherwise.',
+        add_help_option=False)
 
-%s [/B] mask ...
-""" % name
-    DosCmdLine.showlist(switches)
-    print """
-    
-If a file contains extended chars, its name is printed, followed by a list of
-the chars. Returns 0 if all files are ASCII, 1 otherwise (or in case of error),
-or 2 for bad params.
-"""[1:-1]
-    
+    add = op.add_option
+    add('-b', dest='bomignore', action='store_true',
+        help='Ignore files with Unicode BOM (UTF-16 BE/LE or UTF-8).')
+    add('-?', action='help',
+        help=optparse.SUPPRESS_HELP)
 
-def errln(s):
-    sys.stderr.write('ERROR: ' + s + '\n')
+    opt, args = op.parse_args()
+    if not args:
+        op.error('no files specified')
+    return opt, args
 
 
-def buildswitches():
-    return [
-        DosCmdLine.Flag('mask', '',
-            'One or more files/dirs to check. Glob-style wildcards accepted.'),
-        DosCmdLine.Flag('B', 'bomignore',
-            'Ignore files with Unicode BOM (UTF-16 BE/LE or UTF-8).')
-    ]
-
-    
-def main(args):
-    switches = buildswitches()
-    if '/?' in args:
-        showhelp(switches)
-        return 0
-    try:
-        opt, masks = DosCmdLine.parse(args, switches)
-    except DosCmdLine.Error, x:
-        errln(str(x))
-        return 2
+if __name__ == '__main__':
+    opt, masks = parse_cmdline()
     foundsome, ioerror = False, False
     for mask in masks:
         if os.path.isdir(mask):
@@ -61,10 +50,8 @@ def main(args):
                     print fspec
                     print '  ' + badchars
                     foundsome = True
-            except IOError, x:
-                errln('%s: "%s"' % (str(x), fspec))
+            except IOError as x:
+                CommonTools.errln('%s: "%s"' % (str(x), fspec))
                 ioerror = True
-    return 1 if foundsome or ioerror else 0
-
-
-sys.exit(main(sys.argv[1:]))
+    if foundsome or ioerror:
+        sys.exit(1)
