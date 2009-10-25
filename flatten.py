@@ -78,7 +78,7 @@ def parse_cmdline():
 
 
 if __name__ == '__main__':
-    opt, args = parse_cmdline()
+    opt, dirs = parse_cmdline()
 
     if opt.join is not None:
         # TODO: implement this
