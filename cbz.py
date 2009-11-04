@@ -7,31 +7,17 @@ Generated CBZ files are uncompressed.
 """
 
 import os, sys, zipfile
-from CommonTools import scriptname
+import CommonTools
 
 
 def showhelp():
     print 'Convert subdirs to CBZ files.'
     print
-    print '%s [root]' % (scriptname().upper(), )
+    print '%s [root]' % (CommonTools.scriptname().upper(), )
     print
     print '  root  The directory to process. Defaults to the current one.'
     print
     print 'Only first level subdir files are stored (no recursion).'
-
-
-def list_dirs(path):
-    for s in os.listdir(path):
-        s = os.path.join(path, s)
-        if os.path.isdir(s):
-            yield s
-
-
-def list_files(path):
-    for s in os.listdir(path):
-        s = os.path.join(path, s)
-        if os.path.isfile(s):
-            yield s
 
 
 def main(args):
@@ -46,11 +32,11 @@ def main(args):
     if not os.path.isdir(root):
         raise SystemExit('invalid directory specified')
     
-    for dirname in list_dirs(root):
+    for dirname in CommonTools.listdirs(root):
         print 'processing "%s" ...' % dirname
         zippath = os.path.join(root, dirname + '.cbz')
         z = zipfile.ZipFile(zippath, 'w', zipfile.ZIP_STORED)
-        for s in list_files(os.path.join(root, dirname)):
+        for s in CommonTools.listfiles(os.path.join(root, dirname)):
             z.write(os.path.join(root, dirname, s), s)
         z.close()
 
