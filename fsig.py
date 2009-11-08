@@ -1,26 +1,7 @@
-# Copyright (C) Elias Fotinis 2006-2007
-# All rights reserved.
+# File hash calculator.
 #
-# History:
-#   2006-01-12: Created.
-#   2007-03-08: Replaced various sys.exit's with exceptions.
-#               Replace option map with Options class.
-#               Mulitple hash type support via /T switch;
-#                 initially only MD5 was supported.
-#   2007-06-22: Added CRC(32) support and /I switch.
-#               Added check 
-#
-# Bugs:
-# - console_stuff.SamePosOutput() sometimes causes output to start at column 1
-#   instead of 0. Probably due to print's internal sep. guessing (2007-03-08).
-#   FIXED: s. BUGFIX #1
-#
-# Todo:
-# - Only allow DOS-style wildcards by default.
-#   Add a switch (/G) to allow globbing (2007-03-08).
-# - Add a switch for strict error checking (should exit with EXIT_ERROR
-#   on the first range or file error).
-
+# TODO: only allow DOS-style wildcards by default (add switch -g for explicit globbing)
+# - Add a switch for strict error checking (exit on first range or file error).
 
 import os
 import sys
@@ -29,64 +10,138 @@ import binascii
 import struct
 import re
 import glob
+import itertools
+import optparse
+import copy
 
 import console_stuff
 import fileutil
-
-EXIT_OK = 0
-EXIT_ERROR = 1  # currently unused
-EXIT_BAD_PARAM = 2
+import CommonTools
 
 
-def showHelp():
-    """Show help screen."""
-    print """\
-File hash calculator.  (C) Elias Fotinis 2006-2007
+HASH_TYPES = 'crc32 md5 sha1 sha224 sha256 sha384 sha512'.split()
 
-FSIG [/T:type] [/O:offset] [/L:length] [/B:bufsize] [/U] [/NP] files...
-
-  /T     Hash type. One of: CRC(32),MD5,SHA1,SHA224,SHA256,SHA384,SHA512.
-         Default is MD5.
-  /O     Starting file offset. Default is 0.
-  /L     Number of bytes to process. Default is -1, meaning all.
-  /B     Read buffer size. Default is 64K.
-  /U     Output uppercase hex digits.
-  /I     Invert output, displaying the name first and then the hash.
-         Useful for creating SFV files.
-  /NP    Do not display progress indicator. This is the default when STDOUT is
-         not the console.
-  files  List of files. Glob wildcards allowed.
-
-Size and offset values can have a size unit of K, M or G (e.g. '64K', '1M').
-Returns 0 on success, 1 on error, 2 on invalid options."""
+DEFAULT_HASH_TYPE = 'md5'
+DEFAULT_BUFFER_SIZE = 64 * 1024
 
 
-def main(args):
-    """Parse cmdline and loop through files."""
-    if '/?' in args:
-        showHelp()
-        return EXIT_OK
-
+def check_size(option, opt, value):
+    """Implement custom 'size' type for optparse."""
+    UNITS = 'kmgtpezy'
+    if not value:
+        raise optparse.OptionValueError('option %s: empty size value' % opt)
+    # separate number and factor (if any)
+    number, factor = value, 1
+    i = UNITS.find(value[-1].lower())
+    if i != -1:
+        factor = 1024 ** (i + 1)
+        number = value[:-1]
+    # calc result
     try:
-        opt = Options(args)
-    except (Options.Error, ValueError), x:
-        errLn(str(x))
-        return EXIT_BAD_PARAM
-        
-    if not opt.files:
-        errLn('No files specified.')
-        return EXIT_BAD_PARAM
+        return int(float(number) * factor)
+    except ValueError:
+        raise optparse.OptionValueError('option %s: bad size value "%s"' % (opt, value))
 
-    for s in opt.files:
-        files = glob.glob(s)
-        files = [s for s in files if os.path.isfile(s)]  # files only
-        if not files:
-            errLn('No files match "%s"' % s)
-            continue
-        for file in files:
-            fileSig(file, opt)
 
-    return EXIT_OK
+class CustomOption(optparse.Option):
+    """Extended optparse Option class."""
+    TYPES = optparse.Option.TYPES + ('size',)
+    TYPE_CHECKER = copy.copy(optparse.Option.TYPE_CHECKER)
+    TYPE_CHECKER['size'] = check_size
+
+
+class Crc32:
+    """CRC32 digest using the hashlib interface."""
+    digest_size = 32
+    def __init__(self, data=''):
+        self.value = binascii.crc32(data)
+    def update(self, data):
+        self.value = binascii.crc32(data, self.value)
+    def digest(self):
+        return struct.pack('>L', self.value & 0xffffffff)
+    def hexdigest(self):
+        return binascii.hexlify(self.digest())
+    def copy(self):
+        ret = Crc32()
+        ret.value = self.value
+        return ret
+
+
+def getopt():
+    parser = optparse.OptionParser(
+        description='Calculate file hashes.',
+        usage='%prog [options] FILES...',
+        epilog='Glob wildcards allowed in FILES. '
+               'Size and offset values can have a size unit (one of "KMGTPEZY"), e.g. "64K", "0.5m".',
+        add_help_option=False,
+        option_class=CustomOption)
+
+    typeslist = HASH_TYPES[:]
+    i = typeslist.index(DEFAULT_HASH_TYPE)
+    typeslist[i] += ' (default)'
+    typeslist = ', '.join(typeslist)
+
+    _add = parser.add_option
+    _add('-t', dest='hashFactory', default=DEFAULT_HASH_TYPE,
+         help='Hash type. Available options: ' + typeslist)
+    _add('-o', dest='offset', type='size', default=0,
+         help='Starting file offset. Default is 0.')
+    _add('-l', dest='length', type='size', default=-1,
+         help='Number of bytes to process. Default is -1, meaning all.')
+    _add('-b', dest='buflen', type='size', default=DEFAULT_BUFFER_SIZE,
+         help='Read buffer size. Default is %default.')
+    _add('-u', dest='ucase', action='store_true',
+         help='Output uppercase hex digits.')
+    _add('-i', dest='invert', action='store_true',
+         help='Invert output, displaying the file name first. '
+              'Useful for creating SFV files.')
+    _add('-v', dest='verify', 
+         help='List of comma-separated hashes to check against the specified files.')
+    _add('--np', dest='progress', action='store_false', default=True,
+         help='Do not display progress indicator. '
+              'It is automatically set when STDOUT is not a console.')
+    _add('-?', action='help', help='This help.')
+
+    opt, args = parser.parse_args()
+
+    if not console_stuff.iscon():
+        opt.progress = False
+
+    if opt.offset < 0:
+        parser.error('offset must be >= 0')
+    if opt.length < -1:
+        parser.error('number of bytes must be >= -1')
+    if opt.buflen <= 0:
+        parser.error('buffer size must be > 0')
+
+    opt.hashFactory = opt.hashFactory.lower()
+    if opt.hashFactory not in HASH_TYPES:
+        parser.error('invalid hash type: "%s"' % opt.hashFactory)
+    if opt.hashFactory == 'crc32':
+        opt.hashFactory = Crc32
+    else:
+        class HashFactory:
+            def __init__(self, type):
+                self.type = type
+            def __call__(self):
+                return hashlib.new(self.type)
+        opt.hashFactory = HashFactory(opt.hashFactory)
+
+    if opt.verify:
+        strsize = opt.hashFactory().digest_size * 2
+        #print strsize
+        a = []
+        for s in opt.verify.split(','):
+            if len(s) != strsize:
+                parser.error('invalid verify hash size: "%s"' % s)
+            try:
+                a += [int(s, 16)]
+            except ValueError:
+                parser.error('invalid verify hash: "%s"' % s)
+        opt.verify = a
+
+    parser.destroy()
+    return opt, map(unicode, args)
 
 
 def bytesToRead(f, offset, length):
@@ -103,15 +158,17 @@ def bytesToRead(f, offset, length):
     return end - offset
 
 
-def fileSig(s, opt):
-    """Calc and disp file MD5 or an I/O error msg."""
+def fileSig(s, opt, verify=None):
+    """Calculate and print file hash.
+
+    If 'verify' is set, tests and prints whether hash matches.
+    """
     try:
         f = open(s, 'rb')
         if opt.progress:
             progressBytesToRead = bytesToRead(f, opt.offset, opt.length)
             progressBytesRead = 0
-            progressChars = ('/', '-', '\\', '|')
-            progressCharI = 0
+            spinner = itertools.cycle('/-\\|')
             print s, '... ',
             spo = console_stuff.SamePosOutput()
         f.seek(opt.offset)
@@ -128,10 +185,7 @@ def fileSig(s, opt):
                 spo.restore()
                 percent = (progressBytesRead*100/progressBytesToRead
                            if progressBytesToRead else 0)
-                print str(percent) + '%', progressChars[progressCharI]
-                progressCharI += 1
-                if progressCharI >= len(progressChars):
-                    progressCharI = 0
+                print str(percent) + '%', spinner.next()
             if bytesToGo != -1:
                 bytesToGo = bytesToGo - len(buf)
         if opt.progress:
@@ -143,135 +197,44 @@ def fileSig(s, opt):
             digest = d.hexdigest()
             if opt.ucase:
                 digest = digest.upper()
-            sys.stdout.write('')  # BUGFIX #1
+            # the empty write() prevents SamePosOutput from
+            # accidentally printing at col 1 (instead of 0)
+            sys.stdout.write('')
+
+            if verify:
+                digest = '   OK   ' if verify == int(digest, 16) else '**FAIL**'
+            
             if opt.invert:
                 print s, digest
             else:
                 print digest, s
-    except IOError, x:
+    except IOError as x:
         fname = x.filename
         if fname is None:
             fname = s
-        errLn(x.strerror + ': ' + s)
+        CommonTools.errln(x.strerror + ': ' + s)
+
+
+def files_gen(a):
+    """Generate file paths from list of file glob patterns."""
+    for pattern in a:
+        for s in glob.glob(pattern):
+            if os.path.isfile(s):
+                yield s
         
 
-def errLn(s):
-    """Print a line in STDERR."""
-    sys.stderr.write('ERROR: ' + s + '\n')
+if __name__ == '__main__':
+    opt, args = getopt()
 
+    filepaths = list(files_gen(args))
+    if not filepaths:
+        CommonTools.exiterror('no files specified', 2)
 
-class Options:
-
-    def __init__(self, args):
-        hashType = 'MD5'
-        self.hashFactory = None  # will be set later
-        self.offset = 0
-        self.length = -1
-        self.buflen = 64 * 1024
-        self.progress = True
-        self.ucase = False
-        self.invert = False
-        self.files = []
-        switchRx = re.compile(r'/([^:]+)(?::(.*))?', re.I)
-        for s in args:
-            m = switchRx.match(s)
-            if not m:
-                self.files.append(s)
-                continue
-            sw = m.group(1).upper()
-            val = m.group(2) or ''
-            if sw == 'T':
-                hashType = val.upper()
-                types = 'CRC,CRC32,MD5,SHA1,SHA224,SHA256,SHA384,SHA512'.split(',')
-                if hashType not in types:
-                    raise Options.BadValueError(sw, 'type', val)
-            elif sw == 'O':
-                self.offset = getSizeParam(val)
-                if self.offset < 0:
-                    raise Options.BadValueError(sw, 'offset', val)
-            elif sw == 'L':
-                self.length = getSizeParam(val)
-                if self.length < -1:
-                    raise Options.BadValueError(sw, 'length', val)
-            elif sw == 'B':
-                self.buflen = getSizeParam(val)
-                if self.buflen <= 0:
-                    raise Options.BadValueError(sw, 'buffer size', val)
-            elif sw == 'NP':
-                self.progress = False
-            elif sw == 'U':
-                self.ucase = True
-            elif sw == 'I':
-                self.invert = True
-            else:
-                raise Options.BadSwitchError(sw)
-        if hashType in ('CRC','CRC32'):
-            self.hashFactory = crc32digest
-        else:
-            class HashFactory:
-                def __init__(self, type):
-                    self.type = type
-                def __call__(self):
-                    return hashlib.new(self.type)
-            self.hashFactory = HashFactory(hashType)
-        if not console_stuff.iscon():
-            self.progress = False
-
-    class Error(Exception):
-        pass
-
-    class BadValueError(Error):
-        def __init__(self, switch, switchName, value):
-            self.switch = switch
-            self.switchName = switchName
-            self.value = value
-        def __str__(self):
-            t = (self.switch, self.switchName, self.value)
-            return 'Bad value for /%s (%s): "%s"' % t
-
-    class BadSwitchError(Error):
-        def __init__(self, switch):
-            self.switch = switch
-        def __str__(self):
-            return 'Bad switch: "%s"' % self.switch
-
-
-## TODO: replace this with cmdLineOptions.parseSize
-def getSizeParam(s):
-    """Parse a size (any base) with optional unit or abort."""
-    if not s:
-        raise ValueError('Missing int value.')
-
-    # extract size factor
-    factor = 1
-    units = 'KMG'
-    unitIndex = units.find(s[-1].upper())
-    if unitIndex >= 0:
-        factor = 1024 ** (1 + unitIndex)
-        s = s[:-1]
-
-    try:
-        x = float(s) if '.' in s else int(s, 0)
-        return int(x * factor)
-    except:
-        raise ValueError('Invalid number: "%s"' % s)
-        
-
-class crc32digest:
-    """A CRC32 digest using the hashlib object interface."""
-    digest_size = 32
-    def __init__(self, data=''):
-        self.value = binascii.crc32(data)
-    def update(self, data):
-        self.value = binascii.crc32(data, self.value)
-    def digest(self):
-        return struct.pack('>L', self.value & 0xffffffff)
-    def hexdigest(self):
-        return binascii.hexlify(self.digest())
-    def copy(self):
-        ret = crc32digest()
-        ret.value = self.value
-        return ret
-
-
-sys.exit(main(sys.argv[1:]))
+    if opt.verify:
+        if len(opt.verify) != len(filepaths):        
+            CommonTools.exiterror('number of specified verify hashes does not match file count', 2)
+        for s, sig in zip(filepaths, opt.verify):
+            fileSig(s, opt, verify=sig)
+    else:
+        for s in filepaths:
+            fileSig(s, opt)
