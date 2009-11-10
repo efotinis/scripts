@@ -27,7 +27,7 @@ def hotcopy(src, dst):
     dstdir, dstfile = os.path.split(dst)
     if not srcdir: srcdir = '.'
     if not dstdir: dstdir = '.'
-    cmd = 'cmd /c hotcopy "%s" "%s" "%s" "%s"' % (
+    cmd = 'cmd /c hotcopy.cmd "%s" "%s" "%s" "%s"' % (
         srcdir, dstdir, srcfile, dstfile)
     os.system(cmd)
     
