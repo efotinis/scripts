@@ -1,9 +1,11 @@
 import os
 import sys
 import shutil
+
 import win32api
 import win32con
-import efDrives
+
+import diskutil
 
 
 def errLn(s):
@@ -37,9 +39,9 @@ def getCdPath():
     """Detect CD drive and let user enter another path if needed."""
 
     cd = ''
-    for root in efDrives.getDriveRoots(win32con.DRIVE_CDROM):
-        if getVolumeLabelAndSerial(root) == ('CDShow37', -39429415):
-            cd = root
+    for drive in diskutil.logical_drives(win32con.DRIVE_CDROM):
+        if getVolumeLabelAndSerial(drive + ':\\') == ('CDShow37', -39429415):
+            cd = drive + ':\\'
             break
 
     prompt = 'Enter CDROM root path'

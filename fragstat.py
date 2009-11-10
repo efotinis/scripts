@@ -1,55 +1,33 @@
+"""Show fragmentation statistics of all fixed drives in the system."""
+
 import os
 import re
 import sys
 import optparse
+import subprocess
 
-import win32api
-import win32file
 import win32con
 
-
-def getDriveRoots(types=None):
-    a = win32api.GetLogicalDriveStrings()[:-1].split('\0')
-    if types is None:
-        return a
-    elif isinstance(types, int):
-        types = (types,)
-    return [s for s in a if win32file.GetDriveType(s) in types]
+import diskutil
 
 
-def getFileContents(fpath):
-    """Return the whole contents of a file, or '' on error."""
-    ret = ''
-    f = None
+# TODO: add Vista report parsing support (only works on XP now)
+
+
+def readfile(name, mode='r'):
+    """Read a whole file; return None on error."""
     try:
-        f = file(fpath)
-        ret = f.read()
-    finally:
-        if f:
-            f.close()
-    return ret
+        with open(name, mode) as f:
+            return f.read()
+    except IOError:
+        return None
 
 
 def run(cmd):
-    """Run a cmd and return exit code and stdout/stderr strings.
-
-    STDOUT and STDERR are captured by redirection to temp files.
-    If the cmd interpreter cannot run the cmd, the exit code is set to -1.
-    """
-    tmpDir = win32api.GetTempPath() or '.'
-    cout = win32api.GetTempFileName(tmpDir, '')[0]
-    cerr = win32api.GetTempFileName(tmpDir, '')[0]
-    try:
-        redir = ' > "%s" 2> "%s"' % (cout, cerr)
-        exitCode = os.system(cmd + redir)
-    except:
-        exitCode = 256
-    finally:
-        s1 = getFileContents(cout)
-        s2 = getFileContents(cerr)
-        os.unlink(cout)
-        os.unlink(cerr)
-        return (exitCode, s1, s2)
+    """Run a shell command and return the exit code and stdout/stderr strings."""
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, strerr = p.communicate()
+    return p.returncode, stdout, strerr
     
 
 def parseDefragReport(s):
@@ -80,9 +58,11 @@ def runAnalysis():
     header = 'Drive ______Size ______Free_____ Frgm_file needDefrag?'
     #print header.replace('_', ' ')
     print header
-    for root in getDriveRoots(win32con.DRIVE_FIXED):
-        exitCode, cout, cerr = run('defrag ' + root + ' -a')
-        print '%-5s' % root,
+    for drive in diskutil.logical_drives(win32con.DRIVE_FIXED):
+        exitCode, cout, cerr = run('defrag %c: -a' % drive)
+        cout = cout or ''
+        cerr = cerr or ''
+        print '%-4c:' % drive,
         if exitCode == -1:
             print 'Could not run DEFRAG.'
             error = True
@@ -100,26 +80,24 @@ def runAnalysis():
     return not error
 
 
-def parse_cmdline():
+def getopt():
     op = optparse.OptionParser(
         usage='%prog',
         description='Display DEFRAG analysis for all fixed drives.',
         epilog=None,
         add_help_option=False)
-
     add = op.add_option
     add('-?', action='help',
         help=optparse.SUPPRESS_HELP)
-
     opt, args = op.parse_args()
-
     if args:
         op.error('no params allowed')
-
     return opt, args
 
 
 if __name__ == '__main__':
-    opt, args = parse_cmdline()
+    opt, args = getopt()
+    if sys.getwindowsversion()[:1] != (5, 1):
+        sys.exit('only Windows XP is supported at the moment')
     if not runAnalysis():
         sys.exit(1)
