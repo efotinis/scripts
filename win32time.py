@@ -2,7 +2,7 @@
 
 import time
 import ctypes
-import SharedLib
+import dllutil
 
 from ctypes.wintypes import BOOL, WORD, DWORD, LONG, WCHAR
 LPWORD = ctypes.POINTER(WORD)
@@ -64,7 +64,7 @@ class TIME_ZONE_INFORMATION(ctypes.Structure):
         raise NotImplementedError()
 
 
-kernel32 = SharedLib.WinLib('kernel32')
+kernel32 = dllutil.WinDLL('kernel32')
 LPFILETIME = ctypes.POINTER(FILETIME)
 LPSYSTEMTIME = ctypes.POINTER(SYSTEMTIME)
 LPTIME_ZONE_INFORMATION = ctypes.POINTER(TIME_ZONE_INFORMATION)
@@ -214,7 +214,7 @@ def TzSpecificLocalTimeToSystemTime(tz, lst):
 ##PLARGE_INTEGER = ctypes.POINTER(LARGE_INTEGER)
 ##PULONG = ctypes.POINTER(ULONG)
 ##
-##ntdll = SharedLib.WinLib('ntdll')
+##ntdll = dllutil.WinDLL('ntdll')
 ##RtlTimeToSecondsSince1970 = ntdll('RtlTimeToSecondsSince1970', BOOLEAN, [PLARGE_INTEGER, PULONG])
 
 

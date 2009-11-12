@@ -1,9 +1,11 @@
 import os
 import ctypes
-import win32con
-import SharedLib
-from ctypes.wintypes import BOOL, DWORD, HANDLE, WCHAR, LPCWSTR
 
+import win32con
+
+import dllutil
+
+from ctypes.wintypes import BOOL, DWORD, HANDLE, WCHAR, LPCWSTR
 from win32time import FILETIME
 
 
@@ -32,7 +34,7 @@ class Win32FindDataW(ctypes.Structure):
             setattr(ret, name, getattr(self, name))
         return ret
 
-krnl = SharedLib.WinLib('kernel32')
+krnl = dllutil.WinDLL('kernel32')
 FindFirstFileW = krnl('FindFirstFileW', HANDLE, [LPCTSTR, ctypes.POINTER(Win32FindDataW)])
 FindNextFileW = krnl('FindNextFileW', BOOL, [HANDLE, ctypes.POINTER(Win32FindDataW)])
 FindClose = krnl('FindClose', BOOL, [HANDLE])

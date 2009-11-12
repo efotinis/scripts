@@ -2,7 +2,7 @@
 
 import ctypes
 import win32gui, win32process, win32process, win32con
-import SharedLib
+import dllutil
 from ctypes.wintypes import BOOL, UINT, LONG, LPVOID
 
 
@@ -46,7 +46,7 @@ class RECT(ctypes.Structure):
 LPRECT = ctypes.POINTER(RECT)
 
 
-user32 = SharedLib.WinLib('user32')
+user32 = dllutil.WinDLL('user32')
 SystemParametersInfoW = user32('SystemParametersInfoW', BOOL, [UINT,UINT,PVOID,UINT])
 AdjustWindowRectEx = user32('AdjustWindowRectEx', BOOL, [LPRECT,DWORD,BOOL,DWORD])
 

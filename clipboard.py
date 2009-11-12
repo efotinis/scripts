@@ -3,11 +3,11 @@
 from __future__ import print_function
 import win32clipboard
 from win32con import CF_UNICODETEXT, CF_TEXT, CF_LOCALE
-import SharedLib
+import dllutil
 from ctypes.wintypes import INT, LCID, LCTYPE, LPSTR
 
 
-GetLocaleInfo = SharedLib.winfunc(
+GetLocaleInfo = dllutil.winfunc(
     'kernel32', 'GetLocaleInfoA', INT, [LCID, LCTYPE, LPSTR, INT])
 
 

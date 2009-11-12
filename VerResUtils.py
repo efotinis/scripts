@@ -3,7 +3,7 @@
 # 2008.01.27  Created.
 
 
-import ctypes, SharedLib
+import ctypes, dllutil
 
 from ctypes.wintypes import BOOL, BYTE, UINT, DWORD, WCHAR, LPWSTR
 TCHAR = ctypes.c_wchar
@@ -14,7 +14,7 @@ MAX_LEADBYTES = 12
 MAX_PATH = 260
 
 
-VerLanguageName = SharedLib.winfunc('kernel32',
+VerLanguageName = dllutil.winfunc('kernel32',
     'VerLanguageNameW', DWORD, [DWORD, LPWSTR, DWORD])
 
 
@@ -30,7 +30,7 @@ class CPINFOEXW(ctypes.Structure):
     ]
 
 
-GetCPInfoExW = SharedLib.winfunc('kernel32',
+GetCPInfoExW = dllutil.winfunc('kernel32',
     'GetCPInfoExW', BOOL, [UINT, DWORD, ctypes.POINTER(CPINFOEXW)])
 
 
