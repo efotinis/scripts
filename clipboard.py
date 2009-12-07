@@ -37,6 +37,12 @@ def localecodepage(lcid):
     return int(buf.value) if res else None
 
 
+def strz(s):
+    """Trim string at first NUL, if any."""
+    i = s.find('\0')
+    return s if i == -1 else s[:i]
+
+
 def gettext():
     """Get clipboard text (always Unicode) or None."""
     with Session():
@@ -44,10 +50,12 @@ def gettext():
         # Windows provides automatic conversions between the following:
         #   on Win9x: CF_TEXT, CF_OEMTEXT
         #   on NT-based: CF_TEXT, CF_OEMTEXT, CF_UNICODETEXT
+        # Also, the clipboard text is supposed to be NUL-terminated,
+        # but that's not always the case. We must scan for \0 ourselves.
         if hasformat(CF_UNICODETEXT):
-            ret = win32clipboard.GetClipboardData(CF_UNICODETEXT)
+            ret = strz(win32clipboard.GetClipboardData(CF_UNICODETEXT))
         elif hasformat(CF_TEXT):
-            ret = win32clipboard.GetClipboardData(CF_TEXT)
+            ret = strz(win32clipboard.GetClipboardData(CF_TEXT))
             try:
                 lcid = win32clipboard.GetClipboardData(CF_LOCALE)
                 lcid = struct.unpack('L', lcid)[0]
