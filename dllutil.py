@@ -47,22 +47,22 @@ class BaseDLL(object):
         return func
 
 
-class CLib(BaseDLL):
+class CDLL(BaseDLL):
     def __init__(self, name):
-        super(self).__init__(ctypes.cdll[name])
+        BaseDLL.__init__(self, ctypes.cdll[name])
 
 
-class OleLib(BaseDLL):
+class OleDLL(BaseDLL):
     def __init__(self, name):
-        super(self).__init__(ctypes.oledll[name])
+        BaseDLL.__init__(self, ctypes.oledll[name])
 
 
-class WinLib(BaseDLL):
+class WinDLL(BaseDLL):
     def __init__(self, name):
-        super(self).__init__(ctypes.windll[name])
+        BaseDLL.__init__(self, ctypes.windll[name])
 
 
-class PyLib(BaseDLL):
+class PyDLL(BaseDLL):
     def __init__(self, name):
-        super(self).__init__(ctypes.pydll[name])
+        BaseDLL.__init__(self, ctypes.pydll[name])
 
