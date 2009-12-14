@@ -174,25 +174,25 @@ def printfixed(d):
     print INDENT + 'structure version:', verstr32(d['StrucVersion'])
     print INDENT + '     file version:', verstr64(d['FileVersionMS'] << 32 | d['FileVersionLS'])
     print INDENT + '  product version:', verstr64(d['ProductVersionMS'] << 32 | d['ProductVersionLS'])
-    print INDENT + '            flags:', binutil.flagstr(d['FileFlags'] & d['FileFlagsMask'], 32, flags)
+    print INDENT + '            flags:', binutil.flagstring(d['FileFlags'] & d['FileFlagsMask'], 32, flags)
     print INDENT + '               OS:', os_str(d['FileOS'])
     print INDENT + '             type:', type_str(d['FileType'], d['FileSubtype'])
     print INDENT + '             date:', d['FileDate'] or ''
 
 
-def printvalues(fname, opt, showvals):
+def printvalues(fname, opt):
     d = win32api.GetFileVersionInfo(fname, '\\')
     if opt.fixed:
         printfixed(d)
     showxlats = win32api.GetFileVersionInfo(fname, '\\VarFileInfo\\Translation')
     if not opt.allxlats:
         showxlats = showxlats[:1]
-    showvals_maxlen = max(map(len, showvals)) if showvals else 0
+    showvals_maxlen = max(map(len, opt.showstrings)) if opt.showstrings else 0
     for lang, cp in showxlats:
         xlatstr = '%04X%04X' % (lang, cp)
         print '[%s: %s, %s]' % (xlatstr,
             VerResUtils.verlangname(lang), VerResUtils.codepagename(cp))
-        for name in showvals:
+        for name in opt.showstrings:
             val = win32api.GetFileVersionInfo(fname,
                 '\\StringFileInfo\\' + xlatstr + '\\' + name)
             if val:
@@ -212,35 +212,39 @@ def parse_cmdline():
     add = op.add_option
     add('-f', dest='fixed', action='store_true',
         help='Include fixed version info.')
-    add('-s', dest='strings', action='append',
+    add('-s', dest='showstrings', action='append', 
         help='Show only the specified, comma-separated strings. Option is cumulative.'
              'By default, the 12 predefined ones are shown.')
     add('-t', dest='allxlats', action='store_true',
         help='Show all tanslations. By default, only the first is shown.')
     add('-?', action='help',
         help=optparse.SUPPRESS_HELP)
-    return op.parse_args()
+    opt, args = op.parse_args()
+
+    if opt.showstrings is None:
+        opt.showstrings = defvalnames
+    else:
+        # make sure there are no empty strings (GetFileVersionInfo fails on them)
+        opt.showstrings = [s.strip() for s in ','.join(opt.showstrings).split(',') if s.strip()]
+
+    return opt, args
 
     
 def main(args):
     try:
         opt, args = parse_cmdline()
-        opt.strings = [s.strip() for s in ','.join(opt.strings).split(',')]
     except optparse.OptParseError as err:
         CommonTools.exiterror(str(err), 2)
 
-    showvals = opt.strings or defvalnames  # use predef if none specified
-    showvals = [s for s in showvals if s]  # remove empty (bad for GetFileVersionInfo)
-
     failed = False
-    for fname in files:
+    for fname in args:
         print fname
         try:
             if not os.path.exists(fname):
                 errln('file not found: "%s"' % fname)
                 failed = True
             else:
-                printvalues(fname, opt, showvals)
+                printvalues(fname, opt)
         except win32api.error, x:
             errln('%s: "%s"' % (x[2].rstrip('.'), fname))
             failed = True
