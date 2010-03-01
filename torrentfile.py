@@ -13,6 +13,7 @@ File format specs taken from:
 
 import os
 import re
+import hashlib
 
 import fileutil
 
@@ -83,6 +84,35 @@ def readvalue(f, checkend=False):
         return readstr(f, c)
 
 
+def calchash(f):
+    """Get the hex string of a Torrent's hash
+
+    The file pointer must be at the beginning of the torrent data on entry.
+
+    The hash is the SHA1 of the "info" dict.
+    Source:
+        Index >> Protocol Design Discussion >> How to get Hash out of .torrent file ?
+        http://forum.utorrent.com/viewtopic.php?id=47411
+    """
+    if fileutil.readexactly(f, 1) != 'd':
+        raise ValueError('first item is not a dict')
+    while True:
+        c = fileutil.readexactly(f, 1)
+        if c == 'e':
+            break
+        key = readstr(f, c)
+        beg = f.tell()
+        val = readvalue(f)
+        end = f.tell()
+        if key == 'info':
+            if not isinstance(val, dict):
+                raise ValueError('"info" item is not a dict')
+            f.seek(beg)
+            data = fileutil.readexactly(f, end - beg)
+            return hashlib.new('sha1', data).hexdigest()
+    raise ValueError('"info" item not found')
+
+
 if __name__ == '__main__':
     import sys
     import pprint
@@ -93,7 +123,9 @@ if __name__ == '__main__':
         for s in args:
             print s
             print '-' * 78
-            data = readvalue(open(s, 'rb'))
-            data['info']['pieces'] = '<hash data omitted>'
+            with open(s, 'rb') as f:
+                data = readvalue(f)
+            if 'info' in data and 'pieces' in data['info']:
+                data['info']['pieces'] = '<hash data omitted>'
             pprint.pprint(data)
             print
