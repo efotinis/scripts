@@ -18,3 +18,6 @@ def uniquepath(path):
     return path
 
 
+def setpathext(p, ext):
+    """Replace a path's extension."""
+    return os.path.splitext(p)[0] + ext
