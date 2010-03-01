@@ -1,38 +1,36 @@
-# 2008.07.14  created
-# 2008.07.22  added ExtCnt function
-
 # TODO: factor out common code
 # TODO: pretty sizes
 # TODO: commas in dir/file counts
 # TODO: compress dir names to console width by default
-
+# TODO: add headers to output
+# TODO: replace "<files>" with "." and include dir count(???)
 
 import os
 import re
 import sys
 import operator
 import time
-from collections import defaultdict
+import collections
 
 import win32file
 
 import win32time
 import AutoComplete
 import FindFileW
-from console_stuff import SamePosOutput
-from CommonTools import uprint
+import console_stuff
+import CommonTools
+
+uprint = CommonTools.uprint
 
 
 class PathError(ValueError):
     '''Path traversing error.'''
-    def __init__(self, *args):
-        ValueError.__init__(self, *args)
+    pass
 
 
 class CmdError(ValueError):
     '''Command line error.'''
-    def __init__(self, *args):
-        ValueError.__init__(self, *args)
+    pass
 
 
 class ListStats:
@@ -48,18 +46,6 @@ class ExtStats:
     def __init__(self):
         self.files = 0
         self.bytes = 0
-
-
-# FILETIME of Python (and C) epoch
-PY_EPOCH = win32time.pythonEpochToFileTime().getvalue()
-# factor to convert FILETIME to seconds
-TIME_SCALE = 1 / 10000000.0
-
-
-def winToPyTime(n):
-    '''Convert a FindFileW.Info date (FILETIME int64)
-    to Python seconds since the epoch.'''
-    return (n - PY_EPOCH) * TIME_SCALE
 
 
 class Item:
@@ -82,8 +68,8 @@ class Item:
                     uprint('FATAL: could not get info for "%s"' % path)
                     raise SystemExit(-1)
         self.attr = info.attr
-        self.mdate = winToPyTime(info.modify)
-        self.cdate = winToPyTime(info.create)
+        self.mdate = CommonTools.wintime_to_pyseconds(info.modify)
+        self.cdate = CommonTools.wintime_to_pyseconds(info.create)
 
 
 class File(Item):
@@ -276,7 +262,7 @@ def getCandidatePaths(state, seed):
 
 class ScanStatus:
     def __init__(self, root):
-        self.spo = SamePosOutput(fallback=True)
+        self.spo = console_stuff.SamePosOutput(fallback=True)
         self.root = root
     def update(self, s):
         self.spo.restore(True)
@@ -525,7 +511,7 @@ def cmdExtCnt(state, params):
     if params[:1] == params[-1:] == '"':
         params = params[1:-1]
     relPath, dir = locateDir(state, params.strip())
-    statsDict = defaultdict(lambda: ExtStats())
+    statsDict = collections.defaultdict(lambda: ExtStats())
     for item in dir.children:
         item.addExtStats(statsDict)
     dataRows = []

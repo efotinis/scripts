@@ -80,7 +80,7 @@ if __name__ == '__main__':
         btn = win32gui.FindWindowEx(wnd, 0, 'ThunderRT6CommandButton', 'Launch')
         win32api.SendMessage(btn, win32con.BM_CLICK)
 
-        win32api.Sleep(1000)  # give the trainer some time to fix the code
+        win32api.Sleep(5000)  # give the trainer some time to fix the code
         win32api.SendMessage(wnd, win32con.WM_CLOSE)
 
     except Exception as x:

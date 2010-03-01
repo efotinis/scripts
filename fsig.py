@@ -2,6 +2,7 @@
 #
 # TODO: only allow DOS-style wildcards by default (add switch -g for explicit globbing)
 # - Add a switch for strict error checking (exit on first range or file error).
+# TODO: report glob patterns that match no files (currently they are silently ignored)
 
 import os
 import sys

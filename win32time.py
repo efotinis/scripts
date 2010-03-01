@@ -4,7 +4,7 @@ import time
 import ctypes
 import dllutil
 
-from ctypes.wintypes import BOOL, WORD, DWORD, LONG, WCHAR
+from ctypes.wintypes import BOOL, WORD, DWORD, LONG, WCHAR, HANDLE
 LPWORD = ctypes.POINTER(WORD)
 ULONGLONG = ctypes.c_uint64
 
@@ -97,6 +97,10 @@ except AttributeError:
     _GetTickCount64 = None
 _GetSystemTimes = kernel32('GetSystemTimes',
     BOOL, [LPFILETIME, LPFILETIME, LPFILETIME])
+_GetFileTime = kernel32('GetFileTime',
+    BOOL, [HANDLE, LPFILETIME, LPFILETIME, LPFILETIME])
+_SetFileTime = kernel32('SetFileTime',
+    BOOL, [HANDLE, LPFILETIME, LPFILETIME, LPFILETIME])
 
 
 def toLocalFileTime(ft):
@@ -252,6 +256,18 @@ def GetSystemTimes():
     if not _GetSystemTimes(idle, kernel, user):
         raise ctypes.WinError()
     return idle, kernel, user
+
+
+def GetFileTime(h):
+    created, accessed, modified = FILETIME(), FILETIME(), FILETIME()
+    if not _GetFileTime(h, created, accessed, modified):
+        raise ctypes.WinError()
+    return created, accessed, modified
+
+
+def SetFileTime(h, created, accessed, modified):
+    if not _SetFileTime(h, created, accessed, modified):
+        raise ctypes.WinError()
 
 
 ##BOOL WINAPI GetFileTime(
