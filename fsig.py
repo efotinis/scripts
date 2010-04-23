@@ -45,7 +45,7 @@ def check_size(option, opt, value):
 
 
 class CustomOption(optparse.Option):
-    """Extended optparse Option class."""
+    """Extended optparse Option class which includes a 'size' type."""
     TYPES = optparse.Option.TYPES + ('size',)
     TYPE_CHECKER = copy.copy(optparse.Option.TYPE_CHECKER)
     TYPE_CHECKER['size'] = check_size
@@ -83,7 +83,7 @@ def getopt():
     typeslist = ', '.join(typeslist)
 
     _add = parser.add_option
-    _add('-t', dest='hashFactory', default=DEFAULT_HASH_TYPE,
+    _add('-t', dest='hashFactory', default=DEFAULT_HASH_TYPE, metavar='TYPE',
          help='Hash type. Available options: ' + typeslist)
     _add('-o', dest='offset', type='size', default=0,
          help='Starting file offset. Default is 0.')
@@ -100,7 +100,7 @@ def getopt():
          help='List of comma-separated hashes to check against the specified files.')
     _add('--np', dest='progress', action='store_false', default=True,
          help='Do not display progress indicator. '
-              'It is automatically set when STDOUT is not a console.')
+              'This is automatically set when STDOUT is not a console.')
     _add('-?', action='help', help='This help.')
 
     opt, args = parser.parse_args()
@@ -130,7 +130,6 @@ def getopt():
 
     if opt.verify:
         strsize = opt.hashFactory().digest_size * 2
-        #print strsize
         a = []
         for s in opt.verify.split(','):
             if len(s) != strsize:
@@ -145,17 +144,17 @@ def getopt():
     return opt, map(unicode, args)
 
 
-def bytesToRead(f, offset, length):
-    fs = fileutil.fsize(f)
+def calc_read_size(fsize, offset, length):
+    """Calculate the actual byte count given the file size and read offset/length."""
     if offset < 0:
         offset = 0
-    if offset > fs:
-        offset = fs
+    if offset > fsize:
+        offset = fsize
     if length < 0:
-        length = fs - offset
+        length = fsize - offset
     end = offset + length
-    if end > fs:
-        end = fs
+    if end > fsize:
+        end = fsize
     return end - offset
 
 
@@ -167,7 +166,7 @@ def fileSig(s, opt, verify=None):
     try:
         f = open(s, 'rb')
         if opt.progress:
-            progressBytesToRead = bytesToRead(f, opt.offset, opt.length)
+            progressBytesToRead = calc_read_size(fileutil.fsize(f), opt.offset, opt.length)
             progressBytesRead = 0
             spinner = itertools.cycle('/-\\|')
             print s, '... ',

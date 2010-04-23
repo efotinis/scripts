@@ -264,6 +264,7 @@ class Options(object):
 
     def filter(self, relpath, fname):
         """Test filename against all filters."""
+        fname = urllib2.unquote(fname)  # BUGFIX: needed to make filtering regexps work (need to rethink url quoting and filtering)
         ext = os.path.splitext(fname)[1].lower()
         return (not self.extensions or ext in self.extensions) and \
             self._test_regexps(fname) and \
