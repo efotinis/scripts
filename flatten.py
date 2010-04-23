@@ -9,21 +9,45 @@ import CommonTools
 import dirutil
 
 
+def splitall(path):
+    """Return list of all elements in path. Path must not be absolute."""
+    if os.path.isabs(path):
+        raise ValueError('absolute path passed to splitall()')
+    a = []
+    drive, path = os.path.splitdrive(path)
+    while path:
+        path, s = os.path.split(path)
+        a += [s]
+    if drive:
+        a += [drive]
+    a.reverse()
+    return a
+
+
 def flatten(srcroot, opt):
     allok = True
     dstdir = opt.outdir or srcroot
-    # walk bottom-up to allow dir deletion, if needed
+    actionfunc = shutil.copyfile if opt.keeporiginals else shutil.move
+    srcroot = os.path.normpath(srcroot)  # remove any trailing dir separator
+    # walk bottom-up to allow dir deletion, if needed;
     for path, dirs, files in os.walk(srcroot, topdown=False):
         # move files (unless we're at the destination)
         if path != dstdir:
             for s in files:
                 try:
                     src = os.path.join(path, s)
-                    dst = dirutil.uniquepath(os.path.join(dstdir, s))
-                    if opt.keeporiginals:
-                        shutil.copyfile(src, dst)
+                    if opt.joiner is None:
+                        dst = os.path.join(dstdir, s)
                     else:
-                        shutil.move(src, dst)
+                        # get current relpath;
+                        # path[len(srcroot):] produces '' for the root and '/...' for the rest;
+                        # normpath() converts '' to '.';
+                        # finally, [1:] strips the first char ('.' for root, '/' for others)
+                        relpath = os.path.normpath(path[len(srcroot):])[1:]
+                        fname = opt.joiner.join(splitall(relpath) + [s])
+                        dst = os.path.join(dstdir, fname)
+                    dst = dirutil.uniquepath(dst)
+                    actionfunc(src, dst)
                 except IOError, x:
                     CommonTools.errln(str(x))
                     allok = False
@@ -61,7 +85,7 @@ def parse_cmdline():
     add('-c', dest='errorcontinue', action='store_true', 
         help='Continue processing in case of an error. By default, the first '
              'error ends the script.')
-    add('-j', dest='join', 
+    add('-j', dest='joiner', 
         help='Uses the specified string to join the name of the parent dirs '
              'in front of each filename. Useful to avoid collisions or to '
              'keep the dir names as part of the output.')
@@ -80,9 +104,9 @@ def parse_cmdline():
 if __name__ == '__main__':
     opt, dirs = parse_cmdline()
 
-    if opt.join is not None:
-        # TODO: implement this
-        CommonTools.exiterror('parent name joining not supported yet')
+##    if opt.joiner is not None:
+##        # TODO: implement this
+##        CommonTools.exiterror('parent name joining not supported yet')
 
     if opt.outdir is not None and not os.path.isdir(opt.outdir):
         if hasParentRef(opt.outdir):  # os.makedirs() can't handle this
