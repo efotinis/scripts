@@ -18,6 +18,7 @@ import copy
 import console_stuff
 import fileutil
 import CommonTools
+import optparseutil
 
 
 HASH_TYPES = 'crc32 md5 sha1 sha224 sha256 sha384 sha512'.split()
@@ -26,29 +27,11 @@ DEFAULT_HASH_TYPE = 'md5'
 DEFAULT_BUFFER_SIZE = 64 * 1024
 
 
-def check_size(option, opt, value):
-    """Implement custom 'size' type for optparse."""
-    UNITS = 'kmgtpezy'
-    if not value:
-        raise optparse.OptionValueError('option %s: empty size value' % opt)
-    # separate number and factor (if any)
-    number, factor = value, 1
-    i = UNITS.find(value[-1].lower())
-    if i != -1:
-        factor = 1024 ** (i + 1)
-        number = value[:-1]
-    # calc result
-    try:
-        return int(float(number) * factor)
-    except ValueError:
-        raise optparse.OptionValueError('option %s: bad size value "%s"' % (opt, value))
-
-
 class CustomOption(optparse.Option):
     """Extended optparse Option class which includes a 'size' type."""
     TYPES = optparse.Option.TYPES + ('size',)
     TYPE_CHECKER = copy.copy(optparse.Option.TYPE_CHECKER)
-    TYPE_CHECKER['size'] = check_size
+    TYPE_CHECKER['size'] = optparseutil.check_size
 
 
 class Crc32:
