@@ -46,7 +46,7 @@ def walk(top, reader=stdreader, handler=stdhandler):
     dirs, files = [], []
     for item in items:
         if item.name.endswith('/'):  # dir entry
-            if item.name[:1] != '/':  # not the parent
+            if item.name[:1] != '/' and item.name != '../':  # not the parent
                 #dirs += [item._replace(name=item.name.rstrip('/'))]
                 dirs += [item]
         else:
@@ -59,7 +59,13 @@ def walk(top, reader=stdreader, handler=stdhandler):
 _rxheader = re.compile(r'Index of (.*)')
 
 def pagelist(html):
-    soup = BeautifulSoup.BeautifulSoup(html)
+    try:
+        soup = BeautifulSoup.BeautifulSoup(html)
+    except BeautifulSoup.HTMLParseError:
+##        print '-' * 40
+##        print html
+##        print '-' * 40
+        raise
     body = soup.body
     try:
         if body.h1.string == 'Index of locally available sites:':
@@ -99,25 +105,42 @@ _rxpreitem = re.compile(r'''\s+
     (\d{2}-[a-z]{3}-\d{4}\ \d{2}:\d{2})?  # date/time; optional
     \s+
     ([\d+.]+[kmg]?|-)  # size
-    .*\n''', re.IGNORECASE | re.VERBOSE)
+    .*\n?''', re.IGNORECASE | re.VERBOSE)
 
 def _dirItemsFromPre(pre):
     # the entries start with <img> and are between 2 <hr>
     items = pre.findAll(set(('img','hr')))
     hr_indices = [i for i,x in enumerate(items) if x.name == 'hr']
-    # sometimes the second <hr> is right after the </pre>
-    # eg: http://david.gharib.free.fr/
-    assert 1 <= len(hr_indices) <= 2, '<pre> listing must have exactly 1 or 2 <hr>s'
-    if (len(hr_indices) == 1):
-        hr_indices += [None]  # will slice list to the end
-    i, j = hr_indices
-    for img in items[i+1:j]:
-        a = img.next.next  # skip ' '
-        # descr is usually truncuated so it's pretty useless
-        info = a.nextSibling  # '   dd-MMM-yyyy hh:mm   size  descr\n'
-        name = a['href']
-        date, size = _rxpreitem.match(info).groups()
-        yield Item(name, date, str2size(size))
+    assert len(hr_indices) <= 2, '<pre> listing must have 0-2 <hr>s'
+    if not hr_indices:
+        # eg: http://www.playmates.su.postman.ru/walls/files/
+        # no <hr>s, just a list of link lines
+        for a in pre.findAll('a'):
+            info = str(a.nextSibling)  # '   dd-MMM-yyyy hh:mm   size  descr\n'
+            name = a['href']
+            # the '../' entry has no info
+            if info.strip() == '':
+                info = '  -\n'
+            try:
+                date, size = _rxpreitem.match(info).groups() if info else ('', '-')
+            except AttributeError:
+                import win32api
+                win32api.MessageBox(0, repr(info), '', 0)
+                sys.exit()
+            yield Item(name, date, str2size(size))
+    else:
+        # sometimes the second <hr> is right after the </pre>
+        # eg: http://david.gharib.free.fr/
+        if (len(hr_indices) == 1):
+            hr_indices += [None]  # will slice list to the end
+        i, j = hr_indices
+        for img in items[i+1:j]:
+            a = img.next.next  # skip ' '
+            # descr is usually truncuated so it's pretty useless
+            info = a.nextSibling  # '   dd-MMM-yyyy hh:mm   size  descr\n'
+            name = a['href']
+            date, size = _rxpreitem.match(info).groups()
+            yield Item(name, date, str2size(size))
 
 _rxsize = re.compile(r'(-)|([0-9.]+)([kmg]?)', re.IGNORECASE)
 _unitmult = {'':1, 'k':2**10, 'm':2**20, 'g':2**30}
