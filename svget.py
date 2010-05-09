@@ -384,7 +384,7 @@ def download_resumable_file(src, dst, bufsize, totalsize, totaldone, movavg):
                     prettysize_compact(totaldone),
                     prettysize_compact(totalsize),
                     percent(totaldone, totalsize),
-                    total_eta)
+                    total_eta),
 
                 dt = time.clock()
                 s = conn.read(bufsize)
@@ -402,6 +402,8 @@ def download_resumable_file(src, dst, bufsize, totalsize, totaldone, movavg):
                 f.write(s)
 
         except (socket.timeout, urllib2.URLError) as err:
+            print
+            
             # urlopen raises urllib2.URLError(reason=socket.timeout),
             # while conn.read raises socket.timeout
             # (also got an httplib.BadStatusLine once, which didn't show up
