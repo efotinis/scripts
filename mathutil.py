@@ -1,5 +1,6 @@
 """Various mathematical utilities."""
 
+from __future__ import division
 import math
 
 
@@ -20,18 +21,20 @@ def lcm(a, b):
 
     Uses the fact that gcd(x,y)*lcm(x,y)==x*y.
     """
-    return (a * b) / gcd(a, b)
+    return (a * b) // gcd(a, b)
 
 
 def countcombinations(n, m):
     """Count combinations of m out of n items."""
     if n < m:
         raise ValueError
-    return math.factorial(n) / (math.factorial(m) * math.factorial(n - m))
+    return math.factorial(n) // (math.factorial(m) * math.factorial(n - m))
 
 
 def countpermutations(n, m):
     """Count permutations of m out of n items."""
     if n < m:
         raise ValueError
-    return math.factorial(n) / math.factorial(n - m)
+    return math.factorial(n) // math.factorial(n - m)
+
+

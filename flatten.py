@@ -81,7 +81,7 @@ def parse_cmdline():
              'are moved to the top of their respective directory.')
     add('-k', dest='keeporiginals', action='store_true', 
         help='Keep original files and empty directories. If omitted, files are '
-             'moved instead of copied and empty directories are deleted.')
+             'moved instead of copied and emptied directories are deleted.')
     add('-c', dest='errorcontinue', action='store_true', 
         help='Continue processing in case of an error. By default, the first '
              'error ends the script.')
