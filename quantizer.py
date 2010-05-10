@@ -1,4 +1,5 @@
 from __future__ import division
+import time
 
 
 class Quantizer(object):
@@ -23,7 +24,7 @@ class Quantizer(object):
         while value_b + self.pending_b >= self.granularity:
             b = self.granularity - self.pending_b
             a = value_a * b / value_b  # lerp
-            self.data.append(a)
+            self.data.append(self.pending_a + a)
             if self.maxsamples is not None and len(self.data) > self.maxsamples:
                 del self.data[:-self.maxsamples]
             value_a -= a
