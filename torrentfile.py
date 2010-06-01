@@ -113,6 +113,12 @@ def calchash(f):
     raise ValueError('"info" item not found')
 
 
+def filesinfo(data):
+    """Generate the full path and size of each file in a torrent data object."""
+    for entry in data['info']['files']:
+        yield os.path.sep.join(entry['path']), entry['length']
+
+
 if __name__ == '__main__':
     import sys
     import pprint
