@@ -34,6 +34,7 @@ def parseDefragReport(s):
     """Get DEFRAG's analysis results and return the juicy parts."""
     # TODO: return a namedtuple
     # TODO: use verbose regex pattern
+    # NOTE: free percentage is truncated to integer; better ignore the DEFRAG value
     REPORT_RX = re.compile(
         r'^'
         r'(?P<title>.*)\n'

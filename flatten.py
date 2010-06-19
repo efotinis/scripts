@@ -104,10 +104,6 @@ def parse_cmdline():
 if __name__ == '__main__':
     opt, dirs = parse_cmdline()
 
-##    if opt.joiner is not None:
-##        # TODO: implement this
-##        CommonTools.exiterror('parent name joining not supported yet')
-
     if opt.outdir is not None and not os.path.isdir(opt.outdir):
         if hasParentRef(opt.outdir):  # os.makedirs() can't handle this
             CommonTools.exiterror('cannot create output dir, due to embedded ".."', 2)
