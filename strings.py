@@ -6,8 +6,6 @@ import re
 import os
 import contextlib
 import optparse
-if os.name == 'nt':
-    import msvcrt
 
 import CommonTools
 
@@ -20,6 +18,7 @@ DEFAULT_MAXSIZE = None
 def binary_stdin():
     """Temporarily switch STDIN to binary mode on Windows (NOP on other platforms)."""
     if os.name == 'nt':
+        import msvcrt
         fd = sys.stdin.fileno()
         oldmode = msvcrt.setmode(fd, os.O_BINARY)
         try:
