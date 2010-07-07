@@ -6,7 +6,7 @@ import shutil
 import optparse
 
 import CommonTools
-import dirutil
+import pathutil
 
 
 def splitall(path):
@@ -46,7 +46,7 @@ def flatten(srcroot, opt):
                         relpath = os.path.normpath(path[len(srcroot):])[1:]
                         fname = opt.joiner.join(splitall(relpath) + [s])
                         dst = os.path.join(dstdir, fname)
-                    dst = dirutil.uniquepath(dst)
+                    dst = pathutil.get_unique_file(dst)
                     actionfunc(src, dst)
                 except IOError, x:
                     CommonTools.errln(str(x))
