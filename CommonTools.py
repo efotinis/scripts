@@ -2,7 +2,6 @@
 
 import os
 import sys
-import contextlib
 import math
 import itertools
 import re
@@ -186,18 +185,6 @@ def listdirs(path):
     for s in os.listdir(path):
         if os.path.isdir(os.path.join(path, s)):
             yield s
-
-
-@contextlib.contextmanager
-def preserve_cwd(path=None):
-    """Context manager to preserve (and optionally set) the current directory."""
-    orgpath = os.getcwd()
-    if path is not None:
-        os.chdir(path)
-    try:
-        yield
-    finally:
-        os.chdir(orgpath)
 
 
 # FIXME: better names
