@@ -5,10 +5,7 @@ import win32con
 
 import dllutil
 
-from ctypes.wintypes import BOOL, DWORD, HANDLE, WCHAR, LPCWSTR
-from win32time import FILETIME
-
-
+from ctypes.wintypes import BOOL, DWORD, HANDLE, WCHAR, LPCWSTR, FILETIME
 TCHAR = WCHAR
 LPCTSTR = LPCWSTR
 
@@ -89,18 +86,15 @@ class FindFileW:
         self.findNext()
         return ret
 
-def int64(n1, n2):
-    return n1 + (n2 << 32)
-
 # TODO: make named_tuple
 class Info:
     def __init__(self, fd=None):
         if fd:
             self.attr = fd.dwFileAttributes
-            self.create = fd.ftCreationTime.value
-            self.access = fd.ftLastAccessTime.value
-            self.modify = fd.ftLastWriteTime.value
-            self.size = int64(fd.nFileSizeLow, fd.nFileSizeHigh)
+            self.create = fd.ftCreationTime.dwLowDateTime | (fd.ftCreationTime.dwHighDateTime << 32)
+            self.access = fd.ftLastAccessTime.dwLowDateTime | (fd.ftLastAccessTime.dwHighDateTime << 32)
+            self.modify = fd.ftLastWriteTime.dwLowDateTime | (fd.ftLastWriteTime.dwHighDateTime << 32)
+            self.size = fd.nFileSizeLow | (fd.nFileSizeHigh << 32)
             self.res0 = fd.dwReserved0
             self.res1 = fd.dwReserved1
             self.name = fd.cFileName

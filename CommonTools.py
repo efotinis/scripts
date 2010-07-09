@@ -10,7 +10,7 @@ import operator
 
 import win32console
 
-import win32time
+import wintime
 import binutil
 
 shell = shellcon = None  # delay load
@@ -188,8 +188,9 @@ def listdirs(path):
 
 
 # FIXME: better names
-# TODO: move to win32time
-PY_EPOCH = win32time.pythonEpochToFileTime().getvalue()  # FILETIME of Python/C epoch
+# TODO: move to wintime
+PY_EPOCH = wintime.python_epoch_utc_to_filetime()  # FILETIME of Python/C epoch
+PY_EPOCH = PY_EPOCH.dwLowDateTime | (PY_EPOCH.dwHighDateTime << 32)
 PY_TIME_SCALE = 1 / 10000000.0  # factor to convert FILETIME to seconds
 
 

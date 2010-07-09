@@ -14,7 +14,6 @@ import collections
 
 import win32file
 
-import win32time
 import AutoComplete
 import FindFileW
 import console_stuff
