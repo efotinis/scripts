@@ -6,11 +6,7 @@
 import os, sys, re
 import win32file, win32con
 import DosCmdLine, CommonTools
-
-
-# constants missing from win32con
-FILE_READ_ATTRIBUTES = 0x0080
-FILE_WRITE_ATTRIBUTES = 0x0100
+import wintime
 
 
 EXIT_OK = 0
@@ -228,31 +224,6 @@ class IndentSession:
 ##    return EXIT_OK
 
 
-def getFileTimes(fname):
-    """Return 4-tuple of success and create/access/modify file times."""
-    try:
-        f = None
-        f = win32file.CreateFile(fname, FILE_READ_ATTRIBUTES, 0, None,
-                                 win32con.OPEN_EXISTING, 0, None)
-        ret = win32file.GetFileTime(f)
-    finally:
-        if f:
-            win32file.CloseHandle(f)
-    return ret
-
-
-def setFileTimes(fname, create, access, modify):
-    """Set create/access/modify file times; any of them can be None."""
-    try:
-        f = None
-        f = win32file.CreateFile(fname, FILE_WRITE_ATTRIBUTES, 0, None,
-                                 win32con.OPEN_EXISTING, 0, None)
-        win32file.SetFileTime(f, create, access, modify)
-    finally:
-        if f:
-            win32file.CloseHandle(f)
-
-
 def showhelp(switches):
     s = """\
 Change source code indentation level.
@@ -315,7 +286,7 @@ def main(args):
     indent = IndentSession(opt.oldsize , opt.newsize, flags)
 
     if opt.replace:
-        timestamps = getFileTimes(params[0])[1:]
+        timestamps = wintime.get_file_time(params[0])[1:]
         params[1] = params[0] + '$'
 
     infile = CommonTools.InFile(params[0])
@@ -328,7 +299,7 @@ def main(args):
     outfile.close()
 
     if opt.replace:
-        setFileTimes(params[1], *timestamps)
+        wintime.set_file_time(params[1], *timestamps)
         os.unlink(params[0])
         os.rename(params[1], params[0])
 

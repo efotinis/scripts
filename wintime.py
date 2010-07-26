@@ -4,12 +4,19 @@ from __future__ import division
 
 import ctypes
 import datetime
+import contextlib
+import time
 
 import dllutil
 
 from ctypes.wintypes import BOOL, WORD, DWORD, LONG, WCHAR, HANDLE
 LPWORD = ctypes.POINTER(WORD)
 ULONGLONG = ctypes.c_uint64
+
+from win32con import OPEN_EXISTING
+# constants missing from win32con
+FILE_READ_ATTRIBUTES = 0x0080
+FILE_WRITE_ATTRIBUTES = 0x0100
 
 
 class FILETIME(ctypes.Structure):
@@ -247,21 +254,30 @@ def get_tick_count(bits=32, fallback=False):
         raise ValueError('invalid bit value; must be 32 or 64')
 
 
-def get_file_time(h):
-    """Get the create/access/modify FILETIMEs of a file HANDLE."""
+def get_file_time(f):
+    """Get the create/access/modify FILETIMEs of a file (Py)HANDLE or path."""
     created, accessed, modified = FILETIME(), FILETIME(), FILETIME()
-    if not GetFileTime(h, created, accessed, modified):
+    if isinstance(f, basestring):
+        with contextlib.closing(win32file.CreateFileW(f, FILE_READ_ATTRIBUTES, 0, None, OPEN_EXISTING, 0, None)) as h:
+            if not GetFileTime(h.handle, created, accessed, modified):
+                raise ctypes.WinError()
+    elif not GetFileTime(int(f), created, accessed, modified):
         raise ctypes.WinError()
     return created, accessed, modified
 
 
-def set_file_time(h, created=None, accessed=None, modified=None):
-    """Set the create/access/modify FILETIMEs of a file HANDLE."""
-    if not SetFileTime(h, created, accessed, modified):
+def set_file_time(f, created=None, accessed=None, modified=None):
+    """Set the create/access/modify FILETIMEs of a file (Py)HANDLE or path."""
+    if isinstance(f, basestring):
+        with contextlib.closing(win32file.CreateFileW(f, FILE_WRITE_ATTRIBUTES, 0, None, OPEN_EXISTING, 0, None)) as h:
+            if not SetFileTime(h.handle, created, accessed, modified):
+                raise ctypes.WinError()
+    elif not SetFileTime(int(f), created, accessed, modified):
         raise ctypes.WinError()
 
 
 def get_system_times():
+    """Get idle, kernel and user FILETIMEs."""
     idle, kernel, user = FILETIME(), FILETIME(), FILETIME()
     if not GetSystemTimes(idle, kernel, user):
         raise ctypes.WinError()
