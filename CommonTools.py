@@ -93,10 +93,9 @@ def uprint(s):
         print s
 
 
-def splitunits(n, units):
-    """Split a number to a tuple of units.
+def splitunits(value, units):
+    """Split a value (>=0) to a tuple of units (ints, >0).
 
-    The number must be non-negative and the units integers > 0.
     The fractional part (if any) goes to the lowest unit.
 
     # split 125sec to 2min:5sec
@@ -107,15 +106,15 @@ def splitunits(n, units):
     >>> splitunits(123456.7, (60,60,24))
     (36.7, 17, 10, 1)
     """
-    if n < 0:
-        raise ValueError('splitunits() number must be >= 0')
+    if value < 0:
+        raise ValueError('value must be >= 0')
     ret = []
     for u in units:
         if int(u) != u or u <= 0:
-            raise ValueError('splitunits() units must be ints > 0')
-        ret += [n % u]
-        n //= u
-    ret.append(n)
+            raise ValueError('units must be integers and > 0')
+        ret += [value % u]
+        value //= u
+    ret.append(value)
     return tuple(ret)
 
 
