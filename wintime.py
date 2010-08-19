@@ -247,7 +247,7 @@ def get_tick_count(bits=32, fallback=False):
         if GetTickCount64:
             return GetTickCount64()
         elif fallback:
-            GetTickCount()
+            return GetTickCount()
         else:
             raise NotImplementedError('64-bit tick counter is not available')
     else:
