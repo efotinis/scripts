@@ -1,9 +1,17 @@
 # TODO: factor out common code
 # TODO: pretty sizes
-# TODO: commas in dir/file counts
+# TODO: commas in dir/file/size counts
 # TODO: compress dir names to console width by default
 # TODO: add headers to output
 # TODO: replace "<files>" with "." and include dir count(???)
+# TODO: store scan errors and add a cmd for showing them
+# TODO: add a filter function (extensions, regexps, size/date ranges, attribs) to restrict operations
+# TODO: allow optional traversal of junctions and soft-linked dirs
+# TODO: allow command switches and replace "LO","DO","EO" with configurable default switches
+# TODO: replace single order flags with multiple flags (lowercase:ascending, uppercase:descensing)
+# TODO: detect hardlinks (no need to match; just use link count)
+# TODO: detect namespaace cycles (e.g. in junctions)
+# TODO: allow multiple roots (e.g. different drives or dirs); should allow setting an alias for each root
 
 import os
 import re

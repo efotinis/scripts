@@ -1,6 +1,9 @@
-"""Windows directory function.
+"""Windows directory functions.
 
-This will replace the FindFileW module.
+We can't use the win32file functions (FindFilesW and FindFilesIterator),
+because they return PyTime objects (which are broken beyond all repair).
+
+This will eventually replace my FindFileW module.
 """
 
 #from __future__ import print_function

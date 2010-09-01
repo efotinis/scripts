@@ -38,7 +38,7 @@ def gen_file_paths(masks):
     """
     for mask in masks:
         head, tail = os.path.split(mask)
-        matches = [os.path.join(head, s) for s in wildcard.listdir(tail, head)]
+        matches = [os.path.join(head, s) for s in wildcard.listdir(tail, head or '.')]
         matches = [s for s in matches if os.path.isfile(s)]
         if not matches:
             print_error('warning: no files matched with "{0}"'.format(mask))
