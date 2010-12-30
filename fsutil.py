@@ -1,5 +1,6 @@
 """File system (and path) utilities."""
 
+import os
 import contextlib
 
 import binutil

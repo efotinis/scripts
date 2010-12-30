@@ -66,6 +66,8 @@ class OutFile:
         self.f.write(s)
 
 
+# TODO: move scriptname(), errln() and exiterror() at some 'scriptutil' module
+
 def scriptname():
     """Current script name, sans dir path and extension."""
     return os.path.splitext(os.path.basename(sys.argv[0]))[0]
@@ -82,6 +84,9 @@ def exiterror(msg, status=1):
     sys.exit(status)
 
 
+# TODO: move WriteConsole() to some 'winconsole' module and replace this
+#       with a more appropriately named function, depending on whether
+#       it falls back to Python's 'print'
 def uprint(s):
     """Print a unicode string followed by a newline.
 
@@ -171,6 +176,8 @@ def prettysize(n, iec=False):
         return '%d %c%sB' % (int(n), unit, 'i' if iec else '')
 
 
+# TODO: move listfiles() and listdirs() to 'pathutil' module.
+
 def listfiles(path):
     """Generate names of files."""
     for s in os.listdir(path):
@@ -218,51 +225,3 @@ def nukeglobals(keep=None):
     for item in main_globals.keys():
         if not re.match(r'__.+__', item) and item not in keep:
             del main_globals[item]
-
-
-class Counter(object):
-    """Counter of objects, using an optional key.
-
-    Example:
-    >>> c = Counter(key=str.lower)
-    >>> c.addall('abcbcbb')
-    >>> c.dump()
-    1 a
-    2 c
-    4 b
-    """
-    
-    def __init__(self, key=None):
-        self.data = collections.defaultdict(int)
-        self.key = key
-        
-    def add(self, x):
-        """Add an item."""
-        self.data[self.key(x) if self.key else x] += 1
-        
-    def addall(self, seq):
-        """Add a sequence of items."""
-        for x in seq:
-            self.add(x)
-            
-    def clear(self):
-        """Reset all."""
-        self.data.clear()
-        
-    def _data(self):
-        """Return value/counter pairs sorted by counter."""
-        return sorted(self.data.items(), key=operator.itemgetter(1))
-    
-    def __iter__(self):
-        """Iterator of value/counter pairs by increasing counter order."""
-        return iter(self._data())
-    
-    def __reversed__(self):
-        """Iterator of value/counter pairs by decreasing counter order."""
-        return reversed(self._data())
-    
-    def dump(self):
-        """Print values and counters."""
-        for x, freq in self:
-            print '%d %s' % (freq, x)
-

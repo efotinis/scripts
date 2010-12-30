@@ -5,7 +5,7 @@ Source: <http://en.wikibooks.org/wiki/Statistics>
 
 from __future__ import division
 import math
-import CommonTools
+import collections
 
 
 def amean(a):
@@ -33,12 +33,10 @@ def mode(a):
     """List of the most common value or values."""
     if len(a) == 0:
         raise ValueError('empty sequence')
-    cnt = CommonTools.Counter()
-    cnt.addall(a)
-    values_and_counts = list(reversed(cnt))
-    maxcount = values_and_counts[0][1]
+    values_and_counts_decr = collections.Counter(a).most_common()
+    maxcount = values_and_counts_decr[0][1]
     ret = []
-    for val, cnt in values_and_counts:
+    for val, cnt in values_and_counts_decr:
         if cnt == maxcount:
             ret += [val]
         else:
