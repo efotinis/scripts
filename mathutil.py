@@ -2,6 +2,10 @@
 
 from __future__ import division
 import math
+import string
+
+
+BASE36_DIGITS = string.digits + string.ascii_lowercase
 
 
 def gcd(a, b):
@@ -38,3 +42,23 @@ def countpermutations(n, m):
     return math.factorial(n) // math.factorial(n - m)
 
 
+def str_base(num, base, digits=BASE36_DIGITS):
+    """Convert an integer to a custom base string.
+
+    Inverse of int(s,base), except that no base prefix is added.
+    Based on http://code.activestate.com/recipes/65212/#c10 .
+    """
+    if not 2 <= base <= len(digits):
+        raise ValueError('base must be >= 2 and <= %d' % len(digits))
+    if num == 0:
+        return '0'
+    if num < 0:
+        sign = '-'
+        num = -num
+    else:
+        sign = ''
+    result = ''
+    while num:
+        num, remainder = divmod(num, base)
+        result = digits[remainder] + result
+    return sign + result
