@@ -47,7 +47,12 @@ def waitfindwindow(cls, title, msec=100, times=10):
     """FindWindow with retry."""
     for i in range(times):
         try:
-            return win32gui.FindWindow(cls, title)
+            ##return win32gui.FindWindow(cls, title)
+            # FindWindow() is supposed to throw on error, but due to a bug
+            # in the pywin32 generated code, it sometimes returns 0
+            w = win32gui.FindWindow(cls, title)
+            if w:
+                return w
         except win32gui.error:
             pass
         win32api.Sleep(msec)
