@@ -11,9 +11,7 @@ import operator
 import win32console
 
 import wintime
-
-shell = shellcon = None  # delay load
-
+import shellutil
 
 # When STD_OUTPUT_HANDLE is not available (e.g. in PythonWin)
 # GetStdHandle's behavior varies:
@@ -123,23 +121,9 @@ def splitunits(value, units):
     return tuple(ret)
 
 
-def loadShell():
-    global shell, shellcon 
-    if not shell:
-        from win32com.shell import shell, shellcon
-
-
-def getDesktop():
-    """Current user's desktop directory."""
-    loadShell()
-    SHGFP_TYPE_CURRENT = 0  # missing from shellcon
-    return shell.SHGetFolderPath(0, shellcon.CSIDL_DESKTOPDIRECTORY, None,
-                                 SHGFP_TYPE_CURRENT)
-
-
 def gotoDesktop():
     """Change working directory to current user's desktop."""
-    os.chdir(getDesktop())
+    os.chdir(shellutil.SpecialFolders.desktop)
 
 
 def prettysize(n, iec=False):

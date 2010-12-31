@@ -10,7 +10,9 @@ import os
 import sys
 import getopt
 from glob import glob
+
 import CommonTools
+import shellutil
 
 
 def select_file(mask):
@@ -79,7 +81,7 @@ if __name__ == '__main__':
         if os.path.splitext(dst)[1].lower() != '.flv':
             dst += '.flv'
         if not os.path.dirname(dst) and '-d' in opt:
-            dst = os.path.join(CommonTools.getDesktop(), dst)
+            dst = os.path.join(shellutil.SpecialFolders.desktop, dst)
 
         hotcopy(src, dst)
 
