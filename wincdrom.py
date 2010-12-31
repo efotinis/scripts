@@ -4,7 +4,7 @@ Inspired by http://code.activestate.com/recipes/180919/ (r2)
 
 Terminology used in this module:
     'X'       drive letter
-    'X:'      drive
+    'X:'      drive (name)
     'X:\\'    drive root
 """
 
@@ -63,14 +63,14 @@ class Cdrom:
         except win32api.error:
             return False
 
-    def wait_ready(self, timeout, interval=1):
-        """Poll the drive until it's ready and return True.
+    def wait_ready(self, timeout=0, interval=1):
+        """Poll the drive until it's ready and return its ready status.
 
-        If the timeout period expires, False is returned.
-        The polling interval can also be specified.
+        The timeout specifies the time in seconds to wait before returning False.
+        If the timeout is 0, waits forever. The polling interval can also be specified.
         """
         endtime = time.time() + timeout
-        while time.time() < endtime:
+        while timeout <= 0 or time.time() < endtime:
             if self.is_ready():
                 return True
             time.sleep(interval)
