@@ -49,5 +49,3 @@ def readupto(f, delim, keep=False):
                 ret += c
             return ret
         ret += c
-
-    

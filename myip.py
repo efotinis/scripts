@@ -10,7 +10,8 @@ import sys
 import os
 
 
-QUERY_URL = 'http://www.whatismyip.com/automation/n09230945.asp'
+#QUERY_URL = 'http://www.whatismyip.com/automation/n09230945.asp'
+QUERY_URL = 'http://automation.whatismyip.com/n09230945.asp'  # new URL as of May 25, 2011
 
 
 def query():

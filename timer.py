@@ -1,5 +1,11 @@
-import sys, time, re
-import win32api, win32con
+"""Simple timer with alert."""
+
+import sys
+import time
+import re
+import argparse
+import win32api
+import win32con
 
 
 # regex for [[H:]M:]S
@@ -50,7 +56,14 @@ def parsetime(s):
     return ((h * 60) + m) * 60 + s
 
 
-def main(args):
+##ap = argparse.ArgumentParser(description='alarm/timer functions', add_help=False)
+##_add = ap.add_argument
+##_add('-?', action='help', help='this help')
+##print ap.parse_args()
+
+
+if __name__ == '__main__':
+    args = sys.argv[1:]
     if '/?' in args:
         print 'Starts a timer.'
         print 'Usage: TIMER [[hours:]minutes:]seconds'
@@ -63,6 +76,3 @@ def main(args):
         raise SystemExit(str(x))
     wait(seconds)
     alert()
-
-
-main(sys.argv[1:])

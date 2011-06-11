@@ -39,7 +39,7 @@ def UpdateResource(fname, clear=False):
     If 'clear' is True, existing resources are deleted.
     Caller can raise a DiscardUpdate exception to exit, discarding updates.
     """
-    h = win32api.BeginUpdateResource(fname, delete)
+    h = win32api.BeginUpdateResource(fname, clear)
     discard = False
     try:
         yield h
