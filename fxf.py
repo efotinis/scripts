@@ -1,8 +1,10 @@
-# TODO: add flags for mask interpretation (-w:wildcard, -g:glob, [-r:regexp])
+# TODO: add flags for mask interpretation (-w:wildcard(def), -g:glob, [-r:regexp])
 # TODO: add warning output when a mask doesn't match anything
 # TODO: add negotiation to check for already tranferred files (either whole or partial);
 #       before getting data, the client should send the size and hash of the an existing file
 # TODO: encryption (possibly with pycrypto)
+# TODO: add move option (delete source on successful send)
+# TODO: add custom socket timeout
 
 import os
 import sys
@@ -57,6 +59,40 @@ file:
 Notes:
 - integers are little-endian
 - hash field has been removed, since the socket type used (SOCKET_STREAM) is "reliable"
+
+'''
+
+'''
+Stream Format (New)
+===================
+
+legend:
+    [S]     server
+    [C]     client
+    <...>   data sent
+
+structs:
+    TOTALS_INFO     info about number of files/firs, total size, max path size
+
+
+Protocol selection:
+    [S] <PROTO_LIST>
+    [C] (select protocol or close)
+
+Protocol 0:
+    [S] <TOTALS_INFO>
+    [C] if accept:
+            <REPLY("ack")>
+        else:
+            <REPLY("nak", "reason")>
+            close()
+    [S] for f in files:
+            <file path/size>
+    [C]     (send existing size & data hash for data up to min(client size, server size))
+    [S]     (verify existing client data)
+
+
+
 
 '''
 
@@ -150,7 +186,31 @@ def run_server(listenport, buflen, files):
     print 'files to be sent:', len(files)
 
     with contextlib.closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as ssoc:
-        ssoc.bind((socket.gethostname(), listenport))
+        #ssoc.bind((socket.gethostname(), listenport))
+        #--------------------------------------------------------
+        # Using the above bind() we end up binding to the IP of one of the virtual VMware
+        # networks, 192.168.193.1 (can be seen with 'netstat -anp tcp | find "14580"').
+        #
+        # I don't know why this IP is used, but I've noticed that it comes up as the first
+        # IP4 address in getaddrinfo()'s results:
+        #
+        #   >>> socket.getaddrinfo(socket.gethostname(), None)
+        #   [(23, 0, 0, '', ('fe80::a172:9160:3ac7:54c4%13', 0, 0, 13)),
+        #    (23, 0, 0, '', ('fe80::78f6:b6c5:3690:834f%15', 0, 0, 15)),
+        #    (23, 0, 0, '', ('fe80::60:da63:dd6e:2b66%11', 0, 0, 11)),
+        #    (23, 0, 0, '', ('fe80::1cb0:2667:c1fe:57f2%20', 0, 0, 20)),
+        #    (2, 0, 0, '', ('192.168.193.1', 0)),          # <-- this is what we get
+        #    (2, 0, 0, '', ('192.168.93.1', 0)),
+        #    (2, 0, 0, '', ('192.168.1.4', 0)),            # <-- this is what we want
+        #    (23, 0, 0, '', ('2001:0:5ef5:79fd:1cb0:2667:c1fe:57f2', 0, 0, 0))]
+        #
+        # I've also noticed that gethostbyname_ex() returns the preferred IP first, so we
+        # use that to get a numeric IP instead of passing the host name directly to bind().
+        #
+        # Networking is hard... :(
+        #--------------------------------------------------------
+        ip = socket.gethostbyname_ex(socket.gethostname())[2][0]
+        ssoc.bind((ip, listenport))
         ssoc.listen(1)
 
         print 'waiting for client on port %d ...' % listenport
