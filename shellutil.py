@@ -101,6 +101,19 @@ def create_shortcut(path, target, args=None, cwd=None, hotkey=None,
     shortcut.save()
 
 
+def load_shortcut(path):
+    """Load a Windows shortcut (.LNK) as a dict.clear
+
+    The returned items can be used as params to create_shortcut().
+    """
+    wshshell = win32com.client.Dispatch("WScript.Shell")  # WshShell object
+    shortcut = wshshell.CreateShortCut(path)  # WshShortcut object
+    return {'target':shortcut.TargetPath, 'args':shortcut.Arguments,
+            'cwd':shortcut.WorkingDirectory, 'hotkey':shortcut.Hotkey,
+            'wstyle':{1:'', 3:'max', 7:'min'}[shortcut.WindowStyle],
+            'comment':shortcut.Description, 'icon':shortcut.IconLocation,}
+
+
 class SpecialFolders(object):
     """Get the paths of special folders via attribute access.
 
