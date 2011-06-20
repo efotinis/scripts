@@ -135,3 +135,5 @@ if __name__ == '__main__':
                 data['info']['pieces'] = '<hash data omitted>'
             pprint.pprint(data)
             print
+            with open(s, 'rb') as f:
+                print 'torrent hash:', calchash(f)
