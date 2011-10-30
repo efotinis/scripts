@@ -36,7 +36,7 @@ class CustomOption(optparse.Option):
 
 class Crc32:
     """CRC32 digest using the hashlib interface."""
-    digest_size = 32
+    digest_size = 4
     def __init__(self, data=''):
         self.value = binascii.crc32(data)
     def update(self, data):

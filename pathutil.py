@@ -49,3 +49,39 @@ def get_unique_file(path, gen=None):
 def set_ext(p, ext):
     """Replace a path's extension."""
     return os.path.splitext(p)[0] + ext
+
+
+def split_all(s):
+    """Split all elements of a path."""
+    a = []
+    while True:
+        head, tail = os.path.split(s)
+
+        # get tail, unless when s==os.sep*N, where split() returns (s,'')
+        if tail or head != s:
+            a += [tail]
+
+        # done; input path was absolute
+        if head == s:
+            a += [head]
+            break
+
+        # done; input path was not absolute
+        if not head:
+            break
+
+        s = head
+    a.reverse()
+    return a
+
+
+##assert split_all('') == ['']
+##assert split_all('/') == ['/']
+##assert split_all('//') == ['//']
+##assert split_all('a') == ['a']
+##assert split_all('a/') == ['a', '']
+##assert split_all('/a') == ['/', 'a']
+##assert split_all('a/b') == ['a', 'b']
+##assert split_all('a/b/') == ['a', 'b', '']
+##assert split_all('/a/b/') == ['/', 'a', 'b', '']
+##assert split_all('c:/a/b/') == ['c:/', 'a', 'b', '']
