@@ -1,50 +1,65 @@
+"""Produce sounds using the Windows MessageBeep() API."""
+
 import sys
-import win32api
-from win32con import MB_OK, MB_ICONINFORMATION, MB_ICONWARNING, MB_ICONERROR, MB_ICONQUESTION
+import time
+import argparse
+import winsound
 
 
-def showhelp():
-    print '''
-Play a Windows sound.
-
-BEEP [-?] [<sound>]
-
-Accepted sounds:
-    ok         Default Beep sound (MB_OK). This is the default.
-    i[nfo]     Asterisk sound (MB_ICONINFORMATION/MB_ICONASTERISK)
-    w[arn]     Exclamation sound (MB_ICONWARNING/MB_ICONEXCLAMATION)
-    e[rr[or]]  Critical Stop sound (MB_ICONERROR/MB_ICONHAND/MB_ICONSTOP)
-    q, ask     Question sound (MB_ICONQUESTION)
-    s[imple]   Simple beep (uses speaker if no sound card is available)
-'''[1:-1]
+SOUNDS = {
+    'ok': winsound.MB_OK,
+    'i': winsound.MB_ICONASTERISK,
+    'w': winsound.MB_ICONEXCLAMATION,
+    'e': winsound.MB_ICONHAND,
+    'q': winsound.MB_ICONQUESTION,
+    's':  -1,
+}
 
 
-args = sys.argv[1:]
-if '-?' in args:
-    showhelp()
-    sys.exit()
-if len(args) > 1:
-    print >>sys.stderr, 'only one parameter is accepted'
-    sys.exit(2)
-if not args:
-    args = ['ok']
+def parse_args():
+    ap = argparse.ArgumentParser(
+        description='play a Windows sound',
+        add_help=False)
+    ap.add_argument('sound', metavar='SOUND', choices=SOUNDS, default='ok', nargs='?',
+                    help='sound type: ok (default), i (info, asterisk), '
+                         'w (warning, exclamation), e (error, hand, stop), q (question), '
+                         '-1 (speaker beep; obsoleted since Vista)')
+    group = ap.add_mutually_exclusive_group()
+    group.add_argument('-l', dest='loop', action='store_true',
+                       help='loop until interrupted by user')
+    group.add_argument('-r', dest='repeats', type=int, default=1,
+                       help='number of repetitions; default: %(default)s')
+    ap.add_argument('-d', dest='delay', type=float, default=1.0,
+                    help='delay in seconds between repeats; default: %(default)s')
+    ap.add_argument('-?', action='help',
+                    help='this help')
+    args = ap.parse_args()
+    args.sound = SOUNDS[args.sound]
+    if args.repeats < 1:
+        ap.error('repeat count must be >= 1')
+    if args.delay < 0:
+        ap.error('delay must be >= 0')
+    return args
 
-options = {
-    'ok': MB_OK,
-    'i': MB_ICONINFORMATION,
-    'info': MB_ICONINFORMATION,
-    'w': MB_ICONWARNING,
-    'warn': MB_ICONWARNING,
-    'e': MB_ICONERROR,
-    'err': MB_ICONERROR,
-    'error': MB_ICONERROR,
-    'q': MB_ICONQUESTION,
-    'ask': MB_ICONQUESTION,
-    's': -1,
-    'simple': -1}
 
-try:
-    sound = options[args[0].lower()]
-except KeyError:
-    sys.exit('invalid sound: "%s"' % args[0])
-win32api.MessageBeep(sound)
+if __name__ == '__main__':
+    args = parse_args()
+
+    try:
+        first = True
+        while True:
+            if first:
+                first = False
+            else:
+                time.sleep(args.delay)
+
+            winsound.MessageBeep(args.sound)
+
+            if args.loop:
+                continue
+            args.repeats -= 1
+            if args.repeats <= 0:
+                break
+
+    except KeyboardInterrupt:
+        sys.exit('canceled by user')
