@@ -3,7 +3,7 @@
 import os
 import sys
 import shutil
-import optparse
+import argparse
 
 import CommonTools
 import pathutil
@@ -67,15 +67,13 @@ def flatten(srcroot, opt):
 
 
 def parse_cmdline():
-    op = optparse.OptionParser(
-        usage='%prog [options] DIRS',
-        description='Move nested files from multiple subdirectories to a single directory.',
-        epilog='DIRS is a list of the directories to flatten. '
-               'The files of each directory are moved to that directory, unless -o is used. '
-               'Name collisions are resolved by appending a unique number in parentheses after the original file name.',
-        add_help_option=False)
+    ap = argparse.ArgumentParser(
+        description='move/copy/hardlink multiple files to a single directory',
+        add_help=False)
 
-    add = op.add_option
+    add = ap.add_argument
+    add('dirs', metavar='DIR', nargs='+',
+        help='the directories to flatten')
     add('-o', dest='outdir', 
         help='Output directory; will be created if needed. If omitted, files '
              'are moved to the top of their respective directory.')
@@ -90,30 +88,30 @@ def parse_cmdline():
              'in front of each filename. Useful to avoid collisions or to '
              'keep the dir names as part of the output.')
     add('-?', action='help',
-        help=optparse.SUPPRESS_HELP)
+        help='this help')
 
-    opt, args = op.parse_args()
+    args = ap.parse_args()
 
     if not args:
-        op.error('at least one directory must be specified')
+        ap.error('at least one directory must be specified')
     args = map(unicode, args)  # necessary for proper dir listings
 
-    return opt, args
+    return args
 
 
 if __name__ == '__main__':
-    opt, dirs = parse_cmdline()
+    args = parse_cmdline()
 
-    if opt.outdir is not None and not os.path.isdir(opt.outdir):
-        if hasParentRef(opt.outdir):  # os.makedirs() can't handle this
+    if args.outdir is not None and not os.path.isdir(args.outdir):
+        if hasParentRef(args.outdir):  # os.makedirs() can't handle this
             CommonTools.exiterror('cannot create output dir, due to embedded ".."', 2)
         try:
-            os.makedirs(opt.outdir)
+            os.makedirs(args.outdir)
         except OSError, x:
             CommonTools.exiterror('cannot create output dir: ' + str(x))
 
     allok = True
-    for s in dirs:
-        if not flatten(s, opt):
+    for s in args.dirs:
+        if not flatten(s, args):
             allok = False
     sys.exit(0 if allok else 1)
