@@ -149,6 +149,23 @@ def calc_read_size(fsize, offset, length):
     return end - offset
 
 
+class ProgressIndicator(object):
+    def __init__(self, total):
+        self.current = 0
+        self.total = total
+        self.spinner = itertools.cycle('/-\\|')
+        print s, '... ',
+        self.spo = console_stuff.SamePosOutput()
+    def update(self, n):
+        self.current += n
+        self.spo.restore()
+        percent = (self.current*100/self.total if self.total else 0)
+        print str(percent) + '%', self.spinner.next()
+    def clear(self):
+        self.spo.pos.X = 0
+        self.spo.restore(True)
+
+
 def fileSig(s, opt, verify=None):
     """Calculate and print file hash.
 
@@ -156,36 +173,32 @@ def fileSig(s, opt, verify=None):
     """
     try:
         f = open(s, 'rb')
+        
         if opt.progress:
-            progressBytesToRead = calc_read_size(fileutil.fsize(f), opt.offset, opt.length)
-            progressBytesRead = 0
-            spinner = itertools.cycle('/-\\|')
-            print s, '... ',
-            spo = console_stuff.SamePosOutput()
+            total = calc_read_size(fileutil.fsize(f), opt.offset, opt.length)
+            progress = ProgressIndicator(total)
+        else:
+            progress = None
+            
         f.seek(opt.offset)
-        d = opt.hashFactory()
+        hash = opt.hashFactory()
         bytesToGo = opt.length
         while bytesToGo != 0:
             buf = f.read(opt.buflen)
             if buf == '': break
             if bytesToGo != -1 and len(buf) > bytesToGo:
                 buf = buf[:bytesToGo]
-            d.update(buf)
-            if opt.progress:
-                progressBytesRead += len(buf)
-                spo.restore()
-                percent = (progressBytesRead*100/progressBytesToRead
-                           if progressBytesToRead else 0)
-                print str(percent) + '%', spinner.next()
+            hash.update(buf)
+            if progress:
+                progress.update(len(buf))
             if bytesToGo != -1:
                 bytesToGo = bytesToGo - len(buf)
-        if opt.progress:
-            spo.pos.X = 0
-            spo.restore(True)
+        if progress:
+            progress.clear()
         if bytesToGo > 0:
             print 'Reached EOF while reading "%s"' % s
         else:
-            digest = d.hexdigest()
+            digest = hash.hexdigest()
             if opt.ucase:
                 digest = digest.upper()
             # the empty write() prevents SamePosOutput from
