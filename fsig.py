@@ -12,7 +12,7 @@ import struct
 import re
 import glob
 import itertools
-import optparse
+import argparse
 import copy
 
 import console_stuff
@@ -21,17 +21,30 @@ import CommonTools
 import optparseutil
 
 
-HASH_TYPES = 'crc32 md5 sha1 sha224 sha256 sha384 sha512'.split()
-
+HASH_TYPES = set(hashlib.algorithms + ('crc32',))
 DEFAULT_HASH_TYPE = 'md5'
 DEFAULT_BUFFER_SIZE = 64 * 1024
 
 
-class CustomOption(optparse.Option):
-    """Extended optparse Option class which includes a 'size' type."""
-    TYPES = optparse.Option.TYPES + ('size',)
-    TYPE_CHECKER = copy.copy(optparse.Option.TYPE_CHECKER)
-    TYPE_CHECKER['size'] = optparseutil.check_size
+def size_param(s):
+    """Custom 'size' type checker for argparse.
+
+    Parses a string of a float with an optional size prefix and returns a truncated int.
+    """
+    UNITS = 'kmgtpezy'
+    if not s:
+        raise argparse.ArgumentTypeError('empty size value')
+
+    unit = UNITS.find(s[-1].lower())
+    if unit == -1:
+        number, factor = s, 1
+    else:
+        number, factor = s[:-1], 1024 ** (unit + 1)
+
+    try:
+        return int(float(number) * factor)
+    except ValueError:
+        raise argparse.ArgumentTypeError('bad size value: "%s"' % number)
 
 
 class Crc32:
@@ -51,80 +64,75 @@ class Crc32:
         return ret
 
 
-def getopt():
-    parser = optparse.OptionParser(
-        description='Calculate file hashes.',
-        usage='%prog [options] FILES...',
-        epilog='Glob wildcards allowed in FILES. '
-               'Size and offset values can have a size unit (one of "KMGTPEZY"), e.g. "64K", "0.5m".',
-        add_help_option=False,
-        option_class=CustomOption)
+##def get_hash_object(name, string=''):
+##    if name == 'crc32':
+##        return Crc32(string)
+##    else:
+##        return hashlib.new(name, string)
 
-    typeslist = HASH_TYPES[:]
-    i = typeslist.index(DEFAULT_HASH_TYPE)
-    typeslist[i] += ' (default)'
-    typeslist = ', '.join(typeslist)
 
-    _add = parser.add_option
-    _add('-t', dest='hashFactory', default=DEFAULT_HASH_TYPE, metavar='TYPE',
-         help='Hash type. Available options: ' + typeslist)
-    _add('-o', dest='offset', type='size', default=0,
-         help='Starting file offset. Default is 0.')
-    _add('-l', dest='length', type='size', default=-1,
-         help='Number of bytes to process. Default is -1, meaning all.')
-    _add('-b', dest='buflen', type='size', default=DEFAULT_BUFFER_SIZE,
-         help='Read buffer size. Default is %default.')
-    _add('-u', dest='ucase', action='store_true',
-         help='Output uppercase hex digits.')
-    _add('-i', dest='invert', action='store_true',
-         help='Invert output, displaying the file name first. '
-              'Useful for creating SFV files.')
-    _add('-v', dest='verify', 
-         help='List of comma-separated hashes to check against the specified files.')
-    _add('--np', dest='progress', action='store_false', default=True,
-         help='Do not display progress indicator. '
-              'This is automatically set when STDOUT is not a console.')
-    _add('-?', action='help', help='This help.')
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='calculate file hashes',
+        epilog='size and offset values can be a float with an SI unit suffix',
+        add_help=False)
 
-    opt, args = parser.parse_args()
+    add = parser.add_argument
+    add('files', metavar='FILE', nargs='+',
+        help='input file (glob pattern)')
+    add('-t', dest='hashFactory', choices=HASH_TYPES,
+        default=DEFAULT_HASH_TYPE, metavar='TYPE',
+        help='hash type; one of ' + ','.join(sorted(HASH_TYPES)) + '; '
+             'default: %(default)s')
+    add('-o', dest='offset', type=size_param, default=0,
+         help='starting file offset; default: %(default)s')
+    add('-l', dest='length', type=size_param, default=-1,
+         help='number of bytes to process (or -1 for all); default: %(default)s')
+    add('-b', dest='buflen', type=size_param, default=DEFAULT_BUFFER_SIZE,
+         help='read buffer size; default: %(default)s')
+    add('-u', dest='ucase', action='store_true',
+         help='output uppercase hex digits')
+    add('-i', dest='invert', action='store_true',
+         help='invert output by displaying the file name first; '
+              'useful for creating SFV files')
+    add('-v', dest='verify', 
+         help='list of comma-separated hashes to check against the specified files')
+    add('--np', dest='progress', action='store_false', default=True,
+         help='do not display progress indicator; '
+              'set automatically when STDOUT is not a console')
+    add('-?', action='help', help='this help')
+
+    args = parser.parse_args()
 
     if not console_stuff.iscon():
-        opt.progress = False
+        args.progress = False
 
-    if opt.offset < 0:
+    if args.offset < 0:
         parser.error('offset must be >= 0')
-    if opt.length < -1:
+    if args.length < -1:
         parser.error('number of bytes must be >= -1')
-    if opt.buflen <= 0:
+    if args.buflen <= 0:
         parser.error('buffer size must be > 0')
 
-    opt.hashFactory = opt.hashFactory.lower()
-    if opt.hashFactory not in HASH_TYPES:
-        parser.error('invalid hash type: "%s"' % opt.hashFactory)
-    if opt.hashFactory == 'crc32':
-        opt.hashFactory = Crc32
+    if args.hashFactory == 'crc32':
+        args.hashFactory = Crc32
     else:
-        class HashFactory:
-            def __init__(self, type):
-                self.type = type
-            def __call__(self):
-                return hashlib.new(self.type)
-        opt.hashFactory = HashFactory(opt.hashFactory)
+        args.hashFactory = lambda s=args.hashFactory: hashlib.new(s)
 
-    if opt.verify:
-        strsize = opt.hashFactory().digest_size * 2
+    if args.verify:
+        strsize = args.hashFactory().digest_size * 2
         a = []
-        for s in opt.verify.split(','):
+        for s in args.verify.split(','):
             if len(s) != strsize:
                 parser.error('invalid verify hash size: "%s"' % s)
             try:
                 a += [int(s, 16)]
             except ValueError:
                 parser.error('invalid verify hash: "%s"' % s)
-        opt.verify = a
+        args.verify = a
 
-    parser.destroy()
-    return opt, map(unicode, args)
+    args.files = [unicode(s, 'mbcs') for s in args.files]
+    return args
 
 
 def calc_read_size(fsize, offset, length):
@@ -198,26 +206,35 @@ def fileSig(s, opt, verify=None):
         CommonTools.errln(x.strerror + ': ' + s)
 
 
-def files_gen(a):
+def files_gen(patterns, not_matched_handler=None):
     """Generate file paths from list of file glob patterns."""
-    for pattern in a:
-        for s in glob.glob(pattern):
+    for patt in patterns:
+        matched_something = False
+        for s in glob.glob(patt):
             if os.path.isfile(s):
                 yield s
+                matched_something = True
+        if not matched_something and not_matched_handler is not None:
+            not_matched_handler(patt)
+
+
+def not_matched_handler(patt):
+    print >>sys.stderr, 'WARNING: no matches for "%s"' % patt
         
 
 if __name__ == '__main__':
-    opt, args = getopt()
+    args = parse_args()
+##    print args
+##    sys.exit()
 
-    filepaths = list(files_gen(args))
-    if not filepaths:
-        CommonTools.exiterror('no files specified', 2)
+    # TODO: notify user if a pattern has no matches
+    filepaths = list(files_gen(args.files, not_matched_handler))
 
-    if opt.verify:
-        if len(opt.verify) != len(filepaths):        
-            CommonTools.exiterror('number of specified verify hashes does not match file count', 2)
-        for s, sig in zip(filepaths, opt.verify):
-            fileSig(s, opt, verify=sig)
+    if args.verify:
+        if len(args.verify) != len(filepaths):        
+            sys.exit('number of specified verify hashes does not match file count')
+        for s, sig in zip(filepaths, args.verify):
+            fileSig(s, args, verify=sig)
     else:
         for s in filepaths:
-            fileSig(s, opt)
+            fileSig(s, args)
