@@ -43,19 +43,21 @@ def pretty_time(seconds, decimals=0):
     return '%02d:%02d:%0*.*f' % (hours, minutes, secsize, decimals, seconds)
 
 
-def countdown(seconds, step=1.0, decimals=0, format='%s'):
+def countdown(seconds, step=1.0, decimals=0):
     spo = console_stuff.SamePosOutput()
-    while seconds > step:
+    try:
+        while seconds > step:
+            spo.restore(eolclear=True)
+            sys.stdout.write(pretty_time(seconds, decimals))
+            time.sleep(step)
+            seconds -= step
+        time.sleep(seconds)
+    finally:
         spo.restore(eolclear=True)
-        sys.stdout.write(format % pretty_time(seconds, decimals))
-        time.sleep(step)
-        seconds -= step
-    time.sleep(seconds)
-    spo.restore(eolclear=True)
-    #sys.stdout.write(pretty_time(0))
+        #sys.stdout.write(pretty_time(0))
 
 
-def countdown_bigecho(font, seconds, step=1.0, decimals=0, format='%s'):
+def countdown_bigecho(font, seconds, step=1.0, decimals=0):
     for i in range(font.height):
         print
     cout = win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
@@ -63,35 +65,37 @@ def countdown_bigecho(font, seconds, step=1.0, decimals=0, format='%s'):
     pos = info['CursorPosition']
     attrib = info['Attributes']
     pos.Y -= font.height
-    disp_width = len(format % pretty_time(seconds, decimals))
+    disp_width = len(pretty_time(seconds, decimals))
     disp_width = disp_width * font.width + (disp_width - 1) * font.spacing
     rect = win32console.PySMALL_RECTType(pos.X, pos.Y, pos.X + disp_width - 1, pos.Y + font.height - 1)
     scroll_pos = win32console.PyCOORDType(pos.X, pos.Y - font.height)
 
-    while seconds > step:
+    try:
+        while seconds > step:
+            cout.SetConsoleCursorPosition(pos)
+            font.uprint(pretty_time(seconds, decimals))
+            time.sleep(step)
+            seconds -= step
+        time.sleep(seconds)
+    finally:
         cout.SetConsoleCursorPosition(pos)
-        font.uprint(format % pretty_time(seconds, decimals))
-        time.sleep(step)
-        seconds -= step
-    time.sleep(seconds)
-    cout.SetConsoleCursorPosition(pos)
-    cout.ScrollConsoleScreenBuffer(rect, rect, scroll_pos, u' ', attrib)
-
-
-def alert():
-    """Make a beep to notify the user."""
-    win32api.MessageBeep(win32con.MB_ICONINFORMATION)
+        cout.ScrollConsoleScreenBuffer(rect, rect, scroll_pos, u' ', attrib)
 
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='start an alert timer',
+        description='simple countdown timer',
         add_help=False)
     _add = parser.add_argument
-    _add('seconds', type=time_string, metavar='[[h:]m:]s', help='timer duration')
-    _add('-b', dest='bigecho', action='store_true', help='show large characters')
+    _add('seconds', type=time_string, metavar='TIME', help='timer duration; examples: '
+         '"10s", "1m10s", "5m:10s", "2.5h"')
+    _add('-l', dest='large', action='store_true', help='show large characters')
+    _add('-b', dest='beep', action='store_true', help='beep on completion')
+    _add('-d', dest='decimals', type=int, default=1, help='second fractional digits; default: %(default)s')
     _add('-?', action='help', help='this help')
-    return parser.parse_args()
+    args = parser.parse_args()
+    args.decimals = min(max(args.decimals, 0), 3)
+    return args
 
 
 BIG_FONT = '''
@@ -102,15 +106,19 @@ X X  X  X     X   X   X X X X   X X   X      X
 XXX XXX XXX XXX   X XXX XXX X   XXX XXX  X      
 '''
 
-
 if __name__ == '__main__':
     args = parse_args()
-    if args.bigecho:
-        FULL_BLOCK = unichr(0x2588)
-        font = bigecho.Font('0123456789.:', BIG_FONT.replace('X', FULL_BLOCK), 3, weight=2)
-        countdown_bigecho(font, args.seconds, 0.05, 2)
-    else:
-        countdown(args.seconds, 0.1, 1)
-    alert()
-
     
+    try:
+        step = 10.0**(-args.decimals) / 2  # half the smallest displayable value
+        step = min(max(step, 0.01), 1)  # not too small (CPU intensive) or too large (at least 1 sec accurate)
+        if args.large:
+            FULL_BLOCK = unichr(0x2588)
+            font = bigecho.Font('0123456789.:', BIG_FONT.replace('X', FULL_BLOCK), 3, weight=2)
+            countdown_bigecho(font, args.seconds, step, args.decimals)
+        else:
+            countdown(args.seconds, step, args.decimals)
+        if args.beep:
+            win32api.MessageBeep(win32con.MB_ICONINFORMATION)
+    except KeyboardInterrupt:
+        sys.exit('timer canceled by user')
