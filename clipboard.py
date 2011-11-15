@@ -1,14 +1,11 @@
 """Windows Clipboard utilities."""
 
 from __future__ import print_function
+import struct
 import win32clipboard
-from win32con import CF_UNICODETEXT, CF_TEXT, CF_LOCALE
-import dllutil
+import win32con
+import six
 from ctypes.wintypes import INT, LCID, LCTYPE, LPSTR
-
-
-GetLocaleInfo = dllutil.winfunc(
-    'kernel32', 'GetLocaleInfoA', INT, [LCID, LCTYPE, LPSTR, INT])
 
 
 class Session:
@@ -21,72 +18,51 @@ class Session:
         win32clipboard.CloseClipboard()
 
 
-def hasformat(fmt):
+def has_format(fmt):
     """Test whether clipboard contains a specific format."""
     return win32clipboard.IsClipboardFormatAvailable(fmt)
 
 
-def localecodepage(lcid):
-    """Windows codepage number of a LCID.
-
-    Returns None on error, or 0 for Unicode-only locales.
-    """
-    buf = ctypes.create_string_buffer(6)
-    LOCALE_IDEFAULTANSICODEPAGE = 0x00001004
-    res = GetLocaleInfo(lcid, LOCALE_IDEFAULTANSICODEPAGE, buf, len(buf))
-    return int(buf.value) if res else None
-
-
-def strz(s):
-    """Trim string at first NUL, if any."""
-    i = s.find('\0')
-    return s if i == -1 else s[:i]
-
-
-def gettext():
-    """Get clipboard text (always Unicode) or None."""
+def get_text():
+    """Get Unicode text."""
     with Session():
-        ret = None
-        # Windows provides automatic conversions between the following:
-        #   on Win9x: CF_TEXT, CF_OEMTEXT
-        #   on NT-based: CF_TEXT, CF_OEMTEXT, CF_UNICODETEXT
-        # Also, the clipboard text is supposed to be NUL-terminated,
-        # but that's not always the case. We must scan for \0 ourselves.
-        if hasformat(CF_UNICODETEXT):
-            ret = strz(win32clipboard.GetClipboardData(CF_UNICODETEXT))
-        elif hasformat(CF_TEXT):
-            ret = strz(win32clipboard.GetClipboardData(CF_TEXT))
-            try:
-                lcid = win32clipboard.GetClipboardData(CF_LOCALE)
-                lcid = struct.unpack('L', lcid)[0]
-                cp = localecodepage(lcid)
-                if cp:
-                    ret = ret.decode('cp' + str(cp))
-            except TypeError:
-                # CF_LOCALE not available
-                pass
-            if not isinstance(ret, unicode):
-                ret = ret.decode('mbcs')
-    return ret
+        if not has_format(win32clipboard.CF_UNICODETEXT):
+            raise TypeError('no CF_UNICODETEXT in clipboard')
+        return win32clipboard.GetClipboardData(win32clipboard.CF_UNICODETEXT)
 
-
-def settext(s, lcid=None):
-    """Set clipboard text, with optional locale if not Unicode.
-
-    Unless set manually, Windows uses the current input language for the locale.
-    """
-    if isinstance(s, unicode) and lcid is not None:
-        raise ValueError('locale not allowed for Unicode clipboard text')
+def set_text(text):
+    """Set Unicode text."""
+    if not isinstance(text, six.text_type):
+        raise TypeError('text must be unicode')
     with Session():
         win32clipboard.EmptyClipboard()
-        fmt = CF_UNICODETEXT if isinstance(s, unicode) else CF_TEXT
-        win32clipboard.SetClipboardData(fmt, s)
-        if lcid:
-            win32clipboard.SetClipboardData(CF_LOCALE, struct.pack('L', lcid))
+        win32clipboard.SetClipboardData(win32clipboard.CF_UNICODETEXT, text)
+
+def get_text_with_locale():
+    """Get non-Unicode text and locale."""
+    with Session():
+        if not has_format(win32clipboard.CF_TEXT):
+            raise TypeError('no CF_TEXT in clipboard')
+        text = win32clipboard.GetClipboardData(win32clipboard.CF_TEXT)
+        # NOTE: if CF_TEXT is present, so is CF_LOCALE
+        lcid_data = win32clipboard.GetClipboardData(win32clipboard.CF_LOCALE)
+        (lcid,) = struct.unpack('L', lcid_data)
+        return text, lcid
+        
+def set_text_with_locale(text, lcid):
+    """Set non-Unicode text and locale."""
+    if not isinstance(text, six.binary_type):
+        raise TypeError('text must be binary')
+    with Session():
+        win32clipboard.EmptyClipboard()
+        win32clipboard.SetClipboardData(win32clipboard.CF_TEXT, text)
+        lcid_data = struct.pack('L', lcid)
+        wrapper = memoryview if six.PY3 else buffer  # prevents pywin32 from appending a NUL
+        win32clipboard.SetClipboardData(win32clipboard.CF_LOCALE, wrapper(lcid_data))
 
 
-# predefined clipboard format names
-standardformats = {
+# names of predefined clipboard formats
+STD_FMT_NAMES = {
     1: 'CF_TEXT',
     2: 'CF_BITMAP',
     3: 'CF_METAFILEPICT',
@@ -101,31 +77,44 @@ standardformats = {
     12: 'CF_WAVE',
     13: 'CF_UNICODETEXT',
     14: 'CF_ENHMETAFILE',
-    15: 'CF_HDROP',
-    16: 'CF_LOCALE',
-    17: 'CF_DIBV5'}
+    15: 'CF_HDROP',   # WINVER >= 0x0400
+    16: 'CF_LOCALE',  # WINVER >= 0x0400
+    17: 'CF_DIBV5',   # WINVER >= 0x0500
+    0x0080: 'CF_OWNERDISPLAY',
+    0x0081: 'CF_DSPTEXT',
+    0x0082: 'CF_DSPBITMAP',
+    0x0083: 'CF_DSPMETAFILEPICT',
+    0x008E: 'CF_DSPENHMETAFILE',
+    }
 
 
-def formatname(fmt):
+def get_format_name(fmt):
     """Get format name (either custom or predefined)."""
     try:
-        return standardformats[fmt]
+        return STD_FMT_NAMES[fmt]
     except KeyError:
-        return win32clipboard.GetClipboardFormatName(fmt)
+        pass
+
+    if win32con.CF_PRIVATEFIRST <= fmt <= win32con.CF_PRIVATELAST:
+        return 'CF_PRIVATEFIRST' + str(fmt - win32con.CF_PRIVATEFIRST)
+
+    if win32con.CF_GDIOBJFIRST <= fmt <= win32con.CF_GDIOBJLAST:
+        return 'CF_GDIOBJFIRST' + str(fmt - win32con.CF_GDIOBJFIRST)
+
+    return win32clipboard.GetClipboardFormatName(fmt)
 
 
-def enumformats():
-    """List available clipboard formats."""
+def enum_formats():
+    """Generator of available formats."""
     with Session():
-        ret, fmt = [], 0
+        current = 0
         while True:
-            fmt = win32clipboard.EnumClipboardFormats(fmt)
-            if not fmt:
+            current = win32clipboard.EnumClipboardFormats(current)
+            if not current:
                 break
-            ret.append(fmt)
-        return ret
+            yield current
 
 
 if __name__ == '__main__':
-    fmts = [formatname(n) for n in enumformats()]
-    print('available clipboard formats:', ', '.join(fmts))
+    names = [get_format_name(n) for n in enum_formats()]
+    print('available clipboard formats:', ', '.join(names))
