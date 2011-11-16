@@ -90,7 +90,8 @@ def parse_args():
     _add('seconds', type=time_string, metavar='TIME', help='timer duration; examples: '
          '"10s", "1m10s", "5m:10s", "2.5h"')
     _add('-l', dest='large', action='store_true', help='show large characters')
-    _add('-b', dest='beep', action='store_true', help='beep on completion')
+    _add('-b', dest='beeponce', action='store_true', help='beep once on completion')
+    _add('-B', dest='beeploop', action='store_true', help='beep continuously after completion')
     _add('-d', dest='decimals', type=int, default=1, help='second fractional digits; default: %(default)s')
     _add('-?', action='help', help='this help')
     args = parser.parse_args()
@@ -110,6 +111,7 @@ if __name__ == '__main__':
     args = parse_args()
     
     try:
+        timer_completed = False
         step = 10.0**(-args.decimals) / 2  # half the smallest displayable value
         step = min(max(step, 0.01), 1)  # not too small (CPU intensive) or too large (at least 1 sec accurate)
         if args.large:
@@ -118,7 +120,15 @@ if __name__ == '__main__':
             countdown_bigecho(font, args.seconds, step, args.decimals)
         else:
             countdown(args.seconds, step, args.decimals)
-        if args.beep:
+        timer_completed = True
+
+        if args.beeploop:
+            while True:
+                win32api.MessageBeep(win32con.MB_ICONINFORMATION)
+                time.sleep(1)
+        elif args.beeponce:
             win32api.MessageBeep(win32con.MB_ICONINFORMATION)
+
     except KeyboardInterrupt:
-        sys.exit('timer canceled by user')
+        if not timer_completed:
+            sys.exit('timer canceled by user')
