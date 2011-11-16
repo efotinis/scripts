@@ -22,7 +22,7 @@ except getopt.GetoptError as x:
     sys.stderr.write(str(x) + '\n')
     sys.exit(2)
 
-text = clipboard.gettext()
+text = clipboard.get_text()
 if text is None:
     sys.exit('no text in clipboard')
 

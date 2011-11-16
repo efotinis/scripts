@@ -20,7 +20,7 @@ if '-?' in opts:
     print '  -?  This help.'
     sys.exit()
 
-text = clipboard.gettext()
+text = clipboard.get_text()
 if text is None:
     sys.exit('no text in clipboard')
 

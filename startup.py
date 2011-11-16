@@ -26,9 +26,9 @@ try:
     def cb(s=None):
         """Get/set clipboard text."""
         if s is None:
-            return clipboard.gettext()
+            return clipboard.get_text()
         else:
-            clipboard.settext(s)
+            clipboard.set_text(s)
 except ImportError:
     pass
 
