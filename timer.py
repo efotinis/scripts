@@ -43,12 +43,16 @@ def pretty_time(seconds, decimals=0):
     return '%02d:%02d:%0*.*f' % (hours, minutes, secsize, decimals, seconds)
 
 
-def countdown(seconds, step=1.0, decimals=0):
+def countdown(seconds, step=1.0, decimals=0, fmt='{}'):
+    """Countdown display.
+
+    fmt can be used to output a custom string with the counter.
+    """
     spo = console_stuff.SamePosOutput()
     try:
         while seconds > step:
             spo.restore(eolclear=True)
-            sys.stdout.write(pretty_time(seconds, decimals))
+            sys.stdout.write(fmt.format(pretty_time(seconds, decimals)))
             time.sleep(step)
             seconds -= step
         time.sleep(seconds)
@@ -57,7 +61,11 @@ def countdown(seconds, step=1.0, decimals=0):
         #sys.stdout.write(pretty_time(0))
 
 
-def countdown_bigecho(font, seconds, step=1.0, decimals=0):
+def countdown_bigecho(font, seconds, step=1.0, decimals=0, fmt='{}'):
+    """Countdown display using a bigecho font.
+
+    fmt can be used to output a custom string with the counter.
+    """
     for i in range(font.height):
         print
     cout = win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
@@ -65,7 +73,7 @@ def countdown_bigecho(font, seconds, step=1.0, decimals=0):
     pos = info['CursorPosition']
     attrib = info['Attributes']
     pos.Y -= font.height
-    disp_width = len(pretty_time(seconds, decimals))
+    disp_width = len(fmt.format(pretty_time(seconds, decimals)))
     disp_width = disp_width * font.width + (disp_width - 1) * font.spacing
     rect = win32console.PySMALL_RECTType(pos.X, pos.Y, pos.X + disp_width - 1, pos.Y + font.height - 1)
     scroll_pos = win32console.PyCOORDType(pos.X, pos.Y - font.height)
@@ -73,7 +81,7 @@ def countdown_bigecho(font, seconds, step=1.0, decimals=0):
     try:
         while seconds > step:
             cout.SetConsoleCursorPosition(pos)
-            font.uprint(pretty_time(seconds, decimals))
+            font.uprint(fmt.format(pretty_time(seconds, decimals)))
             time.sleep(step)
             seconds -= step
         time.sleep(seconds)

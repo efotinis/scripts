@@ -2,6 +2,7 @@
 
 import argparse
 import time
+import sys
 
 import win32api
 import win32security
@@ -13,7 +14,10 @@ import timer
 
 
 def wait_and_suspend(seconds):
-    timer.countdown(seconds, 0.1, 1, 'suspend in %s')
+    try:
+        timer.countdown(seconds, 0.1, 1, 'suspend in {}')
+    except KeyboardInterrupt:
+        sys.exit('canceled by user')
     print 'suspending...',
     with secutil.privilege_elevation([win32security.SE_SHUTDOWN_NAME]):
         win32api.SetSystemPowerState(True, False)
