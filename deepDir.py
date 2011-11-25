@@ -1,19 +1,18 @@
-# 2006.02.21  created
-# 2007.09.25  utilized DosCmdLine; added support for paths longer than MAX_PATH;
-#             minor revisions
-# 2008.07.12  use CommonTools.uprint for output to handle unicode;
-#             added /ACP
-
-# BUG: '.' doesn't display cur dir
+"""Display file/subdir/byte counts of directories."""
 
 import os
 import sys
 import locale
-#import glob
 import re
-import DosCmdLine
+import argparse
+
 import FindFileW
 import CommonTools
+import UnicodeArgv
+
+
+# TODO: cleanup needed (esp. old Python bugs)
+# FIXME: '.' doesn't display cur dir
 
 
 MAX_PATH = 260
@@ -117,80 +116,58 @@ def doswild2re(s):
     return re.compile(ret, re.I)
 
 
-def errln(s):
-    sys.stderr.write('ERROR: ' + s + '\n')
+def parse_args():
+    UNITS = 'bkmgtpe'
+    ap = argparse.ArgumentParser(
+        description='prints the total subdirs/files/bytes of directories',
+        add_help=False)
 
+    add = ap.add_argument
 
-def showhelp(switches):
-    name = os.path.basename(sys.argv[0]).upper()
-    swlist = '\n'.join(DosCmdLine.helptable(switches))
-    print """\
-Prints the total subdirs, files, and bytes of the specified dirs.
-Elias Fotinis 2006-2007
+    add('-u', dest='unit', choices=UNITS, default='b',
+        help='the outsize size unit; default: %(default)s')
+    add('-d', dest='decs', type=int, default=2,
+        help='output decimal digits (ignored for bytes); default: %(default)s')
+    add('-l', dest='locale', default="",
+        help='locale to use; use an empty string for the system locale; '
+             'note that locale names are case-sensitive and (apart from the "C" locale) '
+             'system-dependant; default: %(default)s')
+    add('-a', dest='acp', action='store_true',
+        help='force output to Windows ANSI codepage')
+    add('dirs', nargs='*', metavar='DIR',
+        help='source directory; wildcards allowed; default is the current dir')
+    add('-?', action='help', help='this help')
 
-%s [U:unit] [/D:decs] [/L:locale] [dirs ...]
+    args = ap.parse_args(args=UnicodeArgv.getargvw()[1:])
 
-%s
-
-Exit code: 0=ok, 1=error, 2=bad params""" % (name, swlist)
-
-
-def main(args):
-    Flag = DosCmdLine.Flag
-    Swtc = DosCmdLine.Switch
-    switches = (
-        Flag('?', 'help', None),
-        Swtc('U', 'unit',
-             'The output size unit. One of "K", "M", "G". Default is bytes.',
-              1, converter=lambda s:1024**(1+'KMG'.index(s.upper()))),
-        Swtc('D', 'decs',
-             'Number of output decimal digits. Ignored for bytes.'
-             'Valid range is 0-10. Default is 2.',
-             2, converter=int),
-        Swtc('L', 'locale',
-             'The locale to use. Defaults to the system locale (""). '
-             'Apart from the "C" locale, locale names are system dependant. '
-             'They are also case-sensitive.',
-             ''),
-        Flag('ACP', 'acp',
-             'Force output to ANSI codepage.'),
-        Flag('dirs', None,
-             'The dirs to process. Wildcards allowed. Default is the current dir.'),
-    )
-    try:
-        opt, dirs = DosCmdLine.parse(args, switches)
-        if opt.help:
-            showhelp(switches)
-            return 0
-        if not 0 <= opt.decs <= 10:
-            raise DosCmdLine.Error('decimals out of range')
-    except DosCmdLine.Error, x:
-        errln(str(x))
-        return 2
-    try:
-        locale.setlocale(locale.LC_ALL, opt.locale)
-    except locale.Error:
-        errln('invalid locale: "%s"' % opt.locale)
-        return 2
-
-    # convert paths to Unicode (it'd be nice if Python had 'sys.wargv')
-    # so that dir traversing functions will also return Unicode
-    dirs = [unicode(s, 'mbcs') for s in dirs]
+    args.decs = min(max(0, args.decs), 10)
+    args.unit = 1024 ** UNITS.index(args.unit)
+    if args.unit == 1:
+        args.decs = 0
+    args.dirs = args.dirs or [u'.']
+    #args.dirs = [unicode(s, 'mbcs') for s in args.dirs]  # FIXME: should use Unicode argv instead
     
-    # no decimals if unit is bytes
-    if opt.unit == 1:
-        opt.decs = 0
+    try:
+        locale.setlocale(locale.LC_ALL, args.locale)  # FIXME: this seems to aways fail if args.locale != ""
+    except locale.Error as x:
+        ap.error('invalid locale "%s": %s' % (args.locale, x))
 
-    if not dirs:
-        dirs = [u'.']
+    return args
 
-    if opt.acp:
-        def print_func(s):
-            print s.encode('mbcs')
+
+if __name__ == '__main__':
+
+    args = parse_args()
+
+    print args
+    sys.exit()
+
+    if args.acp:
+        print_func = lambda s: sys.stdout.write(s.encode('mbcs') + '\n')
     else:
-        print_func = lambda s: CommonTools.uprint(s)
+        print_func = CommonTools.uprint
 
-    for mask in dirs:
+    for mask in args.dirs:
         # can't use glob() because it skips items starting with '.'
         # (although the '[]' matching would be nice)
         for s in getDirs(mask):
@@ -204,8 +181,5 @@ def main(args):
             # when grouping is on; this doesn't happen with floats.
             # That's why t[0]/t[1] are converted to float.
             print_func(locale.format_string('%10.0f %10.0f %15.*f',
-                (float(t[0]), float(t[1]), opt.decs, t[2] / float(opt.unit)),
+                (float(t[0]), float(t[1]), args.decs, t[2] / float(args.unit)),
                 True) + ' ' + s)
-
-
-sys.exit(main(sys.argv[1:]))

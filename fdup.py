@@ -1,15 +1,17 @@
-# -*- coding: mbcs -*-
-"""Locate duplicate files using MD5 hashes.
+"""Locate duplicate files using MD5 hashes."""
 
-2007.10.14  EF  created
-2008.03.09  EF  added cmdline options; renamed from 'finddups' to 'fdup'
-2008.03.20  EF  used console_stuff.SamePosOutput;
-                added display of total/uniq/extra size of dups;
-                reversed order of dir freqs (descending)
-"""
+import os
+import hashlib
+import sys
+import time
+import collections
+import string
+import argparse
 
-import os, hashlib, sys, time, collections, string
-import DosCmdLine, CommonTools, console_stuff
+import CommonTools
+import console_stuff
+import UnicodeArgv
+
 
 HASH_BUFLEN = 2**20
 STATUS_UPDATE_SEC = 1
@@ -72,13 +74,13 @@ def fileList(dirname, recurse):
                 yield s
 
 
-def getSizeGroups(dirs, status, opt):
+def getSizeGroups(dirs, status, args):
     """Group all files in specified dirs by size."""
     ret = collections.defaultdict(list)
     for dir in dirs:
-        for fpath in fileList(dir, opt.recurse):
+        for fpath in fileList(dir, args.recurse):
             fsize = os.path.getsize(fpath)
-            if fsize != 0 or opt.includezero:
+            if fsize != 0 or args.includezero:
                 ret[fsize].append(fpath)
                 status.add(1)
     return ret
@@ -107,21 +109,6 @@ def sizeStr(n):
             return '%.2f %ciB' % (n, c)
 
 
-def validateSigList(a):
-    """Check sig-ignore list and convert to a set for fast testing."""
-    ret = set()
-    validChars = set(string.hexdigits)
-    for s in a:
-        if len(s) > 32:
-            raise DosCmdLine.Error('sig too long: "%s"' % s)
-        else:
-            s = s.rjust(32, '0')
-        if set(s) > validChars:
-            raise DosCmdLine.Error('bad sig chars: "%s"' % s)
-        ret.add(s.lower())
-    return ret
-        
-
 """
 options:
     dirs (list)
@@ -131,67 +118,45 @@ options:
     ignoresigs (list)
 """
 
-def buildSwitches():
-    Swch = DosCmdLine.Switch
-    Flag = DosCmdLine.Flag
-##    def mask_accum(s, a, include):
-##        return a + [(include, s.split(';'))]
-##    def inc_masks(s, a):
-##        return lambda s, a: mask_accum(s, a, True)
-##    def exc_masks(s, a):
-##        return lambda s, a: mask_accum(s, a, False)
-    return (
-        Flag('dirs', '',
-             'One or more directories to scan. Default is the current one. '
-             #'If the last part of the path contains wildcards '
-             #'it is automatically used as an include mask.'
-             ),
-##        Swch('I', 'masks',
-##             'Include masks (";"-delimited).',
-##             [], accumulator=inc_masks),
-##        Swch('E', 'masks',
-##             'Exclude masks (";"-delimited).',
-##             [], accumulator=exc_masks),
-        Flag('R', 'recurse',
-             'Recurse into subdirectories.'),
-        Flag('Z', 'includezero',
-             'Include 0-size files. By default, empty files are ignored.'),
-        Swch('S', 'ignoresigs', 
-             'Skip the specified sigs (";"-delimited). '
-             'Use this to ignore certain files if needed.',
-             [], accumulator=lambda s, a: a + s.split(';')),
-        )
+
+def hash_set_param(s):
+    st = set(t.lower() for t in s.split(','))
+    valid_digits = set(string.hexdigits)
+    for x in st:
+        if len(x) != 32:
+            raise argparse.ArgumentTypeError('bad hash size: "%s"' % x)
+        if not set(x) <= valid_digits:
+            raise argparse.ArgumentTypeError('bad hash: "%s"' % x)
+    return st
 
 
-def showHelp(switches):
-    """Print help."""
-    print """Locate duplicate files using MD5 hashes.
+def parse_args():
+    ap = argparse.ArgumentParser(
+        description='locate duplicate files using MD5 hashes',
+        add_help=False)
+    add = ap.add_argument
 
-%s [/R] [/Z] [/S:skip] [dirs...]
+    add('dirs', nargs='*', metavar='DIR', default=['.'],
+        help='directory to scan ("." if none specified)')
+    add('-r', dest='recurse', action='store_true',
+        help='recurse into subdirectories')
+    add('-e', dest='includezero', action='store_true',
+        help='include empty files (ignored by default)')
+    add('-i', dest='ignoresigs', type=hash_set_param, metavar='HASHES', default=[],
+        help='ignore files with specified, comma-delimitied hashes')
+    add('-?', action='help', help='this help')
 
-%s""" % (
-    CommonTools.scriptname().upper(),
-    '\n'.join(DosCmdLine.helptable(switches)))
+    args = ap.parse_args(UnicodeArgv.getargvw()[1:])
+
+    return args
 
 
-def main(args):
-    switches = buildSwitches()
-    if '/?' in args:
-        showHelp(switches)
-        return 0
-    try:
-        opt, params = DosCmdLine.parse(args, switches)
-        if not params:
-            params = ['.']
-        params = map(unicode, params)
-        opt.ignoresigs = validateSigList(opt.ignoresigs)
-    except DosCmdLine.Error, x:
-        CommonTools.errln(str(x))
-        return 2
+if __name__ == '__main__':
+    args = parse_args()
 
     print 'scanning:',
     with Status(STATUS_UPDATE_SEC, ItemCounter()) as status:
-        sizeGroups = getSizeGroups(params, status, opt)
+        sizeGroups = getSizeGroups(args.dirs, status, args)
 
     totalBytes = sum(size*len(files) for (size,files)
                      in sizeGroups.iteritems())
@@ -208,7 +173,7 @@ def main(args):
             if len(files) > 1:
                 for s in files:
                     sig = hashFile(s, status).hexdigest()
-                    if sig in opt.ignoresigs:
+                    if sig in args.ignoresigs:
                         ignored += 1
                     else:
                         sigNames[sig] += [s]
@@ -250,6 +215,3 @@ def main(args):
     print 'total/uniq/extra size of dups: %s, %s, %s' % (
         sizeStr(dupBytes), sizeStr(uniqBytes), sizeStr(dupBytes - uniqBytes))
     print 'ignored files:', ignored
-
-
-sys.exit(main(sys.argv[1:]))        
