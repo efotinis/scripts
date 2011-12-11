@@ -115,6 +115,17 @@ def enum_formats():
             yield current
 
 
+def cb(s=None):
+    """Get/set clipboard text.
+
+    Interactive interpreter utility added via PYTHONSTARTUP.
+    """
+    if s is None:
+        return get_text()
+    else:
+        set_text(s)
+
+
 if __name__ == '__main__':
     names = [get_format_name(n) for n in enum_formats()]
     print('available clipboard formats:', ', '.join(names))
