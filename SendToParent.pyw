@@ -1,7 +1,9 @@
-# 2008.07.21  converted from WSF
+"""SendTo menu extension to move Shell items up one directory level."""
 
-import os, sys
-import DosCmdLine, CommonTools
+import os
+import sys
+import argparse
+import CommonTools
 import win32api, win32file, win32con
 import win32com.client
 from win32com.shell import shell, shellcon
@@ -56,57 +58,6 @@ IO = ConsoleIO() if isRunningInConsole() else WindowsIO()
 ##IO.err('you haven\'t answered my question yet!')
 ##x = IO.yesno('42?')
 ##IO.prn('you said "%s"' % ('Yes' if x else 'No'))
-
-
-def buildSwitches():
-    Flag = DosCmdLine.Flag
-    Swch = DosCmdLine.Switch
-    return (
-        Flag('r', 'install',
-             'Setup SendTo shortcuts.'),
-        Flag('u', 'uninstall',
-             'Remove SendTo shortcuts.'),
-        Flag('d', 'delDirs',
-             'Delete containers of affected files, along with any other files '
-             'they contain. Deleted items go to the Recycle Bin.'),
-        Flag('items', '',
-             'The items to move. Items located on a root dir are ignored.'))
-
-
-def showHelp(switches):
-    name = CommonTools.scriptname()
-    table = '\n'.join(DosCmdLine.helptable(switches))
-    IO.prn('''
-Move items one directory up and optionally delete original parent.
-
-%s [/R|/U]
-%s [/D] items
-
-%s
-
-/R and /U take precedence over any other parameters.
-'''[1:-1] % (name, name, table))
-
-
-def main(args):
-    switches = buildSwitches()
-    if '/?' in args:
-        showHelp(switches)
-        return 0
-    try:
-        opt, params = DosCmdLine.parse(args, switches)
-        if opt.install and opt.uninstall:
-            raise DosCmdLine.Error('/R and /U are mutually exclusive')
-    except DosCmdLine.Error, x:
-        IO.err(str(x))
-        return 2
-    if opt.install:
-        res = doInstall()
-    elif opt.uninstall:
-        res = doUninstall()
-    else:
-        res = doMove(opt, params)
-    return 0 if res else 1
 
 
 def getShortcutPaths():
@@ -297,11 +248,37 @@ def shellDelete(items):
 ##print shell.SHFileOperation(op)
 
 
-try:
-    #win32api.Sleep(1000)
-    #IO.prn(str(sys.argv[1:]))
-    sys.exit(main(sys.argv[1:]))
-except Exception, x:
-    IO.err('unexpected error: ' + str(x))
+def parse_args():
+    ap = argparse.ArgumentParser(
+        description='move items one directory up and optionally delete original parent'
+        add_help=False)
+    group = ap.add_mutually_exclusive_group(required=True)
+    add = group.add_argument
+    add('-i', dest='install', action='store_true',
+        help='add SendTo menu shortcuts'),
+    add('-u', dest='uninstall', action='store_true',
+        help='remove SendTo menu shortcuts'),
+    ap.add_argument('-d', dest='delDirs', action='store_true',
+        help='Delete containers of affected files, along with any other files '
+        'they contain. Deleted items go to the Recycle Bin.'),
+    add('items', nargs='*',
+        'the items to move; items located on a root dir are ignored')
+    args = ap.parse_args()
+    return args
 
 
+if __name__ == '__main__':
+    args = parse_args()
+    try:
+        #win32api.Sleep(1000)
+        #IO.prn(str(sys.argv[1:]))
+        if opt.install:
+            res = doInstall()
+        elif opt.uninstall:
+            res = doUninstall()
+        else:
+            res = doMove(opt, params)
+        if not res:
+            sys.exit(1)
+    except Exception, x:
+        IO.err('unexpected error: ' + str(x))

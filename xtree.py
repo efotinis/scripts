@@ -1,10 +1,13 @@
-# 2008/02/08  Created; inspired by the reddit thread
-#             "Quick, what does the following Unix/Linux command do?"
-#             <http://reddit.com/goto?rss=true&id=t3_67wfw>
-# 2008.03.09  moved 'uprint' to CommonTools
+"""Directory tree printer.
 
-import os, sys
-import DosCmdLine
+Inspired by:
+    <http://redd.it/67wfw>
+    "Quick, what does the following Unix/Linux command do?"
+"""
+
+import os
+import sys
+import argparse
 from CommonTools import scriptname, errln, uprint
 
 
@@ -30,71 +33,50 @@ class BranchSet:
 
 def subdirs(dpath):
     """Generate the names of a directory's subdirs."""
-    for s in os.listdir(unicode(dpath)):  # 
+    for s in os.listdir(unicode(dpath)):  # this may throw if access is denied
         if os.path.isdir(os.path.join(dpath, s)):
             yield s
 
 
-def dumpsubs(dpath, branches, opt):
+def dumpsubs(dpath, branches, args):
     """Recursively print the tree."""
     subs = tuple(subdirs(dpath))  # we need to know when we reach the last value
-    pad = ''.join(opt.branches.parent(b) for b in branches)
+    pad = ''.join(args.branches.parent(b) for b in branches)
     for s in subs:
         islast = s == subs[-1]
-        uprint(pad + opt.branches.child(islast) + s)
-        if opt.level == 0 or len(branches) + 1 < opt.level:
-            dumpsubs(os.path.join(dpath, s), branches + [islast], opt)
+        uprint(pad + args.branches.child(islast) + s)
+        if args.level == 0 or len(branches) + 1 < args.level:
+            dumpsubs(os.path.join(dpath, s), branches + [islast], args)
 
 
-def buildswitches():
-    """Create the cmdline switches."""
-    Flag, Swch = DosCmdLine.Flag, DosCmdLine.Switch
-    return (
-        Flag('A', 'ascii',
-             'Use ASCII instead of extended line-drawing chars.'),
-        Swch('I', 'indent',
-             'Indentation size (>=1). Default is 4.',
-             4, converter=int),
-        Swch('L', 'level',
-             'The maximum level of recursion. Default is 0, meaning no limit.',
-             0, converter=int),
-        Flag('paths', '',
-             'One or more directories to scan. Default is the current one.'))
+def parse_args():
+    ap = argparse.ArgumentParser(
+        description='display graphical directory structure',
+        add_help=False)
+    add = ap.add_argument
+    add('-a', dest='ascii', action='store_true',
+        help='use ASCII for line-drawing instead of extended chars')
+    add('-i', dest='indent', type=int, default=4,
+        help='indentation size (>=1); default: %(default)s')
+    add('-l', dest='level', type=int, default=0,
+        help='maximum recursion level (0 for infinite); default: %(default)s')
+    add('paths', nargs='*', default=['.'],
+        help='one or more directories to scan; default: "."')
+    add('-?', action='help',
+        help='this help')
+    args = ap.parse_args()
+    if args.indent < 1:
+        ap.error('indent must be >=1')
+    if args.level < 0:
+        ap.error('level must be >=0')
+    return args
 
 
-def showhelp(switches):
-    """Print help."""
-    print """Display graphical directory structure.
-
-%s [/A] [/I:indent] [/L:level] [paths]
-
-%s""" % (
-    scriptname().upper(),
-    '\n'.join(DosCmdLine.helptable(switches)))
-
-
-def main(args):
-    switches = buildswitches()
-    if '/?' in args:
-        showhelp(switches)
-        return 0
-    try:
-        opt, params = DosCmdLine.parse(args, switches)
-        if not params:
-            params = ['.']
-        if opt.level < 0:
-            raise DosCmdLine.Error('recursion level must be >= 0')
-        if opt.indent < 1:
-            raise DosCmdLine.Error('indent must be >= 1')
-    except DosCmdLine.Error, x:
-        errln(str(x))
-        return 2
-    setattr(opt, 'branches',
-            BranchSet(ASCII_BRANCH_CHARS if opt.ascii else EXT_BRANCH_CHARS,
-                      opt.indent))
-    for root in params:
+if __name__ == '__main__':
+    args = parse_args()
+    args.branches = BranchSet(
+        ASCII_BRANCH_CHARS if args.ascii else EXT_BRANCH_CHARS,
+        args.indent)
+    for root in args.paths:
         uprint(root)
-        dumpsubs(root, [], opt)
-
-
-sys.exit(main(sys.argv[1:]))
+        dumpsubs(root, [], args)

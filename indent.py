@@ -1,11 +1,14 @@
-"""Change source code indentation.
+"""Change source code indentation."""
 
-2007-04-13  EF  created
-"""
+import os
+import sys
+import re
+import argparse
 
-import os, sys, re
-import win32file, win32con
-import DosCmdLine, CommonTools
+import win32file
+import win32con
+
+import CommonTools
 import wintime
 
 
@@ -224,73 +227,56 @@ class IndentSession:
 ##    return EXIT_OK
 
 
-def showhelp(switches):
-    s = """\
-Change source code indentation level.
-Elias Fotinis 2007
+def parse_args():
+    ap = argparse.ArgumentParser(
+        description='change source code indentation level',
+        add_help=False)
 
-%s oldsize newsize [input] [output]
+    add = ap.add_argument
 
-%s
+    add('-t', dest='tabsize', type=int, default=8,
+        help='tab size; default: %(default)s')
+    add('-r', dest='replace', action='store_true',
+        help='replace file with result, preserving timestamps; '
+             'exactly 1 file parameter is required for both input and output')
+    add('oldsize', type=int,
+        help='old indentation size')
+    add('newsize', type=int,
+        help='new indentation size')
+    add('input', nargs='?', default='',
+        help='input file; omit or use "" to specify STDIN')
+    add('output', nargs='?', default='',
+        help='output file; omit or use "" to specify STDOUT')
+    add('-?', action='help',
+        help='this help')
 
-Exit codes: 0=ok, 1=error, 2=bad param"""
-    name = CommonTools.scriptname().upper()
-    table = '\n'.join(DosCmdLine.helptable(switches))
-    print s % (name, table)
+    args = ap.parse_args()
+
+    if args.replace and (not args.input or args.output):
+        ap.error('-r requires exactly 1 file param')
+    if args.oldsize <= 0 or args.newsize <= 0:
+        ap.error('indentation size must be >0')
+    
+    return args
 
 
-def main(args):
-    Swch = DosCmdLine.Switch
-    Flag = DosCmdLine.Flag
-    Misc = lambda name, descr: DosCmdLine.Flag(name, None, descr)
-    switches = (
-##        Flag('W', 'readwhole',
-##             'Read whole input file and close it before processing.'),
-        Swch('T', 'tabsize',
-             'Number of spaces to expand tabs into. Default is 8.',
-             8, converter=int),
-        Flag('R', 'replace',
-             'Replace contents of input file, preserving timestamps. '
-             'Input file name is mandatory, output is forbidden.'),
-        Misc(('oldsize', 'newsize'), 'Old/new size of indentation.'),
-        Misc(('input', 'output'), 'Input/output files; omit or use "" to specify STDIN/STDOUT.'),
-    )
-    if '/?' in args:
-        showhelp(switches)
-        return EXIT_OK
-    try:
-        opt, params = DosCmdLine.parse(args, switches)
-        if not 2 <= len(params) <= 4:
-            raise DosCmdLine.Error('only 2 to 4 params are allowed')
-        if opt.replace and len(params) != 3:
-            raise DosCmdLine.Error('exactly 3 params are required with \R')
-        params += [''] * (4 - len(params))
-        try:
-            opt.oldsize = int(params[0])
-            opt.newsize = int(params[1])
-            del params[:2]
-        except ValueError, x:
-            raise DosCmdLine.Error('invalid level number; ' + str(x))
-        if opt.oldsize <= 0 or opt.newsize <= 0:
-            raise DosCmdLine.Error('indentation levels must be >0')
-    except DosCmdLine.Error, x:
-        CommonTools.errln(str(x))
-        return EXIT_BAD_PARAM
-
+if __name__ == '__main__':
+    args = parse_args()
+    
     flags = {
         'EMPTY_LINES':'pad',
         'CPP_SMART_PREPROC':True,
         'CPP_DTOR_DEF_ALIGN':True,
-        'TAB_SIZE':opt.tabsize,
+        'TAB_SIZE':args.tabsize,
     }
-    indent = IndentSession(opt.oldsize , opt.newsize, flags)
+    indent = IndentSession(args.oldsize , args.newsize, flags)
 
-    if opt.replace:
-        timestamps = wintime.get_file_time(params[0])[1:]
-        params[1] = params[0] + '$'
+    if args.replace:
+        timestamps = wintime.get_file_time(args.input)[1:]
+        args.output = args.input + '$'
 
-    infile = CommonTools.InFile(params[0])
-    outfile = CommonTools.OutFile(params[1])
+    infile = CommonTools.InFile(args.input)
+    outfile = CommonTools.OutFile(args.output)
     for s in infile:
         s = s.rstrip('\n')
         s = indent.process(s)
@@ -298,10 +284,7 @@ def main(args):
     infile.close()
     outfile.close()
 
-    if opt.replace:
-        wintime.set_file_time(params[1], *timestamps)
-        os.unlink(params[0])
-        os.rename(params[1], params[0])
-
-
-sys.exit(main(sys.argv[1:]))
+    if args.replace:
+        wintime.set_file_time(args.output, *timestamps)
+        os.unlink(args.input)
+        os.rename(args.output, args.input)
