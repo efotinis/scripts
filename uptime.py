@@ -11,7 +11,7 @@ if os.name == 'nt':
     import win32api
     import win32pdh
 
-import CommonTools
+import mathutil
 
 
 UNITS = {  # unit name and conversion factor
@@ -105,6 +105,6 @@ if __name__ == '__main__':
         print('{0:.{1}f}'.format(n, args.decimals))
     else:
         uptime = int(round(uptime))
-        seconds, minutes, hours, days = CommonTools.splitunits(uptime, (60,60,24))
+        d_h_m_s = mathutil.multi_divmod(uptime, 24, 60, 60)
         fmt = '{0:02}:{1:02}:{2:02}:{3:02}' if args.fixed else '{0}d {1}h {2}m {3}s'
-        print(fmt.format(days, hours, minutes, seconds))
+        print(fmt.format(*d_h_m_s))

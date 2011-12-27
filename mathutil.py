@@ -62,3 +62,16 @@ def str_base(num, base, digits=BASE36_DIGITS):
         num, remainder = divmod(num, base)
         result = digits[remainder] + result
     return sign + result
+
+
+def multi_divmod(numerator, *denominators):
+    """Multiple-divisor divmod(); see PEP 303 (rejected).
+
+    This implementation is a slighty faster variation of the one in 
+    <http://mail.python.org/pipermail/python-dev/2005-June/054285.html> .
+    """
+    ret = ()
+    for denominator in reversed(denominators):
+        numerator, remainder = divmod(numerator, denominator)
+        ret = (remainder,) + ret
+    return (numerator,) + ret

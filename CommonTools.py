@@ -96,31 +96,6 @@ def uprint(s):
         print s
 
 
-def splitunits(value, units):
-    """Split a value (>=0) to a tuple of units (ints, >0).
-
-    The fractional part (if any) goes to the lowest unit.
-
-    # split 125sec to 2min:5sec
-    >>> splitunits(125, (60,))
-    (5, 2)
-    
-    # split 123456.7sec to 1days:10hrs:17min:36.7sec
-    >>> splitunits(123456.7, (60,60,24))
-    (36.7, 17, 10, 1)
-    """
-    if value < 0:
-        raise ValueError('value must be >= 0')
-    ret = []
-    for u in units:
-        if int(u) != u or u <= 0:
-            raise ValueError('units must be integers and > 0')
-        ret += [value % u]
-        value //= u
-    ret.append(value)
-    return tuple(ret)
-
-
 def gotoDesktop():
     """Change working directory to current user's desktop."""
     os.chdir(shellutil.SpecialFolders.desktop)

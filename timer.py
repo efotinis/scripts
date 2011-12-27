@@ -9,7 +9,7 @@ import win32api
 import win32con
 import win32console
 
-import CommonTools
+import mathutil
 import console_stuff
 import bigecho
 
@@ -38,7 +38,7 @@ def time_string(s):
 
 def pretty_time(seconds, decimals=0):
     """Convert seconds to 'hh:mm:ss.ss' string."""
-    seconds, minutes, hours = CommonTools.splitunits(seconds, (60, 60))
+    hours, minutes, seconds = mathutil.multi_divmod(seconds, 60, 60)
     secsize = 2 + decimals + int(decimals > 0)
     return '%02d:%02d:%0*.*f' % (hours, minutes, secsize, decimals, seconds)
 

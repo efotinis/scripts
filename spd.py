@@ -4,6 +4,7 @@ import sys
 import re
 import argparse
 import CommonTools
+import mathutil
 
 
 def size_factor(unit):
@@ -58,7 +59,7 @@ def fmt_time(n):
     """Convert time to string."""
     if not n:
         return '0s'
-    secs, mins, hrs, days, wks = CommonTools.splitunits(n, (60,60,24,7))
+    wks, days, hrs, mins, secs = mathutil.multi_divmod(n, 7, 24, 60, 60)
     a = [(wks,'w'), (days,'d'), (hrs,'h'), (mins,'m'), (secs,'s')]
     return ':'.join(str(int(n))+u for n,u in a if n)
 

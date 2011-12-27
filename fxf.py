@@ -22,6 +22,7 @@ import optparseutil
 import win32file
 import dllutil
 import CommonTools
+import mathutil
 import console_stuff
 import quantizer
 
@@ -275,7 +276,7 @@ def client_filestream(outdir, reader, buflen):
                 gotsize = size - bytesleft
                 #speed = ma.calc()
                 speed = sum(quant.data) / len(quant.data) if quant.data else 0
-                S, M, H = CommonTools.splitunits(bytesleft / speed if speed else 0, (60,60))
+                H, M, S = mathutil.multi_divmod(bytesleft / speed if speed else 0, 60, 60)
                 print '  got: %s,  speed: %s/s,  ETA: %02d:%02d:%02d' % (
                     CommonTools.prettysize(gotsize),
                     CommonTools.prettysize(speed),
