@@ -2,7 +2,7 @@
 # TODO: pretty sizes
 # TODO: commas in dir/file/size counts
 # TODO: compress dir names to console width by default
-# TODO: add headers to output
+# TODO: add headers to output (including size units and sort order)
 # TODO: replace "<files>" with "." and include dir count(???)
 # TODO: store scan errors and add a cmd for showing them
 # TODO: add a filter function (extensions, regexps, size/date ranges, attribs) to restrict operations
@@ -12,6 +12,9 @@
 # TODO: detect hardlinks (no need to match; just use link count)
 # TODO: detect namespaace cycles (e.g. in junctions)
 # TODO: allow multiple roots (e.g. different drives or dirs); should allow setting an alias for each root
+# TODO: add option to display uncompressed long names
+# TODO: add option to display full attribs
+# TODO: add command for opening Explorer folder
 
 import os
 import re
@@ -19,6 +22,7 @@ import sys
 import operator
 import time
 import collections
+import argparse
 
 import win32file
 
@@ -189,16 +193,6 @@ Dir display extra attribute flags (hex):
 '''[1:-1]
 
 
-def showUsage():
-    print '''
-Interactive cmdline OverDisk variant.
-
-OVERDISK [root]
-
-    root  Initial root dir. "." if omitted.
-'''[1:-1]
-    
-
 RX_CMD = re.compile(
     r'''^
         \s*             # optional leading space
@@ -268,74 +262,31 @@ def getCandidatePaths(state, seed):
 
 
 class ScanStatus:
+    """Manage temporary status output during dir scanning."""
+
     def __init__(self, root):
         self.spo = console_stuff.SamePosOutput(fallback=True)
         self.root = root
+
     def update(self, s):
         self.spo.restore(True)
         s = s[len(self.root):]  # trim root
         uprint(s[:79])  # TODO: use a better trimming func, removing middle path elements
+
     def cleanup(self):
         self.spo.restore(True)
+
     def staticprint(self, s):
         """Print a static line and continue updates to the next line."""
         self.spo.restore(True)
         print s
         self.spo.reset()
 
+    def __enter__(self):
+        return self
 
-def main(args):
-    if '/?' in args:
-        showUsage()
-        return 0
-    if len(args) > 1:
-        uprint('ERROR: no more than 1 param needed')
-        return 2
-    if not args:
-        args = [os.getcwd()]
-
-    state = State()
-    cmdDispatcher = CmdDispatcher(state)
-
-    state.rootPath = os.path.abspath(unicode(args[0]))
-    if not os.path.isdir(state.rootPath):
-        uprint('ERROR: not a dir: ""' % state.rootPath)
-        return 2
-
-    uprint('scanning "%s" ...' % state.rootPath)
-    status = ScanStatus(state.rootPath)
-    state.root = Dir(state.rootPath, status)
-    status.cleanup()
-
-    acmgr = AutoComplete.Manager()
-
-    while True:
-        try:
-            prompt = ':: ' + os.path.join(
-                state.rootPath, state.relPath).rstrip(os.path.sep) + '>'
-
-            if 0:
-                s = raw_input(prompt).strip()
-            else:
-                acmgr.completer = lambda s: getCandidatePaths(state, s)
-                s = acmgr.input(prompt)
-
-            if not s:
-                continue
-            m = RX_CMD.match(s)
-            if not m:
-                uprint('ERROR: invalid cmd line')
-                continue
-            cmd, params = m.groups()
-            cmd = cmd.lower()
-            params = params or ''
-            if cmd in ('q', 'quit'):
-                break
-            cmdDispatcher.dispatch(cmd, params)
-        except (CmdError, PathError) as x:
-            uprint('ERROR: ' + str(x))
-        finally:
-            uprint('')
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.cleanup()
 
 
 def walkPath(state, curRelPath, parts):
@@ -419,9 +370,8 @@ def cmdRoot(state, params):
     newRootPath = os.path.abspath(unicode(params))
     if not os.path.isdir(newRootPath):
         raise PathError('not a dir: "%s"' % newRootPath)
-    status = ScanStatus(newRootPath)
-    state.root = Dir(newRootPath, status)
-    status.cleanup()
+    with ScanStatus(newRootPath) as status:
+        state.root = Dir(newRootPath, status)
     state.rootPath = newRootPath
     state.relPath = ''
 
@@ -462,7 +412,7 @@ def cmdDir(state, params):
         'M': lambda n: int(round(n / 2.0 ** 20)),
         'G': lambda n: int(round(n / 2.0 ** 30)),
     }[state.unit]
-    NAME_LEN = 44
+    NAME_LEN = 44  # FIXME: calc from console if possible
     for a in dirRows:
         uprint('%11s %-12s %8s  %s' % (
             dateStr(a[0]), '<DIR>', attrStr(a[2]), trimName(a[3], NAME_LEN)))
@@ -554,9 +504,8 @@ def cmdScan(state, params):
     relPath, dir = locateDir(state, params.strip())
     absPath = os.path.join(state.rootPath, relPath)
     uprint('scanning "%s" ...' % os.path.join(state.rootPath, absPath))
-    status = ScanStatus(absPath)
-    dir.getChildren(absPath, status)
-    status.cleanup()
+    with ScanStatus(absPath) as status:
+        dir.getChildren(absPath, status)
 
 
 def cmdOrder(state, params, attr, colFlags):
@@ -601,4 +550,54 @@ def cmdUnit(state, params):
     state.unit = params
 
 
-sys.exit(main(sys.argv[1:]))
+def parse_args():
+    ap = argparse.ArgumentParser(description='interactive OverDisk CLI')
+    ap.add_argument('root', nargs='?', metavar='DIR', default='.',
+                    help='the initial root dir; default: "%(default)s"')
+    args = ap.parse_args()
+    args.root = os.path.abspath(unicode(args.root))
+    if not os.path.isdir(args.root):
+        ap.error('not a dir: "%s"' % args.root)
+    return args
+
+
+if __name__ == '__main__':
+    args = parse_args()
+
+    state = State()
+    state.rootPath = args.root
+    cmdDispatcher = CmdDispatcher(state)
+
+    uprint('scanning "%s" ...' % state.rootPath)
+    with ScanStatus(state.rootPath) as status:
+        state.root = Dir(state.rootPath, status)
+
+    acmgr = AutoComplete.Manager()
+
+    while True:
+        try:
+            prompt = ':: ' + os.path.join(
+                state.rootPath, state.relPath).rstrip(os.path.sep) + '>'
+
+            if 0:
+                s = raw_input(prompt).strip()
+            else:
+                acmgr.completer = lambda s: getCandidatePaths(state, s)
+                s = acmgr.input(prompt)
+
+            if not s:
+                continue
+            m = RX_CMD.match(s)
+            if not m:
+                uprint('ERROR: invalid cmd line')
+                continue
+            cmd, params = m.groups()
+            cmd = cmd.lower()
+            params = params or ''
+            if cmd in ('q', 'quit'):
+                break
+            cmdDispatcher.dispatch(cmd, params)
+        except (CmdError, PathError) as x:
+            uprint('ERROR: ' + str(x))
+        finally:
+            uprint('')
