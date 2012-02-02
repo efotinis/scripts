@@ -34,33 +34,34 @@ import CommonTools
 uprint = CommonTools.uprint
 
 
-class PathError(ValueError):
-    '''Path traversing error.'''
+class PathError(Exception):
+    """Path traversing error."""
     pass
 
 
-class CmdError(ValueError):
-    '''Command line error.'''
+class CmdError(Exception):
+    """Command line error."""
     pass
 
 
-class ListStats:
-    '''Directory statistics.'''
+class ListStats(object):
+    """Directory statistics."""
     def __init__(self):
         self.dirs = 0
         self.files = 0
         self.bytes = 0
 
 
-class ExtStats:
-    '''Extension statistics.'''
+class ExtStats(object):
+    """Extension statistics."""
     def __init__(self):
         self.files = 0
         self.bytes = 0
 
 
-class Item:
-    '''Base directory item.'''
+class Item(object):
+    """Base directory item."""
+    
     def __init__(self, path):
         self.name = os.path.basename(path)
         # os.path.getmtime and family fail with non-ACP chars
@@ -84,7 +85,8 @@ class Item:
 
 
 class File(Item):
-    '''File item.'''
+    """File item."""
+    
     def __init__(self, path, status=None):
         Item.__init__(self, path)
         try:
@@ -94,9 +96,11 @@ class File(Item):
             # even FindFirstFileW will fail, unless we turn off path parsing
             # with \\?\
             self.size = FindFileW.getInfo('\\\\?\\' + path).size
+            
     def addListStats(self, stats):
         stats.files += 1
         stats.bytes += self.size
+        
     def addExtStats(self, statsDict):
         ext = os.path.splitext(self.name)[1].lower()
         stats = statsDict[ext]
@@ -105,12 +109,14 @@ class File(Item):
 
 
 class Dir(Item):        
-    '''Directory item.'''
+    """Directory item."""
+    
     def __init__(self, path, status=None):
         Item.__init__(self, path)
         if status:
             status.update(path)
         self.getChildren(path, status)
+        
     def getChildren(self, path, status=None):
         self.children = []
         try:
@@ -124,8 +130,9 @@ class Dir(Item):
             childPath = os.path.join(path, s)
             factory = Dir if os.path.isdir(childPath) else File
             self.children += [factory(childPath, status)]
+            
     def getSubDir(self, name):
-        '''Return an immediate subdir.'''
+        """Return an immediate subdir."""
         if name in ('', '.'):
             return self
         for c in self.children:
@@ -133,9 +140,10 @@ class Dir(Item):
                 return c
         else:
             raise PathError('no child named "%s"' % name)
+        
     def getSubPath(self, path):
-        '''Return a subdir, 1 or more levels deeper, but never higher.
-        "path" must be relative, without any ".." tokens.'''
+        """Return a subdir, 1 or more levels deeper, but never higher.
+        "path" must be relative, without any ".." tokens."""
         if not path:
             return self
         if os.path.sep in path:
@@ -143,15 +151,18 @@ class Dir(Item):
             return self.getSubDir(s1).getSubPath(s2)
         else:
             return self.getSubDir(path)
+        
     def getListStats(self):
-        '''Return total dir, files and bytes recursively.'''
+        """Return total dir, files and bytes recursively."""
         stats = ListStats()
         self.addListStats(stats)
         return stats
+    
     def addListStats(self, stats):
         stats.dirs += 1
         for c in self.children:
             c.addListStats(stats)
+            
     def addExtStats(self, statsDict):
         for c in self.children:
             c.addExtStats(statsDict)
@@ -204,8 +215,8 @@ RX_CMD = re.compile(
     re.IGNORECASE | re.VERBOSE)
 
 
-class State:
-    '''Global program state.'''
+class State(object):
+    """Global program state."""
     def __init__(self):
         self.root = None        # root Dir object
         self.rootPath = ''      # root dir path (must be unicode -> listdir bug)
@@ -216,8 +227,9 @@ class State:
         self.unit = 'B'         # display size unit
 
 
-class CmdDispatcher:
-    '''Command dispatcher.'''
+class CmdDispatcher(object):
+    """Command dispatcher."""
+    
     def __init__(self, state):
         self.state = state
         self.entries = (
@@ -233,6 +245,7 @@ class CmdDispatcher:
             (('eo', 'extorder'),  cmdExtOrder),
             (('u', 'unit'),   cmdUnit)
         )
+        
     def dispatch(self, cmd, params):
         for cmdIds, func in self.entries:
             if cmd.lower() in cmdIds:
@@ -261,7 +274,7 @@ def getCandidatePaths(state, seed):
     return a
 
 
-class ScanStatus:
+class ScanStatus(object):
     """Manage temporary status output during dir scanning."""
 
     def __init__(self, root):
@@ -290,10 +303,10 @@ class ScanStatus:
 
 
 def walkPath(state, curRelPath, parts):
-    '''Walk directories starting from a current relative path
+    """Walk directories starting from a current relative path
     and using a list of token parts (incl. "." and "..").
     Underflowing ".." tokens (trying to go above state.root) are ignored.
-    Returns resulting relative path or throws PathError.'''
+    Returns resulting relative path or throws PathError."""
     a = curRelPath.split(os.path.sep) if curRelPath else []
     for s in parts:
         if s == '.':
@@ -310,8 +323,8 @@ def walkPath(state, curRelPath, parts):
 
 
 def setupDirChange(state, newPath):
-    '''Return initial relative path and list of item tokens to walk
-    during a dir change. Tokens may contain "." and ".." items.'''
+    """Return initial relative path and list of item tokens to walk
+    during a dir change. Tokens may contain "." and ".." items."""
     parts = os.path.normpath(newPath).split(os.path.sep)  # len >= 1
     if parts[0] == '':
         # new path is absolute
@@ -322,8 +335,8 @@ def setupDirChange(state, newPath):
 
 
 def locateDir(state, newPath):
-    '''Find dir by following "newPath" (absolute or relative)
-    and return its relative path and Dir object.'''
+    """Find dir by following "newPath" (absolute or relative)
+    and return its relative path and Dir object."""
     if not newPath:
         relPath = state.relPath
     else:
@@ -350,9 +363,9 @@ def attrStr(n):
 
 
 def trimName(s, n):
-    '''Replace some chars before the ext with '<..>'
+    """Replace some chars before the ext with '<..>'
     if needed to restrict size of file name.
-    Append a single '>' if name or ext is too long.'''
+    Append a single '>' if name or ext is too long."""
     if len(s) <= n:
         return s
     name, ext = os.path.splitext(s)
