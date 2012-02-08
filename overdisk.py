@@ -1,16 +1,15 @@
 # TODO: factor out common code
-# TODO: pretty sizes
-# TODO: commas in dir/file/size counts
-# TODO: compress dir names to console width by default
-# TODO: add headers to output (including size units and sort order)
-# TODO: replace "<files>" with "." and include dir count(???)
+# ----: pretty sizes
+# ----: commas in dir/file/size counts
+# TODO: compress names to console width by default
+# ----: add headers to output
 # TODO: store scan errors and add a cmd for showing them
 # TODO: add a filter function (extensions, regexps, size/date ranges, attribs) to restrict operations
 # TODO: allow optional traversal of junctions and soft-linked dirs
 # TODO: allow command switches and replace "LO","DO","EO" with configurable default switches
 # TODO: replace single order flags with multiple flags (lowercase:ascending, uppercase:descensing)
 # TODO: detect hardlinks (no need to match; just use link count)
-# TODO: detect namespaace cycles (e.g. in junctions)
+# TODO: detect namespace cycles (e.g. junctions)
 # TODO: allow multiple roots (e.g. different drives or dirs); should allow setting an alias for each root
 # TODO: add option to display uncompressed long names
 # TODO: add option to display full attribs
@@ -89,6 +88,7 @@ class File(Item):
     
     def __init__(self, path, status=None):
         Item.__init__(self, path)
+        # TODO: remove special handling (too rare to care)
         try:
             # getsize fails on some SecuROM files with trailing spaces
             self.size = os.path.getsize(path)
@@ -181,7 +181,7 @@ def showHelp():
   LO | LISTORDER [listcol][dirctn]  
   EO | EXTORDER [extcol][dirctn]
                      Set (or show) sort order for DIR, LIST and EXTCNT.
-   U | UNIT [unit]   Set (or show) size unit. One of "B", "K", "M", "G".
+   U | UNIT [unit]   Set (or show) size unit. One of "bkmgt*".
    ? | HELP          Show help.
    Q | QUIT          Exit.
 
@@ -224,7 +224,7 @@ class State(object):
         self.listOrder = '*+'   # list sorting
         self.dirOrder = '*+'    # dir sorting
         self.extOrder = '*+'    # extcnt sorting
-        self.unit = 'B'         # display size unit
+        self.unit = 'b'         # display size unit
 
 
 class CmdDispatcher(object):
@@ -398,6 +398,24 @@ def cmdCd(state, params):
     state.relPath = walkPath(state, *setupDirChange(state, params.strip()))
 
 
+def size_str_func(fmt):
+    """Return a size to string converter function according to a specific format."""
+    if fmt == 'b':
+        return lambda n: '{:,}'.format(n)
+    elif fmt == 'k':
+        return lambda n: '{:,} K'.format(n / 2**10)
+    elif fmt == 'm':
+        return lambda n: '{:,} M'.format(n / 2**20)
+    elif fmt == 'g':
+        return lambda n: '{:,} G'.format(n / 2**30)
+    elif fmt == 't':
+        return lambda n: '{:,} T'.format(n / 2**40)
+    elif fmt == '*':
+        return lambda n: CommonTools.prettysize(n)
+    else:
+        raise ValueError('bad format')
+
+
 def cmdDir(state, params):
     if params[:1] == params[-1:] == '"':
         params = params[1:-1]
@@ -419,19 +437,16 @@ def cmdDir(state, params):
             key=operator.itemgetter(orderIndex),
             reverse=(state.listOrder[1] == '-')
         )
-    modifyDispSize = {
-        'B': lambda n: n,
-        'K': lambda n: int(round(n / 2.0 ** 10)),
-        'M': lambda n: int(round(n / 2.0 ** 20)),
-        'G': lambda n: int(round(n / 2.0 ** 30)),
-    }[state.unit]
+    size_str = size_str_func(state.unit)
     NAME_LEN = 44  # FIXME: calc from console if possible
+    uprint('date                size     attr  name')
+    uprint('----------- ------------ --------  ----')
     for a in dirRows:
         uprint('%11s %-12s %8s  %s' % (
             dateStr(a[0]), '<DIR>', attrStr(a[2]), trimName(a[3], NAME_LEN)))
     for a in fileRows:
         uprint('%11s %12s %8s  %s' % (
-            dateStr(a[0]), modifyDispSize(a[1]), attrStr(a[2]), trimName(a[3], NAME_LEN)))
+            dateStr(a[0]), size_str(a[1]), attrStr(a[2]), trimName(a[3], NAME_LEN)))
 
 
 def cmdList(state, params):
@@ -461,20 +476,17 @@ def cmdList(state, params):
             key=operator.itemgetter(orderIndex),
             reverse=(state.listOrder[1] == '-')
         )
-    modifyDispSize = {
-        'B': lambda n: n,
-        'K': lambda n: int(round(n / 2.0 ** 10)),
-        'M': lambda n: int(round(n / 2.0 ** 20)),
-        'G': lambda n: int(round(n / 2.0 ** 30)),
-    }[state.unit]
-    fileStats[2] = modifyDispSize(fileStats[2])
-    totalStats[2] = modifyDispSize(totalStats[2])
+    size_str = size_str_func(state.unit)
+    fileStats[2] = size_str(fileStats[2])
+    totalStats[2] = size_str(totalStats[2])
+    uprint('  dirs  files         size  name')
+    uprint('------ ------ ------------  ----')
     for data in dataRows:
         a = list(data)
-        a[2] = modifyDispSize(a[2])
-        uprint('%6d %6d %12d  %s' % tuple(a))
-    uprint('%6s %6d %12d  %s' % tuple(['-'] + fileStats[1:] + ['<files>']))
-    uprint('%6d %6d %12d  %s' % tuple(totalStats + ['<total>']))
+        a[2] = size_str(a[2])
+        uprint('%6d %6d %12s  %s' % tuple(a))
+    uprint('%6s %6d %12s  %s' % tuple(['-'] + fileStats[1:] + ['<files>']))
+    uprint('%6d %6d %12s  %s' % tuple(totalStats + ['<total>']))
 
 
 def cmdExtCnt(state, params):
@@ -497,18 +509,15 @@ def cmdExtCnt(state, params):
             key=operator.itemgetter(orderIndex),
             reverse=(state.extOrder[1] == '-')
         )
-    modifyDispSize = {
-        'B': lambda n: n,
-        'K': lambda n: int(round(n / 2.0 ** 10)),
-        'M': lambda n: int(round(n / 2.0 ** 20)),
-        'G': lambda n: int(round(n / 2.0 ** 30)),
-    }[state.unit]
-    totalSize = modifyDispSize(totalSize)
+    size_str = size_str_func(state.unit)
+    totalSize = size_str(totalSize)
+    uprint(' files         size  extension')
+    uprint('------ ------------  ---------')
     for data in dataRows:
         a = list(data)
-        a[1] = modifyDispSize(a[1])
-        uprint('%6d %12d  %s' % tuple(a))
-    uprint('%6d %12d  %s' % (totalFiles, totalSize, '<total>'))
+        a[1] = size_str(a[1])
+        uprint('%6d %12s  %s' % tuple(a))
+    uprint('%6d %12s  %s' % (totalFiles, totalSize, '<total>'))
 
 
 def cmdScan(state, params):
@@ -557,8 +566,7 @@ def cmdUnit(state, params):
     if not params:
         uprint(state.unit)
         return
-    params = params.upper()
-    if len(params) != 1 or params not in 'BKMG':
+    if len(params) != 1 or params not in 'bkmgt*':
         raise CmdError('invalid size unit "%s"' % params)
     state.unit = params
 
