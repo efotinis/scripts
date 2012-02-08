@@ -182,6 +182,7 @@ def showHelp():
   EO | EXTORDER [extcol][dirctn]
                      Set (or show) sort order for DIR, LIST and EXTCNT.
    U | UNIT [unit]   Set (or show) size unit. One of "bkmgt*".
+       CLS           Clear screen.
    ? | HELP          Show help.
    Q | QUIT          Exit.
 
@@ -243,7 +244,8 @@ class CmdDispatcher(object):
             (('lo', 'listorder'), cmdListOrder),
             (('do', 'dirorder'),  cmdDirOrder),
             (('eo', 'extorder'),  cmdExtOrder),
-            (('u', 'unit'),   cmdUnit)
+            (('u', 'unit'),   cmdUnit),
+            (('cls',),         lambda dummy1, dummy2: cmdCls()),
         )
         
     def dispatch(self, cmd, params):
@@ -569,6 +571,10 @@ def cmdUnit(state, params):
     if len(params) != 1 or params not in 'bkmgt*':
         raise CmdError('invalid size unit "%s"' % params)
     state.unit = params
+
+
+def cmdCls():
+    console_stuff.cls()
 
 
 def parse_args():
