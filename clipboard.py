@@ -28,7 +28,9 @@ def get_text():
     with Session():
         if not has_format(win32clipboard.CF_UNICODETEXT):
             raise TypeError('no CF_UNICODETEXT in clipboard')
-        return win32clipboard.GetClipboardData(win32clipboard.CF_UNICODETEXT)
+        s = win32clipboard.GetClipboardData(win32clipboard.CF_UNICODETEXT)
+        return s.partition('\0')[0]  # strip part after NUL terminator, if any;
+                                     # text copied from a console has a NUL
 
 def set_text(text):
     """Set Unicode text."""

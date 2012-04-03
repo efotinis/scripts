@@ -3,7 +3,10 @@ el=echo %ErrorLevel%
 el0=time /t > NUL
 el1=verify foo > nul 2>&1
 
-;= Make new directory and go to it.
+;= Macro command, with a Unix-y name (somewhat easier to remember).
+alias=doskey $*
+
+;= Make new directory and go to it. NOTE: Does not work with paths containing spaces. We could use "$*" instead of $1, but then it wouldn't work with paths enclosed in double quotes.
 mcd=md $1 & cd $1
 
 ;= Exit console.

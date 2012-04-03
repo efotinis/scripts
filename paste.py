@@ -26,6 +26,11 @@ text = clipboard.get_text()
 if text is None:
     sys.exit('no text in clipboard')
 
+# This module uses win32clipboard, which only strips a NUL at the end of the text.
+# However, copying from a console will routinely store text with an embedded NUL and junk after it.
+# Since this module is primarily used on the console, we discard the part after the first NUL.
+(text, _, _) = text.partition(u'\0')
+
 encoding = 'cp' + str(win32console.GetConsoleOutputCP())
 text = text.encode(encoding, 'replace')
 # split lines manually to avoid CRLF->CRCRLF problems

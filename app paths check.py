@@ -20,7 +20,7 @@ Associate Program with Start>Run
     ;"useURL"="1"
 
 http://support.microsoft.com/kb/871001    
-You may receive an “HTTP:” error message when you try to open a Visio 2003 file or a Visio 2002 SR-1 file by using FrontPage 2003
+You may receive an HTTP: error message when you try to open a Visio 2003 file or a Visio 2002 SR-1 file by using FrontPage 2003
     (using "SaveURL" to bypass error)
 
 http://web.archive.org/web/20050812083519/http://msdn.microsoft.com/library/en-us/dnwue/html/ch11c.asp

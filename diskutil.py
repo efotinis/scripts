@@ -1,7 +1,8 @@
 """Disk management utilities."""
 
-import win32api
 import win32file
+import win32con
+import diskutil
 
 
 def logical_drives(typefilter=None):
@@ -9,7 +10,7 @@ def logical_drives(typefilter=None):
 
     Result can be filtered by drive type (a single win32con.DRIVE_* value or a sequence of them).
     """
-    bm = win32api.GetLogicalDrives()
+    bm = win32file.GetLogicalDrives()
     letters = ''.join(chr(ord('A') + i) for i in range(26) if bm & (2 ** i))
     if typefilter is not None:
         try:

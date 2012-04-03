@@ -72,12 +72,12 @@ class PakFile(object):
     def __init__(self, file, mode='r'):
         self.ownhandle = isinstance(name, basestring)
         if self.ownhandle:
-            if 'b' not int self.mode:
+            if 'b' not in self.mode:
                 self.mode += 'b'
             self.file = open(file, mode)
         else:
             self.mode = file.mode
-            if 'b' not int self.mode:
+            if 'b' not in self.mode:
                 raise Error('file not opened as binary')
             self.file = file
         self.name
@@ -224,4 +224,135 @@ pak = PakFile('test.pak')
 for rec in pak.
 
 
+'''
+
+
+##------------------
+## 17:38 07/12/2011
+##------------------
+
+def read_file_struct(fp, s, offset=None):
+    if offset is not None:
+        fp.seek(offset)
+    return struct.unpack(fmt, CommonTools.readexactly(s.size))
+
+
+PAK_MODE_TO_ACCESS = {
+    'r': 'r',
+    'w': 'wa',
+    'a': 'a',
+    'r+': 'rwa',
+    'w+': 'rwa',
+    'a+': 'ra',
+    }
+PAK_MODE_TO_FILE_MODE = { ...
+    'r': 'rb',
+    'w': 'r+b',
+    'a': 'r+b',
+    'r+': 'r+b',
+    'w+': 'r+b',
+    'a+': 'ra',
+    }
+
+
+class PakFile(object):
+
+    def __init__(self, path, mode='r'):
+        if not re.match(r'^[rwa]\+?$', mode):
+            raise ValueError('invalid mode')
+
+        self.mode = PAK_MODE_TO_ACCESS[mode]        
+        self.fp = open(path, PAK_MODE_TO_FILE_MODE[mode])
+        
+        magic, dir_offs, dir_size = read_file_struct(self.fp, HEADER)
+        if magic != 'PACK':
+            raise ValueError('not a PAK file')
+        self.fp.seek(dir_offs)
+        reccount = dir_size // struct.calcsize(RECORD)
+        self.entries = [Entry.from_file(self.fp) for i in range(reccount)]
+
+    def __iter__(self):
+        """Iterator for entries (Entry objects)."""
+        return iter(self.entries)
+
+    def names(self):
+        """Iterator of item names."""
+        for item in self.entries:
+            yield item.name
+
+    def items(self):
+        """Iterator of items."""
+        for item in self.entries:
+            yield item
+
+    def find(self, name):
+        """Get the *first* Entry object with specified name."""
+        for item in self.entries:
+            if item.name == name:
+                return item
+        raise ValueError('item not found: "%s"' % name)
+
+    def get(self, x):
+        if not isinstance(x, Entry):
+            x = self.find(x)
+        
+
+class Entry:
+
+    @classmethod
+    def from_file(cls, fp):
+        name, offset, size = read_file_struct(fp, RECORD)
+        name = name.partition('\0')[0]
+        return cls(name, offset, size)
+
+    def __init__(self, name, offset, size):
+        self.name = name
+        self.offset = offset
+        self.size = size
+
+
+"""
+open()
+---------------------------------------------------------------------------
+            missing     exists      read    modify  add
+
+    r       fail        open        yes     no      no
+    w       create      trunc       no      yes     yes
+    a       create      open        no      no      yes
+    r+      fail        open        yes     yes     yes
+    w+      create      trunc       yes     yes     yes
+    a+      create      open        yes     no      yes
+
+
+PakFile()
+---------------------------------------------------------------------------
+            missing     exists      read    modify  add     file mode
+            
+    r       fail        open        yes     no      no      r
+    w       create      trunc       no      yes     yes     w+
+    a       create      open        no      no      yes     r+ -> w+
+    r+      fail        open        yes     yes     yes     r+
+    w+      create      trunc       yes     yes     yes     w+
+    a+      create      open        yes     no      yes     r+ -> w+
+"""
+
+
+
+
+
+'''                                       r   w   a   r+  w+  a+
+                                          ----------------------
+    file must exist before open           x   -   -   x   -   -
+    old file contents discarded on open   -   x   -   -   x   -
+    stream can be read                    x   -   -   x   x   x
+    stream can be written                 -   x   x   x   x   x
+    stream can be written only at end     -   -   x   -   -   x
+
+
+r       read            open existing
+w       write           create new
+a       append          open/create
+r+      read/write      open existing
+w+      read/write      create new
+a+      read/append     open/create
 '''
