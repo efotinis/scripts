@@ -157,3 +157,39 @@ class SpecialFolders(object):
 
 SpecialFolders = SpecialFolders()
 
+
+def delete_items(paths):
+    wnd = 0
+    op = shellcon.FO_DELETE
+    src = '\0'.join(paths)
+    dst = None
+    flags = (shellcon.FOF_SILENT | shellcon.FOF_NOCONFIRMATION |
+             shellcon.FOF_NOERRORUI)
+    failed, any_aborted = shell.SHFileOperation((wnd, op, src, dst, flags))
+    return failed, any_aborted
+
+
+def recycle_items(paths):
+    wnd = 0
+    op = shellcon.FO_DELETE
+    src = '\0'.join(paths)
+    dst = None
+    flags = (shellcon.FOF_SILENT | shellcon.FOF_NOCONFIRMATION |
+             shellcon.FOF_ALLOWUNDO | shellcon.FOF_NOERRORUI)
+    failed, any_aborted = shell.SHFileOperation((wnd, op, src, dst, flags))
+    return failed, any_aborted
+
+
+def move_items(paths, dest):
+    wnd = 0
+    op = shellcon.FO_MOVE
+    src = '\0'.join(paths)
+    flags = (shellcon.FOF_SILENT | shellcon.FOF_NOCONFIRMATION |
+             shellcon.FOF_NOERRORUI | shellcon.FOF_NOCONFIRMMKDIR)
+    if isinstance(dest, basestring):
+        dst = dest
+    else:
+        dst = '\0'.join(dest)
+        flags |= shellcon.FOF_MULTIDESTFILES
+    failed, any_aborted = shell.SHFileOperation((wnd, op, src, dst, flags))
+    return failed, any_aborted
