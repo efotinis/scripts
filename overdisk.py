@@ -1,8 +1,5 @@
 # TODO: factor out common code
-# ----: pretty sizes
-# ----: commas in dir/file/size counts
 # TODO: compress names to console width by default
-# ----: add headers to output
 # TODO: store scan errors and add a cmd for showing them
 # TODO: add a filter function (extensions, regexps, size/date ranges, attribs) to restrict operations
 # TODO: allow optional traversal of junctions and soft-linked dirs
@@ -13,7 +10,6 @@
 # TODO: allow multiple roots (e.g. different drives or dirs); should allow setting an alias for each root
 # TODO: add option to display uncompressed long names
 # TODO: add option to display full attribs
-# TODO: add command for opening Explorer folder
 
 import os
 import re
@@ -177,6 +173,7 @@ def showHelp():
    L | LIST [dir]    Show directory entry statistics.
    E | EXTCNT [dir]  Show directory extension statistics (files only).
    S | SCAN [dir]    Rescan directory.
+   G | GO [dir]      Open directory in Explorer.
   DO | DIRORDER [dircol][dirctn]
   LO | LISTORDER [listcol][dirctn]  
   EO | EXTORDER [extcol][dirctn]
@@ -241,6 +238,7 @@ class CmdDispatcher(object):
             (('e', 'extcnt'), cmdExtCnt),
             (('r', 'root'),   cmdRoot),
             (('s', 'scan'),   cmdScan),
+            (('g', 'go'),     cmdGo),
             (('lo', 'listorder'), cmdListOrder),
             (('do', 'dirorder'),  cmdDirOrder),
             (('eo', 'extorder'),  cmdExtOrder),
@@ -530,6 +528,14 @@ def cmdScan(state, params):
     uprint('scanning "%s" ...' % os.path.join(state.rootPath, absPath))
     with ScanStatus(absPath) as status:
         dir.getChildren(absPath, status)
+
+
+def cmdGo(state, params):
+    if params[:1] == params[-1:] == '"':
+        params = params[1:-1]
+    relPath, dir = locateDir(state, params.strip())
+    absPath = os.path.join(state.rootPath, relPath)
+    os.startfile(absPath)
 
 
 def cmdOrder(state, params, attr, colFlags):
