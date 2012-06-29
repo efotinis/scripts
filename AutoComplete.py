@@ -84,24 +84,66 @@ class ConsoleBuffer:
         self.obj.SetConsoleCursorInfo(size, visible)
 
 
+class History:
+
+    def __init__(self, maxsize=50):
+        self.entries = []
+        self.maxsize = maxsize
+        self.index = None  # last active entry; None means end of entries list
+
+    def add(self, s):
+        self.entries += [s]
+        excess = len(self.entries) - self.maxsize
+        if excess > 0:
+            del self.entries[:excess]
+            self.index -= excess
+            if self.index < 0:
+                self.index = None
+        # reset index if it doesn't match what was entered
+        if self.index is not None and self.entries[self.index] != s:
+            self.index = None
+
+    def get_previous(self):
+        if not self.entries:
+            return None
+        if self.index is None:
+            self.index = len(self.entries) - 1
+            return self.entries[self.index]
+        if self.index > 0:
+            self.index -= 1
+            return self.entries[self.index]
+        return None
+
+    def get_next(self):
+        if not self.entries:
+            return None
+        if self.index is None:
+            return None
+        if self.index < len(self.entries) - 1:
+            self.index += 1
+            return self.entries[self.index]
+        return None
+
+
 class Manager:
 
     def __init__(self):
-        self.history = []               # command history
+        self.history = History()        # command history
         self.completer = None           # autocomplete candidate func
         self.cout = ConsoleBuffer()     # STDOUT
 
     def input(self, prompt=''):
         if prompt:
             self.cout.write(prompt)
-        return _Input(self.cout).readline(self.completer)
+        return _Input(self.cout, self.history).readline(self.completer)
 
 
 class _Input:
     '''Used by Manager. One readline() call per object.'''
 
-    def __init__(self, cout):
+    def __init__(self, cout, history):
         self.cout = cout            # STDOUT
+        self.history = history      # manager's history
         self.line = ''              # edited line
         self.pos = 0                # cursor pos
         self.insert = True          # insert mode
@@ -128,6 +170,15 @@ class _Input:
             y += 1
         self.cout.setCursor(x, y)
 
+    def replace_text(self, s):
+        """Set whole line to new text and move cursor to its end."""
+        prev_len = len(self.line)
+        new_len = len(s)
+        self.line = s
+        self.pos = new_len
+        self.updateText(new_len - prev_len)
+        self.updateCursor()
+
     def readline(self, completerFunc=None):
         while True:
             s = inkey()
@@ -139,6 +190,14 @@ class _Input:
                 self.pos += 1
                 self.updateText()
                 self.candidates = None
+            elif s == UP:
+                new_text = self.history.get_previous()
+                if new_text is not None:
+                    self.replace_text(new_text)
+            elif s == DOWN:
+                new_text = self.history.get_next()
+                if new_text is not None:
+                    self.replace_text(new_text)
             elif s == LEFT:
                 if self.pos > 0:
                     self.pos -= 1
@@ -153,6 +212,7 @@ class _Input:
                 self.pos = len(self.line)
                 self.updateCursor()
                 print
+                self.history.add(self.line)
                 return self.line
             elif s == BASKSPACE:
                 if self.pos > 0:
