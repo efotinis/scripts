@@ -3,12 +3,8 @@
 import os
 import sys
 import hashlib
-import getopt
+import argparse
 import CommonTools
-
-
-SHOW_MATCHED_FILES = False
-COMPARE_FILE_HASHES = False
 
 
 def merged(a, b):
@@ -45,14 +41,23 @@ def fsig(fn, buflen=2**20):
 
 
 def compare_files(root1, root2, rel, name, stats):
-    if COMPARE_FILE_HASHES:
+    # TODO: replace args.testmethod with an actual function
+    if args.testmethod == 'n':
+        pass
+    elif args.testmethod == 'h':
         fn1 = os.path.join(root1, rel, name)
         fn2 = os.path.join(root2, rel, name)
+        # TODO: checks hashes (or even bytes) in parallel
         if fsig(fn1) != fsig(fn2):
             print '**', os.path.join(rel, name)
             stats['mismatched_files'] += 1
             return
-    if SHOW_MATCHED_FILES:
+    elif args.testmethod == 'b':
+        raise NotImplementedError('byte compare')
+    else:
+        assert False, 'invalid test method: "%s"' % args.testmethod
+        
+    if args.verbose:
         print '==', os.path.join(rel, name)
     stats['matched_files'] += 1
         
@@ -79,48 +84,46 @@ def compare_dirs(root1, root2, rel, stats):
                 stats['file_dir_mismatches'] += 1
 
 
-HELP_TEXT = '''
-Compare two directories.
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='compare the files in two directories',
+        add_help=False)
 
-usage: %s [options] DIR1 DIR2 [RELPATH]
+    add = parser.add_argument
+    add('dir1', metavar='DIR1', help='first directory')
+    add('dir2', metavar='DIR2', help='second directory')
+    add('relpath', metavar='REL', nargs='?', help='common relative path')
+    #add('-c', dest='matchcase', action='store_true', help='force case-sensitive comparisons')
+    add('-t', dest='testmethod', choices='nhb', default='n',
+        help='test method for matching files; n: by name (default), h: by MD5 hash, b: by bytes')
+    #add('-b', dest='buflen', type=int, default=2*20, help='file I/O buffer size')
+    add('-v', dest='verbose', action='store_true', help='verbose output; shows matched items')
+    add('-?', action='help', help='this help')
+    args = parser.parse_args()
+    
+    if args.relpath:
+        args.dir1 = os.path.join(args.dir1, args.relpath)
+        args.dir2 = os.path.join(args.dir2, args.relpath)
+    del args.relpath
+    
+    if not os.path.isdir(args.dir1):
+        parser.error('not a directory: "%s"' % args.dir1)
+    if not os.path.isdir(args.dir2):
+        parser.error('not a directory: "%s"' % args.dir2)
 
-  DIR1,DIR2  The directories to compare.
-  RELPATH    Optional relative path.
-  -m         Display matched files (not shown by default).
-  -h         Hash and compare file contents.
-  -?         This help.
-'''[1:-1] % CommonTools.scriptname()
-
-
-def parse_cmdline():
-    global SHOW_MATCHED_FILES
-    global COMPARE_FILE_HASHES
-
-    opts, args = getopt.gnu_getopt(sys.argv[1:], 'mh?')
-    opts = dict(opts)
-    if '-?' in opts:
-        print HELP_TEXT
-        sys.exit()
-
-    if '-m' in opts:
-        SHOW_MATCHED_FILES = True
-    if '-h' in opts:
-        COMPARE_FILE_HASHES = True
-
-    if len(args) == 2:
-        dir1, dir2 = map(unicode, args)
-        return dir1, dir2
-    elif len(args) == 3:
-        dir1, dir2, rel = map(unicode, args)
-        dir1 = os.path.join(dir1, rel)
-        dir2 = os.path.join(dir2, rel)
-        return dir1, dir2
-    else:
-        sys.exit('2 or 3 parameters required')
+    args.dir1 = unicode(args.dir1)
+    args.dir2 = unicode(args.dir2)
+    
+    return args
 
 
 if __name__ == '__main__':
-    dir1, dir2 = parse_cmdline()
+
+    args = parse_args()
+
+    dir1, dir2 = args.dir1, args.dir2
+    del args.dir1, args.dir2
+
     stats = {'only_in_a':0, 'only_in_b':0, 'file_dir_mismatches':0,
              'mismatched_files':0, 'matched_files':0}
     try:
