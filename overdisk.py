@@ -10,6 +10,7 @@
 # TODO: allow multiple roots (e.g. different drives or dirs); should allow setting an alias for each root
 # TODO: add option to display uncompressed long names
 # TODO: add option to display full attribs
+# TODO: add option to display numbers/sizes as percentage of total
 
 import os
 import re
@@ -205,7 +206,7 @@ Dir display extra attribute flags (hex):
 RX_CMD = re.compile(
     r'''^
         \s*             # optional leading space
-        (\w+|\?)        # alnum word or "?"
+        (\w+|\?|\.\.)        # alnum word, "?", or ".."
         (?:
             \s+(.*)     # optional params with leading space
         )?
@@ -233,6 +234,7 @@ class CmdDispatcher(object):
         self.entries = (
             (('?', 'help'),   lambda dummy1, dummy2: showHelp()),
             (('cd', 'chdir'), cmdCd),
+            (('..',),         lambda state, params: cmdCd(state, '..')),
             (('d', 'dir'),    cmdDir),
             (('l', 'list'),   cmdList),
             (('e', 'extcnt'), cmdExtCnt),
