@@ -19,6 +19,7 @@ import operator
 import time
 import collections
 import argparse
+import fnmatch
 
 import win32file
 
@@ -94,15 +95,17 @@ class File(Item):
             # with \\?\
             self.size = FindFileW.getInfo('\\\\?\\' + path).size
             
-    def addListStats(self, stats):
-        stats.files += 1
-        stats.bytes += self.size
+    def addListStats(self, stats, filter_obj):
+        if filter_obj.test(self.name):
+            stats.files += 1
+            stats.bytes += self.size
         
-    def addExtStats(self, statsDict):
-        ext = os.path.splitext(self.name)[1].lower()
-        stats = statsDict[ext]
-        stats.files += 1
-        stats.bytes += self.size
+    def addExtStats(self, statsDict, filter_obj):
+        if filter_obj.test(self.name):
+            ext = os.path.splitext(self.name)[1].lower()
+            stats = statsDict[ext]
+            stats.files += 1
+            stats.bytes += self.size
 
 
 class Dir(Item):        
@@ -149,20 +152,20 @@ class Dir(Item):
         else:
             return self.getSubDir(path)
         
-    def getListStats(self):
+    def getListStats(self, filter_obj):
         """Return total dir, files and bytes recursively."""
         stats = ListStats()
-        self.addListStats(stats)
+        self.addListStats(stats, filter_obj)
         return stats
     
-    def addListStats(self, stats):
+    def addListStats(self, stats, filter_obj):
         stats.dirs += 1
         for c in self.children:
-            c.addListStats(stats)
+            c.addListStats(stats, filter_obj)
             
-    def addExtStats(self, statsDict):
+    def addExtStats(self, statsDict, filter_obj):
         for c in self.children:
-            c.addExtStats(statsDict)
+            c.addExtStats(statsDict, filter_obj)
             
         
         
@@ -175,6 +178,10 @@ def showHelp():
    E | EXTCNT [dir]  Show directory extension statistics (files only).
    S | SCAN [dir]    Rescan directory.
    G | GO [dir]      Open directory in Explorer.
+   F | FILTER [flt]  Set (or show) filename filter. Use "*" to include all.
+                     Filtering affects DIR, LIST, and EXTCNT.
+                     Param is a sequence of glob patterns to include.
+                     Prepending a pattern with "/" will exclude matches.
   DO | DIRORDER [dircol][dirctn]
   LO | LISTORDER [listcol][dirctn]  
   EO | EXTORDER [extcol][dirctn]
@@ -214,6 +221,34 @@ RX_CMD = re.compile(
     re.IGNORECASE | re.VERBOSE)
 
 
+class Filter(object):
+    """File filtering object."""
+
+    def __init__(self, rule_str):
+        self.pattern = rule_str
+        self.rules = []
+        for s in rule_str.split():
+            include = True
+            if s[:1] == '/':
+                include = False
+                s = s[1:]
+            if s:
+                patt = fnmatch.translate(s)
+                # TODO: make case-matching depend on platfrom and/or configurable
+                self.rules += [(include, re.compile(patt, re.IGNORECASE))]
+        self.initial = (self.rules[0][0] == False) if self.rules else True
+
+    def test(self, s):
+        ret = self.initial
+        for include, rx in self.rules:
+            if ret != include:
+                if include and rx.match(s):
+                    ret = True
+                elif not include and rx.match(s):
+                    ret = False
+        return ret
+
+
 class State(object):
     """Global program state."""
     def __init__(self):
@@ -224,6 +259,7 @@ class State(object):
         self.dirOrder = '*+'    # dir sorting
         self.extOrder = '*+'    # extcnt sorting
         self.unit = 'b'         # display size unit
+        self.filter = Filter('*')  # filename filter
 
 
 class CmdDispatcher(object):
@@ -241,6 +277,7 @@ class CmdDispatcher(object):
             (('r', 'root'),   cmdRoot),
             (('s', 'scan'),   cmdScan),
             (('g', 'go'),     cmdGo),
+            (('f', 'filter'), cmdFilter),
             (('lo', 'listorder'), cmdListOrder),
             (('do', 'dirorder'),  cmdDirOrder),
             (('eo', 'extorder'),  cmdExtOrder),
@@ -427,7 +464,8 @@ def cmdDir(state, params):
         if isinstance(item, Dir):
             dirRows += [(item.mdate, 0, item.attr, item.name)]
         else:
-            fileRows += [(item.mdate, item.size, item.attr, item.name)]
+            if state.filter.test(item.name):
+                fileRows += [(item.mdate, item.size, item.attr, item.name)]
     orderIndexMap = {'M':0, 'S':1, 'A':2, 'N':3, '*':None}
     orderIndex = orderIndexMap[state.dirOrder[0]]
     if orderIndex is not None:
@@ -460,17 +498,18 @@ def cmdList(state, params):
     fileStats = [0, 0, 0]
     for item in dir.children:
         try:
-            stats = item.getListStats()
+            stats = item.getListStats(state.filter)
             dataRows += [(stats.dirs, stats.files, stats.bytes, item.name)]
             totalStats[0] += stats.dirs
             totalStats[1] += stats.files
             totalStats[2] += stats.bytes
         except AttributeError:
             # it's a File
-            fileStats[1] += 1
-            fileStats[2] += item.size
-            totalStats[1] += 1
-            totalStats[2] += item.size
+            if state.filter.test(item.name):
+                fileStats[1] += 1
+                fileStats[2] += item.size
+                totalStats[1] += 1
+                totalStats[2] += item.size
     orderIndexMap = {'D':0, 'F':1, 'S':2, 'N':3, '*':None}
     orderIndex = orderIndexMap[state.listOrder[0]]
     if orderIndex is not None:
@@ -497,7 +536,7 @@ def cmdExtCnt(state, params):
     relPath, dir = locateDir(state, params.strip())
     statsDict = collections.defaultdict(lambda: ExtStats())
     for item in dir.children:
-        item.addExtStats(statsDict)
+        item.addExtStats(statsDict, state.filter)
     dataRows = []
     totalFiles, totalSize = 0, 0
     for ext, stats in statsDict.iteritems():
@@ -538,6 +577,13 @@ def cmdGo(state, params):
     relPath, dir = locateDir(state, params.strip())
     absPath = os.path.join(state.rootPath, relPath)
     os.startfile(absPath)
+
+
+def cmdFilter(state, params):
+    if not params:
+        print state.filter.pattern
+        return
+    state.filter = Filter(params)
 
 
 def cmdOrder(state, params, attr, colFlags):
