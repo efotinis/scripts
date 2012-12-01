@@ -41,3 +41,10 @@ class HeadRequest(_urllib.Request):
     """
     def get_method(self):
         return "HEAD"
+
+
+def headers(url):
+    """Get headers dict of web resource."""
+    res = _urllib.urlopen(HeadRequest(url))
+    res.close()
+    return res.info().dict
