@@ -1,7 +1,9 @@
 """Interactive stopwatch."""
 
 import os
-from stopwatch import StopWatch
+import stopwatch
+import mathutil
+
 
 if os.name == 'nt':
     import msvcrt
@@ -14,63 +16,105 @@ else:
     raise RuntimeError('no getch() specified for this platform ("%s")' % os.name)
 
 
-ESC = chr(27)
+def time_str(sec):
+    """Convert seconds to 'DD:HH:MM:SS.mmm'."""
+    millisec = int(round(sec * 1000, 0))
+    d, h, m, s, ms = mathutil.multi_divmod(millisec, 24, 60, 60, 1000)
+    return '%02d:%02d:%02d:%02d.%03d' % (d, h, m, s, ms)
 
 
 def showhelp():
     print '''Interactive stopwatch.
 Keys:
-  s   start/stop
-  S   show status (running/stopped)
-  t   show current time
-  r   reset
-  R   reset & restart
-  l   record lap time (if running) and list all lap times
-  L   clear lap times
-  ?   this help
-  Esc quit'''
+    Space   start/stop
+    Tab     status
+    Enter   record lap time, if running
+    l       list lap times
+    L       clear lap times
+    Del     reset & stop
+    ^Del    reset & start
+    F1      this help
+    Esc     quit'''
 
 
-sw = StopWatch()
-laptimes = []
+KEY_STARTSTOP   = ' '           # Space
+KEY_STATUS      = '\t'          # Tab
+KEY_RESET       = '\xe0S'       # Del
+KEY_RESETSTART  = '\xe0\x93'    # ^Del
+KEY_ADDLAP      = '\r'          # Enter
+KEY_SHOWLAPS    = 'l'
+KEY_CLEARLAPS   = 'L'
+KEY_HELP        = '\0;'         # F1
+KEY_EXIT        = '\x1b'        # Esc
 
-print 'stopped'
-while True:
-    cmd = getch()
-    if cmd == 's':
-        if sw.isrunning():
-            sw.stop()
-            print 'stopped'
+
+def print_status(sw):
+    print '%s  %s  laps:%d' % (
+        time_str(sw.get()),
+        'running' if sw.isrunning() else 'stopped',
+        len(laps))
+
+
+if __name__ == '__main__':
+    sw = stopwatch.StopWatch()
+    laps = []
+    print_status(sw)
+
+    while True:
+        cmd = getch()
+
+        if cmd == KEY_STARTSTOP:
+            if sw.isrunning():
+                sw.stop()
+            else:
+                sw.start()
+            print_status(sw)
+
+        elif cmd == KEY_STATUS:
+            print_status(sw)
+
+        elif cmd == KEY_RESET:
+            laps = []
+            sw.reset()
+            print 'reset'
+            print_status(sw)
+
+        elif cmd == KEY_RESETSTART:
+            laps = []
+            sw.reset(autostart=True)
+            print 'reset'
+            print_status(sw)
+
+        elif cmd == KEY_ADDLAP:
+            if not sw.isrunning():
+                print 'not running'
+            else:
+                last_lap = laps[-1] if laps else 0
+                i = len(laps)
+                t = sw.get()
+                laps += [t]
+                print '  %3d: +%s  %s' % (i + 1, time_str(t - last_lap), time_str(t))
+
+        elif cmd == KEY_SHOWLAPS:
+            if not laps:
+                print 'no laps recorded'
+            else:
+                print 'laps:'
+                last_lap = 0
+                for i, t in enumerate(laps):
+                    print '  %3d: +%s  %s' % (i + 1, time_str(t - last_lap), time_str(t))
+                    last_lap = t
+
+        elif cmd == KEY_CLEARLAPS:
+            laps = []
+            print 'laps cleared'
+
+        elif cmd == KEY_HELP:
+            showhelp()
+
+        elif cmd == KEY_EXIT:
+            break
+
         else:
-            sw.start()
-            print 'running...'
-    elif cmd == 'S':
-        if sw.isrunning():
-            print 'running...'
-        else:
-            print 'stopped'
-    elif cmd == 't':
-        print sw.get()
-    elif cmd == 'r':
-        sw.reset()
-        print 'reset'
-    elif cmd == 'R':
-        sw.reset(autostart=True)
-        print 'reset'
-        print 'running...'
-    elif cmd == 'l':
-        if sw.isrunning():
-            laptimes += [sw.get()]
-            print 'added lap time'
-        print 'laps:'
-        for i, t in enumerate(laptimes):
-            print '  #%d: %f' % (i + 1, t)
-    elif cmd == 'L':
-        del laptimes[:]
-        print 'laptimes cleared'
-    elif cmd == '?':
-        showhelp()
-    elif cmd == ESC:
-        break
-    else:
-        pass
+            #print repr(cmd)
+            pass
