@@ -96,9 +96,10 @@ class History:
         excess = len(self.entries) - self.maxsize
         if excess > 0:
             del self.entries[:excess]
-            self.index -= excess
-            if self.index < 0:
-                self.index = None
+            if self.index is not None:
+                self.index -= excess
+                if self.index < 0:
+                    self.index = None
         # reset index if it doesn't match what was entered
         if self.index is not None and self.entries[self.index] != s:
             self.index = None
@@ -176,7 +177,7 @@ class _Input:
         new_len = len(s)
         self.line = s
         self.pos = new_len
-        self.updateText(new_len - prev_len)
+        self.updateText(prev_len - new_len)
         self.updateCursor()
 
     def readline(self, completerFunc=None):
