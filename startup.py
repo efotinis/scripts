@@ -59,3 +59,28 @@ except ImportError:
 def untangle(text, encoding='mbcs'):
     """Fix text that was incorrectly saved as Latin-1."""
     return text.encode('latin1').decode(encoding)
+
+
+# cwd manipulation
+def cdd():
+    """Set the currect user's desktop as the CWD."""
+    import shellutil
+    os.chdir(shellutil.SpecialFolders.desktop)
+
+
+# clear interactive window
+def cls():
+    """Clear the interactive prompt window.
+
+    Currently supported: PythonWin, Windows console.
+    """
+    from pywin.framework import interact
+    if interact.edit:
+        # found PythonWin interactive window
+        interact.edit.currentView.SetSel(0, -1) 
+        interact.edit.currentView.Clear()
+    else:
+        # assume Windows console
+        import console_stuff
+        console_stuff.cls()
+
