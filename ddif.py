@@ -15,7 +15,7 @@ if os.name == 'posix':
 elif os.name == 'nt':
     CASE_SENSITIVE_PLATFORM_PATHS = False
 else:
-    CASE_SENSITIVE_PLATFORM_PATHS = None
+    CASE_SENSITIVE_PLATFORM_PATHS = None  # will err if user selects it
 
 
 def merged(a, b, case_sens):
@@ -51,6 +51,10 @@ def merged(a, b, case_sens):
 
 
 def compare_file_hashes(path1, path2):
+    """Compare two files using MD5 hashes.
+
+    Returns False as soon as a difference is detected, otherwise True.
+    """
     if os.path.getsize(path1) != os.path.getsize(path2):
         return False
     hash1, hash2 = hashlib.md5(), hashlib.md5()
@@ -71,6 +75,10 @@ def compare_file_hashes(path1, path2):
 
 
 def compare_file_bytes(path1, path2):
+    """Compare two files via byte-by-byte testing.
+    
+    Returns False as soon as a difference is detected, otherwise True.
+    """
     if os.path.getsize(path1) != os.path.getsize(path2):
         return False
     with open(path1, 'rb') as f1, open(path2, 'rb') as f2:
@@ -89,7 +97,6 @@ def compare_file_bytes(path1, path2):
 
 def compare_dirs(root1, root2, rel, stats, args):
     """Compare two dirs."""
-    # FIXME: also list all files from unmatched directories
 
     merged_names = merged(
         os.listdir(os.path.join(root1, rel)),
@@ -97,12 +104,20 @@ def compare_dirs(root1, root2, rel, stats, args):
         args.case_sens)
 
     for name, where in merged_names:
-        if where in '<':
-            print '1 ', os.path.join(rel, name)
-            stats['only_in_a'] += 1
-        elif where in '>':
-            print ' 2', os.path.join(rel, name)
-            stats['only_in_b'] += 1
+        if where == '<':
+            isdir = os.path.isdir(os.path.join(root1, rel, name))
+            if isdir:
+                list_unmatched_dir(root1, os.path.join(rel, name), stats, 'only_in_a', '1 ')
+            else:
+                print '1 ', os.path.join(rel, name)
+                stats['only_in_a'] += 1
+        elif where == '>':
+            isdir = os.path.isdir(os.path.join(root2, rel, name))
+            if isdir:
+                list_unmatched_dir(root2, os.path.join(rel, name), stats, 'only_in_b', ' 2')
+            else:
+                print ' 2', os.path.join(rel, name)
+                stats['only_in_b'] += 1
         else:
             isdir1 = os.path.isdir(os.path.join(root1, rel, name))
             isdir2 = os.path.isdir(os.path.join(root2, rel, name))
@@ -118,9 +133,26 @@ def compare_dirs(root1, root2, rel, stats, args):
                 else:
                     print '**', os.path.join(rel, name)
                     stats['mismatched_files'] += 1
-            else:
-                print '!!', os.path.join(rel, name)
-                stats['file_dir_mismatches'] += 1
+            else:  # file <-> dir
+                if isdir1:
+                    list_unmatched_dir(root1, os.path.join(rel, name), stats, 'only_in_a', '1 ')
+                    print ' 2', os.path.join(rel, name)
+                    stats['only_in_b'] += 1
+                else:
+                    print '1 ', os.path.join(rel, name)
+                    stats['only_in_a'] += 1
+                    list_unmatched_dir(root2, os.path.join(rel, name), stats, 'only_in_b', ' 2')
+
+
+def list_unmatched_dir(root, rel, stats, stats_key, prefix):
+    """Recursively print all files under an unmatched directory."""
+    for name in os.listdir(os.path.join(root, rel)):
+        isdir = os.path.isdir(os.path.join(root, rel, name))
+        if isdir:
+            list_unmatched_dir(root, os.path.join(rel, name), stats, stats_key, prefix)
+        else:
+            print prefix, os.path.join(rel, name)
+            stats[stats_key] += 1
 
 
 def parse_args():
@@ -181,15 +213,18 @@ if __name__ == '__main__':
     dir1, dir2 = args.dir1, args.dir2
     del args.dir1, args.dir2
 
-    stats = {'only_in_a':0, 'only_in_b':0, 'file_dir_mismatches':0,
+    stats = {'only_in_a':0, 'only_in_b':0, 
              'mismatched_files':0, 'matched_files':0}
     try:
         compare_dirs(dir1, dir2, '', stats, args)
         print
-        print '            only in 1:', stats['only_in_a']
-        print '            only in 2:', stats['only_in_b']
-        print '  file/dir mismatches:', stats['file_dir_mismatches']
-        print '     mismatched files:', stats['mismatched_files']
-        print '        matched files:', stats['matched_files']
+        print 'Totals:'
+        print '  (==)    matched:', stats['matched_files']
+        print '  (**) mismatched:', stats['mismatched_files']
+        print '  (1 )  only in 1:', stats['only_in_a']
+        print '  ( 2)  only in 2:', stats['only_in_b']
     except KeyboardInterrupt:
         sys.exit('cancelled by user')
+    except UnicodeError as x:
+        print repr(x)
+        
