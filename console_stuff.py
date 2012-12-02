@@ -91,8 +91,9 @@ def consolesize():
 
 
 if __name__ == '__main__':
+    import sys
     if not iscon():
-        print 'STDOUT is not a console'
+        sys.exit('STDOUT is not a console')
     else:
 ##        import win32api
 ##        print 'time for a test:',
