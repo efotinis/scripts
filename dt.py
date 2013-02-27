@@ -4,14 +4,15 @@ from __future__ import print_function
 import re
 import sys
 import math
-import getopt
+import argparse
 import CommonTools
 import mathutil
 
 
-# time format: [[hr:]min:]sec[.fract]
+# time format: [-][[hr:]min:]sec[.fract]
 rx = re.compile(r'''
     ^\s*
+    (-?)                # sign
     (?:
         (?:
             (\d+):      # hours
@@ -26,87 +27,50 @@ rx = re.compile(r'''
 def timestr_to_sec(timestr):
     """Convert a time string to seconds."""
     try:
-        hours, minutes, seconds, fraction = map(
-            float, (s or 0 for s in rx.match(timestr).groups()))
-        return ((hours * 60 + minutes) * 60) + seconds + fraction
+        sign, hours, minutes, seconds, fraction = rx.match(timestr).groups()
+        sign = -1 if sign else 1
+        hours = int(hours or '0')
+        minutes = int(minutes or '0')
+        seconds = int(seconds)
+        fraction = float(fraction or '.0')
+        return sign * (((hours * 60 + minutes) * 60) + seconds + fraction)
     except (AttributeError, ValueError):
         raise ValueError('invalid time: ' + timestr)
 
 
-def sec_to_timestr(sec, fracts=True):
-    """Convert seconds to a time string. Use fracts=False to round seconds."""
+def sec_to_timestr(sec):
+    """Convert seconds to a time string."""
+    sign = ''
+    if sec < 0:
+        sec = -sec
+        sign = '-'
     h_m_s = mathutil.multi_divmod(sec, 60, 60)
-    fmt = '%02d:%02d:%06.3f' if fracts else '%02d:%02d:%02.0f'
-    return fmt % h_m_s
+    return sign + ('%02d:%02d:%06.3f' % h_m_s)
 
 
-def help():
-    scriptname = CommonTools.scriptname()
-    print('''
-Calculate the difference between two times.
-    
-%(scriptname)s options START END
-
-  START,END  The two time strings: [[hr:]min:]sec[.fract]
-  -v         Verbose output. Include the (normalized) input times.
-  -s         Include sign if START > END.
-  -f, -F     By default, milliseconds are displayed if input times are
-             fractional. Use -f to always show or -F to hide (and round) them.
-  -?         This help.
-'''[1:-1] % locals())
-
-
-class Options(object):
-
-    help = False
-    verbose = False
-    signed = False
-    starttime = 0
-    endtime = 0
-    fracts = None
-
-    def __init__(self, args):
-        opts, args = getopt.gnu_getopt(args, '?vsfF')
-        for sw, val in opts:
-            if sw == '-?':
-                self.help = True
-                return  # bail out early for help
-            elif sw == '-v':  self.verbose = True
-            elif sw == '-s':  self.signed = True
-            elif sw == '-f':  self.fracts = True
-            elif sw == '-F':  self.fracts = False
-        if len(args) != 2:
-            raise getopt.GetoptError('exactly two arguments required')
-        try:
-            self.starttime = timestr_to_sec(args[0])
-            self.endtime = timestr_to_sec(args[1])
-            isfract = lambda n: n != int(n)
-            if self.fracts is None:
-                self.fracts = isfract(self.starttime) or \
-                              isfract(self.endtime)
-        except ValueError as err:
-            raise getopt.GetoptError(str(err))
+def parse_args():
+    ap = argparse.ArgumentParser(
+        description='calculate the difference between two times',
+        epilog='input time format: [-][[hr:]min:]sec[.fract]')
+    add = ap.add_argument
+    add('-v', dest='verbose', action='store_true', help='verbose output: include the (normalized) input times')
+    add('start_t', metavar='START', type=timestr_to_sec, help='start time')
+    add('end_t', metavar='END', type=timestr_to_sec, help='end time')
+    return ap.parse_args()
 
 
 if __name__ == '__main__':
 
-    try:
-        opt = Options(sys.argv[1:])
-    except getopt.GetoptError as err:
-        raise SystemExit(str(err))
+    args = parse_args()
 
-    if opt.help:
-        help()
-    else:
-        diff = opt.endtime - opt.starttime
-        sign = ''
-        if diff < 0:
-            diff = -diff
-            if opt.signed:
-                sign = '-'
-        if opt.verbose:
-            print('%s ... %s -> ' % (
-                sec_to_timestr(opt.starttime, opt.fracts),
-                sec_to_timestr(opt.endtime, opt.fracts)),
-                  end='')
-        print('%s%s' % (sign, sec_to_timestr(diff, opt.fracts)))
+    diff = args.end_t - args.start_t
+    sign = ''
+    if diff < 0:
+        diff = -diff
+        sign = '-'
+    if args.verbose:
+        print('%s ... %s -> ' % (
+                sec_to_timestr(args.start_t),
+                sec_to_timestr(args.end_t)),
+            end='')
+    print('%s%s' % (sign, sec_to_timestr(diff)))
