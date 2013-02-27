@@ -124,7 +124,8 @@ if __name__ == '__main__':
         step = min(max(step, 0.01), 1)  # not too small (CPU intensive) or too large (at least 1 sec accurate)
         if args.large:
             FULL_BLOCK = unichr(0x2588)
-            font = bigecho.Font('0123456789.:', BIG_FONT.replace('X', FULL_BLOCK), 3, weight=2)
+            bitmaps = bigecho.chars_from_string(BIG_FONT.replace('X', FULL_BLOCK), 3, 1)
+            font = bigecho.Font('0123456789.:', bitmaps, 3, 5, weight=2)
             countdown_bigecho(font, args.seconds, step, args.decimals)
         else:
             countdown(args.seconds, step, args.decimals)
