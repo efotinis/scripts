@@ -1,6 +1,6 @@
 :: Setup CLI tools for different versions of Visual Studio.
 
-@ECHO OFF & SETLOCAL ENABLEEXTENSIONS
+@ECHO OFF
 
 SET CL_DEFAULT_PARAMS=/nologo
 
@@ -22,7 +22,7 @@ IF %VER%==10 GOTO VC100
 IF %VER%==10.0 GOTO VC100
 IF %VER%==2010 GOTO VC100
 ECHO ERROR: Unsupported version ID.
-goto usage
+GOTO usage
 
 :usage
 ECHO Usage: VC.CMD id [args...]
@@ -58,3 +58,9 @@ TITLE %NAME%
 CALL %BATCH%
 SET CL=%CL% %CL_DEFAULT_PARAMS%
 ECHO CL=%CL%
+
+:: cleanup vars, since we can't use SETLOCAL
+SET VER=
+SET NAME=
+SET BATCH=
+SET CL_DEFAULT_PARAMS%=
