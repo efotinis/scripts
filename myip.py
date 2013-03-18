@@ -1,7 +1,11 @@
-"""Get external IP via whatismyip.com.
+"""Get external IP via the Internet IP service du jour.
 
 Call without arguments to display IP.
 Call with a filename (env.vars accepted) to append local time and IP to it.
+
+Old services used:
+- whatismyip.com; stopped offering free scripting support at the beginning of 2013;
+  see http://forum.whatismyip.com/showpost.php?p=9092&postcount=6
 """
 
 import urllib2
@@ -10,17 +14,10 @@ import sys
 import os
 
 
-#QUERY_URL = 'http://www.whatismyip.com/automation/n09230945.asp'
-QUERY_URL = 'http://automation.whatismyip.com/n09230945.asp'  # new URL as of May 25, 2011
-
-
 def query():
-    """Get IP as a string.
-
-    As per the whatismyip.com automation rules, this function should not
-    be called more ofter than every 5 minutes.
-    """
-    return urllib2.urlopen(QUERY_URL).read()
+    """Get IP as a string."""
+    # http://rackerhacker.com/icanhazip-com-faq/
+    return urllib2.urlopen('http://icanhazip.com/').read().rstrip('\n')
 
 
 if __name__ == '__main__':
