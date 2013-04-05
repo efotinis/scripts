@@ -8,9 +8,13 @@
 # TODO: detect hardlinks (no need to match; just use link count)
 # TODO: detect namespace cycles (e.g. junctions)
 # TODO: allow multiple roots (e.g. different drives or dirs); should allow setting an alias for each root
-# TODO: add option to display uncompressed long names
-# TODO: add option to display full attribs
-# TODO: add option to display numbers/sizes as percentage of total
+# TODO: option to display uncompressed long names
+# TODO: option to display full attribs
+# TODO: option to display numbers/sizes as percentage of total
+# TODO: file filter groups (e.g. 'images' for '*.jpg *.png *.gif' etc)
+# TODO: head/tail support for listings (nice)
+# TODO: some kind of indicators (possibly before or after the prompt) for active filters ('f'), head/tail restriction ('...'), etc
+# TODO: allow cmd aliases (to implement the short cmds)
 
 import os
 import re
@@ -136,7 +140,7 @@ class Dir(Item):
         if name in ('', '.'):
             return self
         for c in self.children:
-            if c.name.upper() == name.upper():
+            if c.name.lower() == name.lower():
                 return c
         else:
             raise PathError('no child named "%s"' % name)
@@ -196,10 +200,10 @@ DIR, LIST, EXTCNT and SCAN default to current directory.
 Order flags:
   listcol      dircol         extcol       dirctn
   -----------  -------------  -----------  ------------
-  D dirs       M modify date  F files      + ascending
-  F files      S size         S size       - descending
-  S size       A attributes   N name       
-  N name       N name         * unordered
+  d dirs       m modify date  f files      + ascending
+  f files      s size         s size       - descending
+  s size       a attributes   n name       
+  n name       n name         * unordered
   * unordered  * unordered    
 
 Dir display extra attribute flags (hex):
@@ -301,8 +305,8 @@ def getCandidatePaths(state, seed):
     except PathError:
         return []
     if tail:
-        tail = tail.upper()
-        matches = lambda s: s.upper().startswith(tail)
+        tail = tail.lower()
+        matches = lambda s: s.lower().startswith(tail)
     else:
         matches = lambda s: True
     a = []
@@ -592,7 +596,7 @@ def cmdOrder(state, params, attr, colFlags):
         uprint(cur)
         return
     newCol, newDir = '', ''
-    for c in params.upper():
+    for c in params.lower():
         if c in colFlags:
             newCol = c
         elif c in '+-':
@@ -607,15 +611,15 @@ def cmdOrder(state, params, attr, colFlags):
 
 
 def cmdListOrder(state, params):
-    cmdOrder(state, params, 'listOrder', 'DFSN*')
+    cmdOrder(state, params, 'listOrder', 'dfsn*')
 
 
 def cmdDirOrder(state, params):
-    cmdOrder(state, params, 'dirOrder', 'MSAN*')
+    cmdOrder(state, params, 'dirOrder', 'msan*')
 
 
 def cmdExtOrder(state, params):
-    cmdOrder(state, params, 'extOrder', 'FSN*')
+    cmdOrder(state, params, 'extOrder', 'fsn*')
 
 
 def cmdUnit(state, params):
