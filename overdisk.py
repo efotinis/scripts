@@ -470,7 +470,7 @@ def cmdDir(state, params):
         else:
             if state.filter.test(item.name):
                 fileRows += [(item.mdate, item.size, item.attr, item.name)]
-    orderIndexMap = {'M':0, 'S':1, 'A':2, 'N':3, '*':None}
+    orderIndexMap = {'m':0, 's':1, 'a':2, 'n':3, '*':None}
     orderIndex = orderIndexMap[state.dirOrder[0]]
     if orderIndex is not None:
         dirRows.sort(
@@ -514,7 +514,7 @@ def cmdList(state, params):
                 fileStats[2] += item.size
                 totalStats[1] += 1
                 totalStats[2] += item.size
-    orderIndexMap = {'D':0, 'F':1, 'S':2, 'N':3, '*':None}
+    orderIndexMap = {'d':0, 'f':1, 's':2, 'n':3, '*':None}
     orderIndex = orderIndexMap[state.listOrder[0]]
     if orderIndex is not None:
         dataRows.sort(
@@ -547,7 +547,7 @@ def cmdExtCnt(state, params):
         dataRows += [(stats.files, stats.bytes, ext)]
         totalFiles += stats.files
         totalSize += stats.bytes
-    orderIndexMap = {'F':0, 'S':1, 'N':2, '*':None}
+    orderIndexMap = {'f':0, 's':1, 'n':2, '*':None}
     orderIndex = orderIndexMap[state.extOrder[0]]
     if orderIndex is not None:
         dataRows.sort(
