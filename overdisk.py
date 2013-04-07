@@ -501,22 +501,22 @@ def cmdCd(state, params):
     state.relPath = walkPath(state, *setupDirChange(state, params.strip()))
 
 
-def size_str_func(fmt):
-    """Return a size to string converter function according to a specific format."""
-    if fmt == 'b':
-        return lambda n: '{:,}'.format(n)
-    elif fmt == 'k':
-        return lambda n: '{:,} K'.format(n / 2**10)
-    elif fmt == 'm':
-        return lambda n: '{:,} M'.format(n / 2**20)
-    elif fmt == 'g':
-        return lambda n: '{:,} G'.format(n / 2**30)
-    elif fmt == 't':
-        return lambda n: '{:,} T'.format(n / 2**40)
-    elif fmt == '*':
-        return lambda n: CommonTools.prettysize(n)
+def size_title_and_formatter(unit):
+    """Return the title and formatting func for a specific size unit."""
+    if unit == 'b':
+        return 'bytes', lambda n: '{:,}'.format(n)
+    elif unit == 'k':
+        return 'KB', lambda n: '{:,}'.format(n / 2**10)
+    elif unit == 'm':
+        return 'MB', lambda n: '{:,}'.format(n / 2**20)
+    elif unit == 'g':
+        return 'GB', lambda n: '{:,}'.format(n / 2**30)
+    elif unit == 't':
+        return 'TB', lambda n: '{:,}'.format(n / 2**40)
+    elif unit == '*':
+        return 'size', lambda n: CommonTools.prettysize(n)
     else:
-        raise ValueError('bad format')
+        raise ValueError('bad unit', unit)
 
 
 def cmdDir(state, params):
@@ -540,7 +540,8 @@ def cmdDir(state, params):
     # move dirs to beginning
     dataRows.sort(key=is_dir_row, reverse=True)
 
-    size_str = lambda x, row: '<DIR>' if is_dir_row(row) else size_str_func(state.unit)(x)
+    size_title, size_fmt = size_title_and_formatter(state.unit)
+    size_str = lambda x, row: '<DIR>' if is_dir_row(row) else size_fmt(x)
     date_str = lambda x, row: dateStr(x)
     attr_str = lambda x, row: attrStr(x)
     NAME_LEN = 44  # FIXME: calc from console if possible
@@ -548,7 +549,7 @@ def cmdDir(state, params):
 
     cols = [
         TableColumn('date', 'l', date_str),
-        TableColumn('size', 'r', size_str),
+        TableColumn(size_title, 'r', size_str),
         TableColumn('attr', 'l', attr_str),
         TableColumn('name', '', name_str),
         ]
@@ -589,14 +590,15 @@ def cmdList(state, params):
     dataRows += [fileStats + ['<files>']] + \
                 [totalStats + ['<total>']]
 
+    size_title, size_fmt = size_title_and_formatter(state.unit)
     number_str = lambda x, row: '{:,}'.format(x)
-    size_str = lambda x, row: size_str_func(state.unit)(x)
+    size_str = lambda x, row: size_fmt(x)
     identity = lambda s, row: s
 
     cols = [
         TableColumn('dirs', 'r', number_str),
         TableColumn('files', 'r', number_str),
-        TableColumn('size', 'r', size_str),
+        TableColumn(size_title, 'r', size_str),
         TableColumn('name', '', identity),
         ]
     for s in output_table(cols, dataRows, 2):
@@ -627,13 +629,14 @@ def cmdExtCnt(state, params):
     dataRows = list(head_tail_filter(dataRows, state.headTailCount))
     dataRows += [[totalFiles, totalSize, '<total>']]
 
+    size_title, size_fmt = size_title_and_formatter(state.unit)
     number_str = lambda x, row: '{:,}'.format(x)
-    size_str = lambda x, row: size_str_func(state.unit)(x)
+    size_str = lambda x, row: size_fmt(x)
     identity = lambda s, row: s
 
     cols = [
         TableColumn('files', 'r', number_str),
-        TableColumn('size', 'r', size_str),
+        TableColumn(size_title, 'r', size_str),
         TableColumn('ext', '', identity),
         ]
     for s in output_table(cols, dataRows, 1):
