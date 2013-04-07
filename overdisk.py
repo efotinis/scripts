@@ -182,6 +182,9 @@ def showHelp():
                      Filtering affects DIR, LIST, and EXTCNT.
                      Param is a sequence of glob patterns to include.
                      Prepending a pattern with "/" will exclude matches.
+  HT | HEADTAIL [n]  Set (or show) listing head/tail count. Listing rows shown:
+                     all (n=0), first n (n>0), last n (n<0)
+                     Affects LIST and EXTCNT output.
   DO | DIRORDER [dircol][dirctn]
   LO | LISTORDER [listcol][dirctn]  
   EO | EXTORDER [extcol][dirctn]
@@ -260,6 +263,7 @@ class State(object):
         self.extOrder = '*+'    # extcnt sorting
         self.unit = 'b'         # display size unit
         self.filter = Filter('*')  # filename filter
+        self.headTailCount = 0  # listing head/tail count
 
 
 class CmdDispatcher(object):
@@ -278,6 +282,7 @@ class CmdDispatcher(object):
             (('s', 'scan'),   cmdScan),
             (('g', 'go'),     cmdGo),
             (('f', 'filter'), cmdFilter),
+            (('ht', 'headtail'), cmdHeadTail),
             (('lo', 'listorder'), cmdListOrder),
             (('do', 'dirorder'),  cmdDirOrder),
             (('eo', 'extorder'),  cmdExtOrder),
@@ -294,6 +299,32 @@ class CmdDispatcher(object):
             raise CmdError('unknown command "%s"' % cmd)
 
 
+def head_tail_filter(seq, count):
+    """Yield seq items, restricting their number.
+
+    Items returned for count=N:
+        N=0  all
+        N>0  first N
+        N<0  last N
+    """
+    if count == 0:
+        for x in seq:
+            yield x
+    elif count > 0:
+        for i, x in enumerate(seq):
+            if i < count:
+                yield x
+            else:
+                break
+    else:  # count < 0
+        a = []
+        for x in seq:
+            a += [x]
+            a = a[count:]
+        for x in a:
+            yield x
+
+
 TableColumn = collections.namedtuple('TableColumn', 'caption alignment formatter')
 
 
@@ -303,10 +334,10 @@ def pad_table_row(a, alignments, widths, joiner):
     return joiner.join(a)
 
 
-def output_table(cols, data):
+def output_table(cols, data, footer=0):
     """Generate table rows, given a list of TableColumn objects and a 2D list of cell values."""
-    rows = [[col.formatter(x, row) for (x, col) in zip(row, cols)]
-            for row in data]
+    rows = [[col.formatter(x, a) for (x, col) in zip(a, cols)]
+            for a in data]
     captions = [c.caption for c in cols]
     max_widths = [max(len(row[i]) for row in itertools.chain([captions], rows))
                   for i in range(len(cols))]
@@ -315,8 +346,16 @@ def output_table(cols, data):
 
     yield pad_table_row(captions, alignments, max_widths, joiner)
     yield pad_table_row(['-' * n for n in max_widths], alignments, max_widths, joiner)
+    if footer > 0:
+        rows, footer_rows = rows[:-footer], rows[-footer:]
+    else:
+        rows, footer_rows = rows, []
     for row in rows:
         yield pad_table_row(row, alignments, max_widths, joiner)
+    if footer_rows:
+        yield pad_table_row(['-' * n for n in max_widths], alignments, max_widths, joiner)
+        for row in footer_rows:
+            yield pad_table_row(row, alignments, max_widths, joiner)
 
 
 def getCandidatePaths(state, seed):
@@ -546,6 +585,7 @@ def cmdList(state, params):
             reverse=(state.listOrder[1] == '-')
         )
 
+    dataRows = list(head_tail_filter(dataRows, state.headTailCount))
     dataRows += [fileStats + ['<files>']] + \
                 [totalStats + ['<total>']]
 
@@ -559,7 +599,7 @@ def cmdList(state, params):
         TableColumn('size', 'r', size_str),
         TableColumn('name', '', identity),
         ]
-    for s in output_table(cols, dataRows):
+    for s in output_table(cols, dataRows, 2):
         uprint(s)
 
 
@@ -584,6 +624,7 @@ def cmdExtCnt(state, params):
             reverse=(state.extOrder[1] == '-')
         )
 
+    dataRows = list(head_tail_filter(dataRows, state.headTailCount))
     dataRows += [[totalFiles, totalSize, '<total>']]
 
     number_str = lambda x, row: '{:,}'.format(x)
@@ -595,7 +636,7 @@ def cmdExtCnt(state, params):
         TableColumn('size', 'r', size_str),
         TableColumn('ext', '', identity),
         ]
-    for s in output_table(cols, dataRows):
+    for s in output_table(cols, dataRows, 1):
         uprint(s)
 
 
@@ -622,6 +663,16 @@ def cmdFilter(state, params):
         print state.filter.pattern
         return
     state.filter = Filter(params)
+
+
+def cmdHeadTail(state, params):
+    if not params:
+        print state.headTailCount
+        return
+    try:
+        state.headTailCount = int(params, 10)
+    except ValueError:
+        raise CmdError('invalid number "%s"' % params)
 
 
 def cmdOrder(state, params, attr, colFlags):
