@@ -1,5 +1,3 @@
-# TODO: factor out common code
-# TODO: compress names to console width by default
 # TODO: store scan errors and add a cmd for showing them
 # TODO: add a filter function (extensions, regexps, size/date ranges, attribs) to restrict operations
 # TODO: allow optional traversal of junctions and soft-linked dirs
@@ -11,7 +9,6 @@
 # TODO: option to display uncompressed long names
 # TODO: option to display full attribs
 # TODO: option to display numbers/sizes as percentage of total
-# TODO: file filter groups (e.g. 'images' for '*.jpg *.png *.gif' etc)
 # TODO: head/tail support for listings (nice)
 # TODO: some kind of indicators (possibly before or after the prompt) for active filters ('f'), head/tail restriction ('...'), etc
 # TODO: allow cmd aliases (to implement the short cmds)
@@ -24,6 +21,8 @@ import time
 import collections
 import argparse
 import fnmatch
+import itertools
+import string
 
 import win32file
 
@@ -33,6 +32,10 @@ import console_stuff
 import CommonTools
 
 uprint = CommonTools.uprint
+
+
+# string alignment types mapped to functions
+STR_ALIGN = {'l': string.ljust, 'r': string.rjust, 'c': string.center, '': lambda s, n: s}
 
 
 class PathError(Exception):
@@ -73,6 +76,7 @@ class Item(object):
             if info is None:
                 if not self.name:
                     # root dirs have no info
+                    self.size = None
                     self.attr = None
                     self.mdate = None
                     self.cdate = None
@@ -80,6 +84,7 @@ class Item(object):
                 else:
                     uprint('FATAL: could not get info for "%s"' % path)
                     raise SystemExit(-1)
+        self.size = info.size
         self.attr = info.attr
         self.mdate = CommonTools.wintime_to_pyseconds(info.modify)
         self.cdate = CommonTools.wintime_to_pyseconds(info.create)
@@ -90,14 +95,6 @@ class File(Item):
     
     def __init__(self, path, status=None):
         Item.__init__(self, path)
-        # TODO: remove special handling (too rare to care)
-        try:
-            # getsize fails on some SecuROM files with trailing spaces
-            self.size = os.path.getsize(path)
-        except OSError:
-            # even FindFirstFileW will fail, unless we turn off path parsing
-            # with \\?\
-            self.size = FindFileW.getInfo('\\\\?\\' + path).size
             
     def addListStats(self, stats, filter_obj):
         if filter_obj.test(self.name):
@@ -170,9 +167,8 @@ class Dir(Item):
     def addExtStats(self, statsDict, filter_obj):
         for c in self.children:
             c.addExtStats(statsDict, filter_obj)
-            
-        
-        
+
+
 def showHelp():
     print '''
    R | ROOT [dir]    Set (or show) root directory.
@@ -296,6 +292,31 @@ class CmdDispatcher(object):
                 return
         else:
             raise CmdError('unknown command "%s"' % cmd)
+
+
+TableColumn = collections.namedtuple('TableColumn', 'caption alignment formatter')
+
+
+def pad_table_row(a, alignments, widths, joiner):
+    """Pad and join row cells."""
+    a = [STR_ALIGN[alignment](s, width) for (s, alignment, width) in zip(a, alignments, widths)]
+    return joiner.join(a)
+
+
+def output_table(cols, data):
+    """Generate table rows, given a list of TableColumn objects and a 2D list of cell values."""
+    rows = [[col.formatter(x, row) for (x, col) in zip(row, cols)]
+            for row in data]
+    captions = [c.caption for c in cols]
+    max_widths = [max(len(row[i]) for row in itertools.chain([captions], rows))
+                  for i in range(len(cols))]
+    alignments = [c.alignment for c in cols]
+    joiner = '  '
+
+    yield pad_table_row(captions, alignments, max_widths, joiner)
+    yield pad_table_row(['-' * n for n in max_widths], alignments, max_widths, joiner)
+    for row in rows:
+        yield pad_table_row(row, alignments, max_widths, joiner)
 
 
 def getCandidatePaths(state, seed):
@@ -463,34 +484,37 @@ def cmdDir(state, params):
     if params[:1] == params[-1:] == '"':
         params = params[1:-1]
     relPath, dir = locateDir(state, params.strip())
-    dirRows, fileRows = [], []
+    dataRows = []
     for item in dir.children:
-        if isinstance(item, Dir):
-            dirRows += [(item.mdate, 0, item.attr, item.name)]
-        else:
-            if state.filter.test(item.name):
-                fileRows += [(item.mdate, item.size, item.attr, item.name)]
+        if isinstance(item, Dir) or state.filter.test(item.name):
+            dataRows += [(item.mdate, item.size, item.attr, item.name)]
     orderIndexMap = {'m':0, 's':1, 'a':2, 'n':3, '*':None}
     orderIndex = orderIndexMap[state.dirOrder[0]]
     if orderIndex is not None:
-        dirRows.sort(
+        dataRows.sort(
             key=operator.itemgetter(orderIndex),
             reverse=(state.listOrder[1] == '-')
         )
-        fileRows.sort(
-            key=operator.itemgetter(orderIndex),
-            reverse=(state.listOrder[1] == '-')
-        )
-    size_str = size_str_func(state.unit)
+
+    is_dir_row = lambda row: bool(row[2] & win32file.FILE_ATTRIBUTE_DIRECTORY)
+
+    # move dirs to beginning
+    dataRows.sort(key=is_dir_row, reverse=True)
+
+    size_str = lambda x, row: '<DIR>' if is_dir_row(row) else size_str_func(state.unit)(x)
+    date_str = lambda x, row: dateStr(x)
+    attr_str = lambda x, row: attrStr(x)
     NAME_LEN = 44  # FIXME: calc from console if possible
-    uprint('date                size     attr  name')
-    uprint('----------- ------------ --------  ----')
-    for a in dirRows:
-        uprint('%11s %-12s %8s  %s' % (
-            dateStr(a[0]), '<DIR>', attrStr(a[2]), trimName(a[3], NAME_LEN)))
-    for a in fileRows:
-        uprint('%11s %12s %8s  %s' % (
-            dateStr(a[0]), size_str(a[1]), attrStr(a[2]), trimName(a[3], NAME_LEN)))
+    name_str = lambda x, row: trimName(x, NAME_LEN)
+
+    cols = [
+        TableColumn('date', 'l', date_str),
+        TableColumn('size', 'r', size_str),
+        TableColumn('attr', 'l', attr_str),
+        TableColumn('name', '', name_str),
+        ]
+    for s in output_table(cols, dataRows):
+        uprint(s)
 
 
 def cmdList(state, params):
@@ -521,17 +545,22 @@ def cmdList(state, params):
             key=operator.itemgetter(orderIndex),
             reverse=(state.listOrder[1] == '-')
         )
-    size_str = size_str_func(state.unit)
-    fileStats[2] = size_str(fileStats[2])
-    totalStats[2] = size_str(totalStats[2])
-    uprint('  dirs  files         size  name')
-    uprint('------ ------ ------------  ----')
-    for data in dataRows:
-        a = list(data)
-        a[2] = size_str(a[2])
-        uprint('%6d %6d %12s  %s' % tuple(a))
-    uprint('%6s %6d %12s  %s' % tuple(['-'] + fileStats[1:] + ['<files>']))
-    uprint('%6d %6d %12s  %s' % tuple(totalStats + ['<total>']))
+
+    dataRows += [fileStats + ['<files>']] + \
+                [totalStats + ['<total>']]
+
+    number_str = lambda x, row: '{:,}'.format(x)
+    size_str = lambda x, row: size_str_func(state.unit)(x)
+    identity = lambda s, row: s
+
+    cols = [
+        TableColumn('dirs', 'r', number_str),
+        TableColumn('files', 'r', number_str),
+        TableColumn('size', 'r', size_str),
+        TableColumn('name', '', identity),
+        ]
+    for s in output_table(cols, dataRows):
+        uprint(s)
 
 
 def cmdExtCnt(state, params):
@@ -554,15 +583,20 @@ def cmdExtCnt(state, params):
             key=operator.itemgetter(orderIndex),
             reverse=(state.extOrder[1] == '-')
         )
-    size_str = size_str_func(state.unit)
-    totalSize = size_str(totalSize)
-    uprint(' files         size  extension')
-    uprint('------ ------------  ---------')
-    for data in dataRows:
-        a = list(data)
-        a[1] = size_str(a[1])
-        uprint('%6d %12s  %s' % tuple(a))
-    uprint('%6d %12s  %s' % (totalFiles, totalSize, '<total>'))
+
+    dataRows += [[totalFiles, totalSize, '<total>']]
+
+    number_str = lambda x, row: '{:,}'.format(x)
+    size_str = lambda x, row: size_str_func(state.unit)(x)
+    identity = lambda s, row: s
+
+    cols = [
+        TableColumn('files', 'r', number_str),
+        TableColumn('size', 'r', size_str),
+        TableColumn('ext', '', identity),
+        ]
+    for s in output_table(cols, dataRows):
+        uprint(s)
 
 
 def cmdScan(state, params):
