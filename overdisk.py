@@ -748,8 +748,18 @@ if __name__ == '__main__':
 
     while True:
         try:
-            prompt = ':: ' + os.path.join(
-                state.root_path, state.rel_path).rstrip(os.path.sep) + '>'
+            prompt_flags = []
+            if state.filter.pattern != '*':
+                prompt_flags += ['f']
+            if state.head_tail_count:
+                prompt_flags += [str(state.head_tail_count)]
+            if 1 or prompt_flags:
+                prompt_flags = '[' + ','.join(prompt_flags) + '] '
+            else:
+                prompt_flags = ''
+
+            prompt = prompt_flags + os.path.join(
+                state.root_path, state.rel_path).rstrip(os.path.sep) + '> '
 
             if 0:
                 s = raw_input(prompt).strip()
