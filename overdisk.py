@@ -9,7 +9,6 @@
 # TODO: option to display uncompressed long names
 # TODO: option to display full attribs
 # TODO: option to display numbers/sizes as percentage of total
-# TODO: head/tail support for listings (nice)
 # TODO: some kind of indicators (possibly before or after the prompt) for active filters ('f'), head/tail restriction ('...'), etc
 # TODO: allow cmd aliases (to implement the short cmds)
 
@@ -96,15 +95,15 @@ class File(Item):
     def __init__(self, path, status=None):
         Item.__init__(self, path)
             
-    def addListStats(self, stats, filter_obj):
+    def add_list_stats(self, stats, filter_obj):
         if filter_obj.test(self.name):
             stats.files += 1
             stats.bytes += self.size
         
-    def addExtStats(self, statsDict, filter_obj):
+    def add_ext_stats(self, stats_dict, filter_obj):
         if filter_obj.test(self.name):
             ext = os.path.splitext(self.name)[1].lower()
-            stats = statsDict[ext]
+            stats = stats_dict[ext]
             stats.files += 1
             stats.bytes += self.size
 
@@ -116,23 +115,23 @@ class Dir(Item):
         Item.__init__(self, path)
         if status:
             status.update(path)
-        self.getChildren(path, status)
+        self.get_children(path, status)
         
-    def getChildren(self, path, status=None):
+    def get_children(self, path, status=None):
         self.children = []
         try:
             # some folders (like "System Volume Information") cannot be listed
             items = os.listdir(path)
         except WindowsError as x:
             msg = 'WANRING: could list contents of "%s"; reason: %s' % (path, x.strerror)
-            status.staticprint(msg)
+            status.static_print(msg)
             return
         for s in items:
-            childPath = os.path.join(path, s)
-            factory = Dir if os.path.isdir(childPath) else File
-            self.children += [factory(childPath, status)]
+            child_path = os.path.join(path, s)
+            factory = Dir if os.path.isdir(child_path) else File
+            self.children += [factory(child_path, status)]
             
-    def getSubDir(self, name):
+    def get_sub_dir(self, name):
         """Return an immediate subdir."""
         if name in ('', '.'):
             return self
@@ -142,34 +141,34 @@ class Dir(Item):
         else:
             raise PathError('no child named "%s"' % name)
         
-    def getSubPath(self, path):
+    def get_sub_path(self, path):
         """Return a subdir, 1 or more levels deeper, but never higher.
         "path" must be relative, without any ".." tokens."""
         if not path:
             return self
         if os.path.sep in path:
             s1, s2 = path.split(os.path.sep, 1)
-            return self.getSubDir(s1).getSubPath(s2)
+            return self.get_sub_dir(s1).get_sub_path(s2)
         else:
-            return self.getSubDir(path)
+            return self.get_sub_dir(path)
         
-    def getListStats(self, filter_obj):
+    def get_list_stats(self, filter_obj):
         """Return total dir, files and bytes recursively."""
         stats = ListStats()
-        self.addListStats(stats, filter_obj)
+        self.add_list_stats(stats, filter_obj)
         return stats
     
-    def addListStats(self, stats, filter_obj):
+    def add_list_stats(self, stats, filter_obj):
         stats.dirs += 1
         for c in self.children:
-            c.addListStats(stats, filter_obj)
+            c.add_list_stats(stats, filter_obj)
             
-    def addExtStats(self, statsDict, filter_obj):
+    def add_ext_stats(self, stats_dict, filter_obj):
         for c in self.children:
-            c.addExtStats(statsDict, filter_obj)
+            c.add_ext_stats(stats_dict, filter_obj)
 
 
-def showHelp():
+def show_help():
     print '''
    R | ROOT [dir]    Set (or show) root directory.
   CD | CHDIR [dir]   Set (or show) current directory.
@@ -256,14 +255,14 @@ class State(object):
     """Global program state."""
     def __init__(self):
         self.root = None        # root Dir object
-        self.rootPath = ''      # root dir path (must be unicode -> listdir bug)
-        self.relPath = ''       # current relative dir path
-        self.listOrder = '*+'   # list sorting
-        self.dirOrder = '*+'    # dir sorting
-        self.extOrder = '*+'    # extcnt sorting
+        self.root_path = ''      # root dir path (must be unicode -> listdir bug)
+        self.rel_path = ''       # current relative dir path
+        self.list_order = '*+'   # list sorting
+        self.dir_order = '*+'    # dir sorting
+        self.ext_order = '*+'    # extcnt sorting
         self.unit = 'b'         # display size unit
         self.filter = Filter('*')  # filename filter
-        self.headTailCount = 0  # listing head/tail count
+        self.head_tail_count = 0  # listing head/tail count
 
 
 class CmdDispatcher(object):
@@ -272,27 +271,27 @@ class CmdDispatcher(object):
     def __init__(self, state):
         self.state = state
         self.entries = (
-            (('?', 'help'),   lambda dummy1, dummy2: showHelp()),
-            (('cd', 'chdir'), cmdCd),
-            (('..',),         lambda state, params: cmdCd(state, '..')),
-            (('d', 'dir'),    cmdDir),
-            (('l', 'list'),   cmdList),
-            (('e', 'extcnt'), cmdExtCnt),
-            (('r', 'root'),   cmdRoot),
-            (('s', 'scan'),   cmdScan),
-            (('g', 'go'),     cmdGo),
-            (('f', 'filter'), cmdFilter),
-            (('ht', 'headtail'), cmdHeadTail),
-            (('lo', 'listorder'), cmdListOrder),
-            (('do', 'dirorder'),  cmdDirOrder),
-            (('eo', 'extorder'),  cmdExtOrder),
-            (('u', 'unit'),   cmdUnit),
-            (('cls',),         lambda dummy1, dummy2: cmdCls()),
+            (('?', 'help'),   lambda dummy1, dummy2: show_help()),
+            (('cd', 'chdir'), cmd_cd),
+            (('..',),         lambda state, params: cmd_cd(state, '..')),
+            (('d', 'dir'),    cmd_dir),
+            (('l', 'list'),   cmd_list),
+            (('e', 'extcnt'), cmd_extcnt),
+            (('r', 'root'),   cmd_root),
+            (('s', 'scan'),   cmd_scan),
+            (('g', 'go'),     cmd_go),
+            (('f', 'filter'), cmd_filter),
+            (('ht', 'headtail'), cmd_headtail),
+            (('lo', 'listorder'), cmd_listorder),
+            (('do', 'dirorder'),  cmd_dirorder),
+            (('eo', 'extorder'),  cmd_extorder),
+            (('u', 'unit'),   cmd_unit),
+            (('cls',),         lambda dummy1, dummy2: cmd_cls()),
         )
         
     def dispatch(self, cmd, params):
-        for cmdIds, func in self.entries:
-            if cmd.lower() in cmdIds:
+        for cmd_ids, func in self.entries:
+            if cmd.lower() in cmd_ids:
                 func(self.state, params)
                 return
         else:
@@ -358,10 +357,10 @@ def output_table(cols, data, footer=0):
             yield pad_table_row(row, alignments, max_widths, joiner)
 
 
-def getCandidatePaths(state, seed):
+def get_candidate_paths(state, seed):
     head, tail = os.path.split(seed)
     try:
-        relPath, dirObj = locateDir(state, head)
+        rel_path, dir_obj = locate_dir(state, head)
     except PathError:
         return []
     if tail:
@@ -370,7 +369,7 @@ def getCandidatePaths(state, seed):
     else:
         matches = lambda s: True
     a = []
-    for item in dirObj.children:
+    for item in dir_obj.children:
         if isinstance(item, Dir) and matches(item.name):
             #a += [item.name]
             a += [os.path.join(head, item.name)]
@@ -392,7 +391,7 @@ class ScanStatus(object):
     def cleanup(self):
         self.spo.restore(True)
 
-    def staticprint(self, s):
+    def static_print(self, s):
         """Print a static line and continue updates to the next line."""
         self.spo.restore(True)
         print s
@@ -405,12 +404,12 @@ class ScanStatus(object):
         self.cleanup()
 
 
-def walkPath(state, curRelPath, parts):
+def walk_path(state, cur_rel_path, parts):
     """Walk directories starting from a current relative path
     and using a list of token parts (incl. "." and "..").
     Underflowing ".." tokens (trying to go above state.root) are ignored.
     Returns resulting relative path or throws PathError."""
-    a = curRelPath.split(os.path.sep) if curRelPath else []
+    a = cur_rel_path.split(os.path.sep) if cur_rel_path else []
     for s in parts:
         if s == '.':
             continue
@@ -418,42 +417,42 @@ def walkPath(state, curRelPath, parts):
             del a[-1:]
         else:
             try:
-                state.root.getSubPath(os.path.join(*(a + [s])))
+                state.root.get_sub_path(os.path.join(*(a + [s])))
                 a += [s]
             except PathError:
                 raise
     return os.path.join(*a) if a else ''
 
 
-def setupDirChange(state, newPath):
+def setup_dir_change(state, new_path):
     """Return initial relative path and list of item tokens to walk
     during a dir change. Tokens may contain "." and ".." items."""
-    parts = os.path.normpath(newPath).split(os.path.sep)  # len >= 1
+    parts = os.path.normpath(new_path).split(os.path.sep)  # len >= 1
     if parts[0] == '':
         # new path is absolute
         return '', parts[1:]
     else:
         # new path is relative
-        return state.relPath, parts
+        return state.rel_path, parts
 
 
-def locateDir(state, newPath):
-    """Find dir by following "newPath" (absolute or relative)
+def locate_dir(state, new_path):
+    """Find dir by following "new_path" (absolute or relative)
     and return its relative path and Dir object."""
-    if not newPath:
-        relPath = state.relPath
+    if not new_path:
+        rel_path = state.rel_path
     else:
-        relPath = walkPath(state, *setupDirChange(state, newPath))
-    return relPath, state.root.getSubPath(relPath)
+        rel_path = walk_path(state, *setup_dir_change(state, new_path))
+    return rel_path, state.root.get_sub_path(rel_path)
     
 
-def dateStr(n):
+def date_to_str(n):
     a = list(time.localtime(n))[:5]
     a[0] %= 100
     return '%02d%02d%02d-%02d%02d' % tuple(a)
 
 
-def attrStr(n):
+def attr_to_str(n):
     extra = (n & 0xff00) >> 8
     s = '%02x' % extra if extra else '..'
     s += '-'
@@ -465,7 +464,7 @@ def attrStr(n):
     return s
 
 
-def trimName(s, n):
+def trim_name(s, n):
     """Replace some chars before the ext with '<..>'
     if needed to restrict size of file name.
     Append a single '>' if name or ext is too long."""
@@ -477,28 +476,28 @@ def trimName(s, n):
     return name[:n-len(ext)-4] + '<..>' + ext
 
 
-def cmdRoot(state, params):
+def cmd_root(state, params):
     if not params:
-        uprint(state.rootPath)
+        uprint(state.root_path)
         return
     if params[:1] == params[-1:] == '"':
         params = params[1:-1]
-    newRootPath = os.path.abspath(unicode(params))
-    if not os.path.isdir(newRootPath):
-        raise PathError('not a dir: "%s"' % newRootPath)
-    with ScanStatus(newRootPath) as status:
-        state.root = Dir(newRootPath, status)
-    state.rootPath = newRootPath
-    state.relPath = ''
+    new_root_path = os.path.abspath(unicode(params))
+    if not os.path.isdir(new_root_path):
+        raise PathError('not a dir: "%s"' % new_root_path)
+    with ScanStatus(new_root_path) as status:
+        state.root = Dir(new_root_path, status)
+    state.root_path = new_root_path
+    state.rel_path = ''
 
 
-def cmdCd(state, params):
+def cmd_cd(state, params):
     if not params:
-        uprint(os.path.join(state.rootPath, state.relPath))
+        uprint(os.path.join(state.root_path, state.rel_path))
         return
     if params[:1] == params[-1:] == '"':
         params = params[1:-1]
-    state.relPath = walkPath(state, *setupDirChange(state, params.strip()))
+    state.rel_path = walk_path(state, *setup_dir_change(state, params.strip()))
 
 
 def size_title_and_formatter(unit):
@@ -519,33 +518,33 @@ def size_title_and_formatter(unit):
         raise ValueError('bad unit', unit)
 
 
-def cmdDir(state, params):
+def cmd_dir(state, params):
     if params[:1] == params[-1:] == '"':
         params = params[1:-1]
-    relPath, dir = locateDir(state, params.strip())
-    dataRows = []
+    rel_path, dir = locate_dir(state, params.strip())
+    data_rows = []
     for item in dir.children:
         if isinstance(item, Dir) or state.filter.test(item.name):
-            dataRows += [(item.mdate, item.size, item.attr, item.name)]
-    orderIndexMap = {'m':0, 's':1, 'a':2, 'n':3, '*':None}
-    orderIndex = orderIndexMap[state.dirOrder[0]]
-    if orderIndex is not None:
-        dataRows.sort(
-            key=operator.itemgetter(orderIndex),
-            reverse=(state.listOrder[1] == '-')
+            data_rows += [(item.mdate, item.size, item.attr, item.name)]
+    order_index_map = {'m':0, 's':1, 'a':2, 'n':3, '*':None}
+    order_index = order_index_map[state.dir_order[0]]
+    if order_index is not None:
+        data_rows.sort(
+            key=operator.itemgetter(order_index),
+            reverse=(state.list_order[1] == '-')
         )
 
     is_dir_row = lambda row: bool(row[2] & win32file.FILE_ATTRIBUTE_DIRECTORY)
 
     # move dirs to beginning
-    dataRows.sort(key=is_dir_row, reverse=True)
+    data_rows.sort(key=is_dir_row, reverse=True)
 
     size_title, size_fmt = size_title_and_formatter(state.unit)
     size_str = lambda x, row: '<DIR>' if is_dir_row(row) else size_fmt(x)
-    date_str = lambda x, row: dateStr(x)
-    attr_str = lambda x, row: attrStr(x)
+    date_str = lambda x, row: date_to_str(x)
+    attr_str = lambda x, row: attr_to_str(x)
     NAME_LEN = 44  # FIXME: calc from console if possible
-    name_str = lambda x, row: trimName(x, NAME_LEN)
+    name_str = lambda x, row: trim_name(x, NAME_LEN)
 
     cols = [
         TableColumn('date', 'l', date_str),
@@ -553,42 +552,42 @@ def cmdDir(state, params):
         TableColumn('attr', 'l', attr_str),
         TableColumn('name', '', name_str),
         ]
-    for s in output_table(cols, dataRows):
+    for s in output_table(cols, data_rows):
         uprint(s)
 
 
-def cmdList(state, params):
+def cmd_list(state, params):
     if params[:1] == params[-1:] == '"':
         params = params[1:-1]
-    relPath, dir = locateDir(state, params.strip())
-    dataRows = []
-    totalStats = [0, 0, 0]
-    fileStats = [0, 0, 0]
+    rel_path, dir = locate_dir(state, params.strip())
+    data_rows = []
+    total_stats = [0, 0, 0]
+    file_stats = [0, 0, 0]
     for item in dir.children:
         try:
-            stats = item.getListStats(state.filter)
-            dataRows += [(stats.dirs, stats.files, stats.bytes, item.name)]
-            totalStats[0] += stats.dirs
-            totalStats[1] += stats.files
-            totalStats[2] += stats.bytes
+            stats = item.get_list_stats(state.filter)
+            data_rows += [(stats.dirs, stats.files, stats.bytes, item.name)]
+            total_stats[0] += stats.dirs
+            total_stats[1] += stats.files
+            total_stats[2] += stats.bytes
         except AttributeError:
             # it's a File
             if state.filter.test(item.name):
-                fileStats[1] += 1
-                fileStats[2] += item.size
-                totalStats[1] += 1
-                totalStats[2] += item.size
-    orderIndexMap = {'d':0, 'f':1, 's':2, 'n':3, '*':None}
-    orderIndex = orderIndexMap[state.listOrder[0]]
-    if orderIndex is not None:
-        dataRows.sort(
-            key=operator.itemgetter(orderIndex),
-            reverse=(state.listOrder[1] == '-')
+                file_stats[1] += 1
+                file_stats[2] += item.size
+                total_stats[1] += 1
+                total_stats[2] += item.size
+    order_index_map = {'d':0, 'f':1, 's':2, 'n':3, '*':None}
+    order_index = order_index_map[state.list_order[0]]
+    if order_index is not None:
+        data_rows.sort(
+            key=operator.itemgetter(order_index),
+            reverse=(state.list_order[1] == '-')
         )
 
-    dataRows = list(head_tail_filter(dataRows, state.headTailCount))
-    dataRows += [fileStats + ['<files>']] + \
-                [totalStats + ['<total>']]
+    data_rows = list(head_tail_filter(data_rows, state.head_tail_count))
+    data_rows += [file_stats + ['<files>']] + \
+                [total_stats + ['<total>']]
 
     size_title, size_fmt = size_title_and_formatter(state.unit)
     number_str = lambda x, row: '{:,}'.format(x)
@@ -601,33 +600,33 @@ def cmdList(state, params):
         TableColumn(size_title, 'r', size_str),
         TableColumn('name', '', identity),
         ]
-    for s in output_table(cols, dataRows, 2):
+    for s in output_table(cols, data_rows, 2):
         uprint(s)
 
 
-def cmdExtCnt(state, params):
+def cmd_extcnt(state, params):
     if params[:1] == params[-1:] == '"':
         params = params[1:-1]
-    relPath, dir = locateDir(state, params.strip())
-    statsDict = collections.defaultdict(lambda: ExtStats())
+    rel_path, dir = locate_dir(state, params.strip())
+    stats_dict = collections.defaultdict(lambda: ExtStats())
     for item in dir.children:
-        item.addExtStats(statsDict, state.filter)
-    dataRows = []
-    totalFiles, totalSize = 0, 0
-    for ext, stats in statsDict.iteritems():
-        dataRows += [(stats.files, stats.bytes, ext)]
-        totalFiles += stats.files
-        totalSize += stats.bytes
-    orderIndexMap = {'f':0, 's':1, 'n':2, '*':None}
-    orderIndex = orderIndexMap[state.extOrder[0]]
-    if orderIndex is not None:
-        dataRows.sort(
-            key=operator.itemgetter(orderIndex),
-            reverse=(state.extOrder[1] == '-')
+        item.add_ext_stats(stats_dict, state.filter)
+    data_rows = []
+    total_files, total_size = 0, 0
+    for ext, stats in stats_dict.iteritems():
+        data_rows += [(stats.files, stats.bytes, ext)]
+        total_files += stats.files
+        total_size += stats.bytes
+    order_index_map = {'f':0, 's':1, 'n':2, '*':None}
+    order_index = order_index_map[state.ext_order[0]]
+    if order_index is not None:
+        data_rows.sort(
+            key=operator.itemgetter(order_index),
+            reverse=(state.ext_order[1] == '-')
         )
 
-    dataRows = list(head_tail_filter(dataRows, state.headTailCount))
-    dataRows += [[totalFiles, totalSize, '<total>']]
+    data_rows = list(head_tail_filter(data_rows, state.head_tail_count))
+    data_rows += [[total_files, total_size, '<total>']]
 
     size_title, size_fmt = size_title_and_formatter(state.unit)
     number_str = lambda x, row: '{:,}'.format(x)
@@ -639,78 +638,78 @@ def cmdExtCnt(state, params):
         TableColumn(size_title, 'r', size_str),
         TableColumn('ext', '', identity),
         ]
-    for s in output_table(cols, dataRows, 1):
+    for s in output_table(cols, data_rows, 1):
         uprint(s)
 
 
-def cmdScan(state, params):
+def cmd_scan(state, params):
     if params[:1] == params[-1:] == '"':
         params = params[1:-1]
-    relPath, dir = locateDir(state, params.strip())
-    absPath = os.path.join(state.rootPath, relPath)
-    uprint('scanning "%s" ...' % os.path.join(state.rootPath, absPath))
-    with ScanStatus(absPath) as status:
-        dir.getChildren(absPath, status)
+    rel_path, dir = locate_dir(state, params.strip())
+    abs_path = os.path.join(state.root_path, rel_path)
+    uprint('scanning "%s" ...' % os.path.join(state.root_path, abs_path))
+    with ScanStatus(abs_path) as status:
+        dir.get_children(abs_path, status)
 
 
-def cmdGo(state, params):
+def cmd_go(state, params):
     if params[:1] == params[-1:] == '"':
         params = params[1:-1]
-    relPath, dir = locateDir(state, params.strip())
-    absPath = os.path.join(state.rootPath, relPath)
-    os.startfile(absPath)
+    rel_path, dir = locate_dir(state, params.strip())
+    abs_path = os.path.join(state.root_path, rel_path)
+    os.startfile(abs_path)
 
 
-def cmdFilter(state, params):
+def cmd_filter(state, params):
     if not params:
         print state.filter.pattern
         return
     state.filter = Filter(params)
 
 
-def cmdHeadTail(state, params):
+def cmd_headtail(state, params):
     if not params:
-        print state.headTailCount
+        print state.head_tail_count
         return
     try:
-        state.headTailCount = int(params, 10)
+        state.head_tail_count = int(params, 10)
     except ValueError:
         raise CmdError('invalid number "%s"' % params)
 
 
-def cmdOrder(state, params, attr, colFlags):
+def cmd_order(state, params, attr, col_flags):
     cur = getattr(state, attr)
     if not params:
         uprint(cur)
         return
-    newCol, newDir = '', ''
+    new_col, new_dir = '', ''
     for c in params.lower():
-        if c in colFlags:
-            newCol = c
+        if c in col_flags:
+            new_col = c
         elif c in '+-':
-            newDir = c
+            new_dir = c
         else:
             raise CmdError('invalid order flag "%s"' % c)
-    if newCol:
-        cur = newCol + cur[1]
-    if newDir:
-        cur = cur[0] + newDir
+    if new_col:
+        cur = new_col + cur[1]
+    if new_dir:
+        cur = cur[0] + new_dir
     setattr(state, attr, cur)
 
 
-def cmdListOrder(state, params):
-    cmdOrder(state, params, 'listOrder', 'dfsn*')
+def cmd_listorder(state, params):
+    cmd_order(state, params, 'list_order', 'dfsn*')
 
 
-def cmdDirOrder(state, params):
-    cmdOrder(state, params, 'dirOrder', 'msan*')
+def cmd_dirorder(state, params):
+    cmd_order(state, params, 'dir_order', 'msan*')
 
 
-def cmdExtOrder(state, params):
-    cmdOrder(state, params, 'extOrder', 'fsn*')
+def cmd_extorder(state, params):
+    cmd_order(state, params, 'ext_order', 'fsn*')
 
 
-def cmdUnit(state, params):
+def cmd_unit(state, params):
     if not params:
         uprint(state.unit)
         return
@@ -719,7 +718,7 @@ def cmdUnit(state, params):
     state.unit = params
 
 
-def cmdCls():
+def cmd_cls():
     console_stuff.cls()
 
 
@@ -738,24 +737,24 @@ if __name__ == '__main__':
     args = parse_args()
 
     state = State()
-    state.rootPath = args.root
-    cmdDispatcher = CmdDispatcher(state)
+    state.root_path = args.root
+    cmd_dispatcher = CmdDispatcher(state)
 
-    uprint('scanning "%s" ...' % state.rootPath)
-    with ScanStatus(state.rootPath) as status:
-        state.root = Dir(state.rootPath, status)
+    uprint('scanning "%s" ...' % state.root_path)
+    with ScanStatus(state.root_path) as status:
+        state.root = Dir(state.root_path, status)
 
     acmgr = AutoComplete.Manager()
 
     while True:
         try:
             prompt = ':: ' + os.path.join(
-                state.rootPath, state.relPath).rstrip(os.path.sep) + '>'
+                state.root_path, state.rel_path).rstrip(os.path.sep) + '>'
 
             if 0:
                 s = raw_input(prompt).strip()
             else:
-                acmgr.completer = lambda s: getCandidatePaths(state, s)
+                acmgr.completer = lambda s: get_candidate_paths(state, s)
                 s = acmgr.input(prompt)
 
             if not s:
@@ -769,7 +768,7 @@ if __name__ == '__main__':
             params = params or ''
             if cmd in ('q', 'quit'):
                 break
-            cmdDispatcher.dispatch(cmd, params)
+            cmd_dispatcher.dispatch(cmd, params)
         except (CmdError, PathError) as x:
             uprint('ERROR: ' + str(x))
         finally:
