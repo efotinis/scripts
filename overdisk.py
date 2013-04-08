@@ -188,7 +188,7 @@ def show_help():
   LO | LISTORDER [listcol][dirctn]  
   EO | EXTORDER [extcol][dirctn]
                      Set (or show) sort order for DIR, LIST and EXTCNT.
-   U | UNIT [unit]   Set (or show) size unit. One of "bkmgt*".
+   U | UNIT [unit]   Set (or show) size unit. One of "bkmgtpe*".
        CLS           Clear screen.
    ? | HELP          Show help.
    Q | QUIT          Exit.
@@ -505,13 +505,17 @@ def size_title_and_formatter(unit):
     if unit == 'b':
         return 'bytes', lambda n: '{:,}'.format(n)
     elif unit == 'k':
-        return 'KB', lambda n: '{:,}'.format(n / 2**10)
+        return 'KB', lambda n: '{:,.0f}'.format(n / 2.0**10)
     elif unit == 'm':
-        return 'MB', lambda n: '{:,}'.format(n / 2**20)
+        return 'MB', lambda n: '{:,.0f}'.format(n / 2.0**20)
     elif unit == 'g':
-        return 'GB', lambda n: '{:,}'.format(n / 2**30)
+        return 'GB', lambda n: '{:,.0f}'.format(n / 2.0**30)
     elif unit == 't':
-        return 'TB', lambda n: '{:,}'.format(n / 2**40)
+        return 'TB', lambda n: '{:,.0f}'.format(n / 2.0**40)
+    elif unit == 'p':
+        return 'PB', lambda n: '{:,.0f}'.format(n / 2.0**50)
+    elif unit == 'e':
+        return 'EB', lambda n: '{:,.0f}'.format(n / 2.0**60)
     elif unit == '*':
         return 'size', lambda n: CommonTools.prettysize(n)
     else:
@@ -713,7 +717,7 @@ def cmd_unit(state, params):
     if not params:
         uprint(state.unit)
         return
-    if len(params) != 1 or params not in 'bkmgt*':
+    if len(params) != 1 or params not in 'bkmgtpe*':
         raise CmdError('invalid size unit "%s"' % params)
     state.unit = params
 
