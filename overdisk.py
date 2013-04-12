@@ -169,29 +169,36 @@ class Dir(Item):
 
 
 def show_help():
+# TODO: add 'Commands' title
     print '''
-   R | ROOT [dir]    Set (or show) root directory.
-  CD | CHDIR [dir]   Set (or show) current directory.
-   D | DIR [dir]     Show directory contents.
-   L | LIST [dir]    Show directory entry statistics.
-   E | EXTCNT [dir]  Show directory extension statistics (files only).
-   S | SCAN [dir]    Rescan directory.
-   G | GO [dir]      Open directory in Explorer.
-   F | FILTER [flt]  Set (or show) filename filter. Use "*" to include all.
-                     Filtering affects DIR, LIST, and EXTCNT.
-                     Param is a sequence of glob patterns to include.
-                     Prepending a pattern with "/" will exclude matches.
-   T | TAIL [n]      Set (or show) tail count for listings.
-                     0: all, >0: last n, <0: first n
-                     Affects LIST and EXTCNT output.
-  DO | DIRORDER [dircol][dirctn]
-  LO | LISTORDER [listcol][dirctn]  
-  EO | EXTORDER [extcol][dirctn]
-                     Set (or show) sort order for DIR, LIST and EXTCNT.
-   U | UNIT [unit]   Set (or show) size unit. One of "bkmgtpe*".
-       CLS           Clear screen.
-   ? | HELP          Show help.
-   Q | QUIT          Exit.
+Commands:
+  ROOT [dir]    Set (or show) root directory.
+  CHDIR [dir]   Set (or show) current directory. As a shortcut, "\\" and ".."
+                can be used without the command name.
+  DIR [dir]     Show directory contents.
+  LIST [dir]    Show directory entry statistics.
+  EXTCNT [dir]  Show directory extension statistics (files only).
+  SCAN [dir]    Rescan directory.
+  GO [dir]      Open directory in Explorer.
+  FILTER [flt]  Set (or show) filename filter. Use "*" to include all.
+                Filtering affects DIR, LIST, and EXTCNT.
+                Param is a sequence of glob patterns to include.
+                Prepending a pattern with "/" will exclude matches.
+  TAIL [n]      Set (or show) tail count for listings.
+                0: all, >0: last n, <0: first n
+                Affects LIST and EXTCNT output.
+  DIRORDER [dircol][dirctn]
+  LISTORDER [listcol][dirctn]  
+  EXTORDER [extcol][dirctn]
+                Set (or show) sort order for DIR, LIST and EXTCNT.
+  UNIT [unit]   Set (or show) size unit. One of "bkmgtpe*".
+  ALIAS [name[=[value]]]
+                Set (or show) one or more simply command aliases.
+                No params show all aliases, 'name' shows aliases starting
+                with name, 'name=' deletes and 'name=value' sets an alias.
+  CLS           Clear screen.
+  HELP          Show help.
+  QUIT          Exit.
 
 DIR, LIST, EXTCNT and SCAN default to current directory.
 
@@ -214,11 +221,9 @@ Dir display extra attribute flags (hex):
 
 RX_CMD = re.compile(
     r'''^
-        \s*             # optional leading space
-        (\w+|\?|\.\.)        # alnum word, "?", or ".."
-        (?:
-            \s+(.*)     # optional params with leading space
-        )?
+        \s*                 # optional leading space
+        (\w+|\?|\.\.|\\)    # alnum word, "?", "..", or "\"
+        (?:\s+(.*))?        # optional params with leading space
     $''',
     re.IGNORECASE | re.VERBOSE)
 
@@ -263,6 +268,12 @@ class State(object):
         self.unit = 'b'             # display size unit
         self.filter = Filter('*')   # filename filter
         self.tail_count = 0         # listing tail count
+        self.aliases = {            # simple command aliases
+            '?': 'help', 'cd': 'chdir', 'd': 'dir', 'l': 'list', 'e': 'extcnt',
+            'r': 'root', 's': 'scan', 'g': 'go', 'f': 'filter', 't': 'tail',
+            'lo': 'listorder', 'do': 'dirorder', 'eo': 'extorder', 'u': 'unit',
+            'a': 'alias', 'q': 'quit'
+        }
 
 
 class CmdDispatcher(object):
@@ -270,32 +281,33 @@ class CmdDispatcher(object):
     
     def __init__(self, state):
         self.state = state
-        self.entries = (
-            (('?', 'help'),   lambda dummy1, dummy2: show_help()),
-            (('cd', 'chdir'), cmd_cd),
-            (('..',),         lambda state, params: cmd_cd(state, '..')),
-            (('d', 'dir'),    cmd_dir),
-            (('l', 'list'),   cmd_list),
-            (('e', 'extcnt'), cmd_extcnt),
-            (('r', 'root'),   cmd_root),
-            (('s', 'scan'),   cmd_scan),
-            (('g', 'go'),     cmd_go),
-            (('f', 'filter'), cmd_filter),
-            (('t', 'tail'),   cmd_tail),
-            (('lo', 'listorder'), cmd_listorder),
-            (('do', 'dirorder'),  cmd_dirorder),
-            (('eo', 'extorder'),  cmd_extorder),
-            (('u', 'unit'),   cmd_unit),
-            (('cls',),         lambda dummy1, dummy2: cmd_cls()),
-        )
+        self.entries = {
+            'help': lambda dummy1, dummy2: show_help(),
+            'chdir': cmd_cd,
+            '..': lambda state, params: cmd_cd(state, '..'),
+            '\\': lambda state, params: cmd_cd(state, '\\'),
+            'dir': cmd_dir,
+            'list': cmd_list,
+            'extcnt': cmd_extcnt,
+            'root': cmd_root,
+            'scan': cmd_scan,
+            'go': cmd_go,
+            'filter': cmd_filter,
+            'tail': cmd_tail,
+            'listorder': cmd_listorder,
+            'dirorder': cmd_dirorder,
+            'extorder': cmd_extorder,
+            'unit': cmd_unit,
+            'alias': cmd_alias,
+            'cls': lambda dummy1, dummy2: cmd_cls(),
+            'quit': lambda dummy1, dummy2: cmd_quit(),
+        }
         
     def dispatch(self, cmd, params):
-        for cmd_ids, func in self.entries:
-            if cmd.lower() in cmd_ids:
-                func(self.state, params)
-                return
-        else:
+        func = self.entries.get(cmd.lower())
+        if func is None:
             raise CmdError('unknown command "%s"' % cmd)
+        func(self.state, params)
 
 
 def tail_filter(seq, count):
@@ -722,8 +734,35 @@ def cmd_unit(state, params):
     state.unit = params
 
 
+def cmd_alias(state, params):
+    aliases = state.aliases
+    keys = sorted(aliases.keys())
+    params = params.split()
+    if not params:
+        for key in keys:
+            uprint(key + '=' + aliases[key])
+        return
+    for s in params:
+        name, sep, value = s.partition('=')
+        name, value = name.strip().lower(), value.strip().lower()
+        if not name:
+            uprint('WARNING: empty alias name: "%s"' % s)
+        elif not sep:
+            for key in keys:
+                if key.startswith(name):
+                    uprint(key + '=' + aliases[key])
+        elif not value:
+            del aliases[name]
+        else:
+            aliases[name] = value
+
+
 def cmd_cls():
     console_stuff.cls()
+
+
+def cmd_quit():
+    raise SystemExit
 
 
 def parse_args():
@@ -779,9 +818,8 @@ if __name__ == '__main__':
                 continue
             cmd, params = m.groups()
             cmd = cmd.lower()
+            cmd = state.aliases.get(cmd, cmd)
             params = params or ''
-            if cmd in ('q', 'quit'):
-                break
             cmd_dispatcher.dispatch(cmd, params)
         except (CmdError, PathError) as x:
             uprint('ERROR: ' + str(x))
