@@ -123,7 +123,7 @@ class Dir(Item):
             # some folders (like "System Volume Information") cannot be listed
             items = os.listdir(path)
         except WindowsError as x:
-            msg = 'WANRING: could list contents of "%s"; reason: %s' % (path, x.strerror)
+            msg = 'WARNING: could not list contents of "%s"; reason: %s' % (path, x.strerror)
             status.static_print(msg)
             return
         for s in items:
@@ -181,8 +181,8 @@ def show_help():
                      Filtering affects DIR, LIST, and EXTCNT.
                      Param is a sequence of glob patterns to include.
                      Prepending a pattern with "/" will exclude matches.
-  HT | HEADTAIL [n]  Set (or show) listing head/tail count. Listing rows shown:
-                     all (n=0), first n (n>0), last n (n<0)
+   T | TAIL [n]      Set (or show) tail count for listings.
+                     0: all, >0: last n, <0: first n
                      Affects LIST and EXTCNT output.
   DO | DIRORDER [dircol][dirctn]
   LO | LISTORDER [listcol][dirctn]  
@@ -254,15 +254,15 @@ class Filter(object):
 class State(object):
     """Global program state."""
     def __init__(self):
-        self.root = None        # root Dir object
-        self.root_path = ''      # root dir path (must be unicode -> listdir bug)
-        self.rel_path = ''       # current relative dir path
-        self.list_order = '*+'   # list sorting
-        self.dir_order = '*+'    # dir sorting
-        self.ext_order = '*+'    # extcnt sorting
-        self.unit = 'b'         # display size unit
-        self.filter = Filter('*')  # filename filter
-        self.head_tail_count = 0  # listing head/tail count
+        self.root = None            # root Dir object
+        self.root_path = ''         # root dir path (must be unicode -> listdir bug)
+        self.rel_path = ''          # current relative dir path
+        self.list_order = '*+'      # list sorting
+        self.dir_order = '*+'       # dir sorting
+        self.ext_order = '*+'       # extcnt sorting
+        self.unit = 'b'             # display size unit
+        self.filter = Filter('*')   # filename filter
+        self.tail_count = 0         # listing tail count
 
 
 class CmdDispatcher(object):
@@ -281,7 +281,7 @@ class CmdDispatcher(object):
             (('s', 'scan'),   cmd_scan),
             (('g', 'go'),     cmd_go),
             (('f', 'filter'), cmd_filter),
-            (('ht', 'headtail'), cmd_headtail),
+            (('t', 'tail'),   cmd_tail),
             (('lo', 'listorder'), cmd_listorder),
             (('do', 'dirorder'),  cmd_dirorder),
             (('eo', 'extorder'),  cmd_extorder),
@@ -298,28 +298,28 @@ class CmdDispatcher(object):
             raise CmdError('unknown command "%s"' % cmd)
 
 
-def head_tail_filter(seq, count):
+def tail_filter(seq, count):
     """Yield seq items, restricting their number.
 
     Items returned for count=N:
         N=0  all
-        N>0  first N
-        N<0  last N
+        N>0  last N
+        N<0  first N
     """
     if count == 0:
         for x in seq:
             yield x
-    elif count > 0:
+    elif count < 0:
         for i, x in enumerate(seq):
-            if i < count:
+            if i < -count:
                 yield x
             else:
                 break
-    else:  # count < 0
+    else:  # count > 0
         a = []
         for x in seq:
             a += [x]
-            a = a[count:]
+            a = a[-count:]
         for x in a:
             yield x
 
@@ -589,7 +589,7 @@ def cmd_list(state, params):
             reverse=(state.list_order[1] == '-')
         )
 
-    data_rows = list(head_tail_filter(data_rows, state.head_tail_count))
+    data_rows = list(tail_filter(data_rows, state.tail_count))
     data_rows += [file_stats + ['<files>']] + \
                 [total_stats + ['<total>']]
 
@@ -629,7 +629,7 @@ def cmd_extcnt(state, params):
             reverse=(state.ext_order[1] == '-')
         )
 
-    data_rows = list(head_tail_filter(data_rows, state.head_tail_count))
+    data_rows = list(tail_filter(data_rows, state.tail_count))
     data_rows += [[total_files, total_size, '<total>']]
 
     size_title, size_fmt = size_title_and_formatter(state.unit)
@@ -671,12 +671,12 @@ def cmd_filter(state, params):
     state.filter = Filter(params)
 
 
-def cmd_headtail(state, params):
+def cmd_tail(state, params):
     if not params:
-        print state.head_tail_count
+        print state.tail_count
         return
     try:
-        state.head_tail_count = int(params, 10)
+        state.tail_count = int(params, 10)
     except ValueError:
         raise CmdError('invalid number "%s"' % params)
 
@@ -755,8 +755,8 @@ if __name__ == '__main__':
             prompt_flags = []
             if state.filter.pattern != '*':
                 prompt_flags += ['f']
-            if state.head_tail_count:
-                prompt_flags += [str(state.head_tail_count)]
+            if state.tail_count:
+                prompt_flags += [str(state.tail_count)]
             if 1 or prompt_flags:
                 prompt_flags = '[' + ','.join(prompt_flags) + '] '
             else:
