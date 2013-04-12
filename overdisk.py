@@ -9,8 +9,7 @@
 # TODO: option to display uncompressed long names
 # TODO: option to display full attribs
 # TODO: option to display numbers/sizes as percentage of total
-# TODO: some kind of indicators (possibly before or after the prompt) for active filters ('f'), head/tail restriction ('...'), etc
-# TODO: allow cmd aliases (to implement the short cmds)
+# TODO: make commands case-sensitive
 
 import os
 import re
@@ -168,8 +167,9 @@ class Dir(Item):
             c.add_ext_stats(stats_dict, filter_obj)
 
 
-def show_help():
-# TODO: add 'Commands' title
+def cmd_help(state, params):
+    if params:
+        raise CmdError('no params required')
     print '''
 Commands:
   ROOT [dir]    Set (or show) root directory.
@@ -219,22 +219,76 @@ Dir display extra attribute flags (hex):
 '''[1:-1]
 
 
-RX_CMD = re.compile(
-    r'''^
-        \s*                 # optional leading space
-        (\w+|\?|\.\.|\\)    # alnum word, "?", "..", or "\"
-        (?:\s+(.*))?        # optional params with leading space
-    $''',
-    re.IGNORECASE | re.VERBOSE)
+def split_cmd(s):
+    """Split a param string like a shell does.
+
+    Handles adjacent tokens and double quotes (incl. missing closing quote).
+    """
+    # find: spaces, quoted, and unquoted tokens
+    a = re.findall(r'(\s+)|"(.*?)(?:"|(\s+)$)|([^\s"]+)', s)
+
+    # replace spaces with None and combine the rest of the string tokens;
+    # s1 is a quoted token, minus s2, which is the closing quote or
+    # the trailing space of an non-terminated quoted token;
+    # s3 is an unquoted token
+    a = [None if space else s1+s2+s3 for space, s1, s2, s3 in a]
+
+
+    # remove trailing space; the leading space, if any, is needed
+    if a and a[-1] is None:
+        del a[-1]
+        
+    # combine consequtive strings, adding a new one when None is found
+    ret = []
+    for s in a:
+        if s is None:
+            ret += ['']
+        elif ret:
+            ret[-1] += s
+        else:
+            ret = [s]
+    return ret
+
+
+def test_split_cmd():
+    f = split_cmd
+
+    # empty
+    assert(f('') == [])
+    assert(f(' ') == [])
+    assert(f('     ') == [])
+
+    # single
+    assert(f('a') == ['a'])
+    assert(f(' a') == ['a'])
+    assert(f('a ') == ['a'])
+    assert(f(' a ') == ['a'])
+
+    # quoted
+    assert(f('"a"') == ['a'])
+    assert(f('"a" b') == ['a', 'b'])
+
+    # multiple
+    assert(f('a b') == ['a', 'b'])
+    assert(f('a  b') == ['a', 'b'])
+    assert(f('"a" "b"') == ['a','b'])
+
+    # adjacent
+    assert(f('"a"b') == ['ab'])
+    assert(f('"a""b"') == ['ab'])
+
+    # missing end quote
+    assert(f('"a""b') == ['ab'])
+    assert(f('"a" "b') == ['a','b'])
+    assert(f('"a" "b ') == ['a','b '])
 
 
 class Filter(object):
     """File filtering object."""
 
-    def __init__(self, rule_str):
-        self.pattern = rule_str
+    def __init__(self, rule_strings):
         self.rules = []
-        for s in rule_str.split():
+        for s in rule_strings:
             include = True
             if s[:1] == '/':
                 include = False
@@ -244,6 +298,11 @@ class Filter(object):
                 # TODO: make case-matching depend on platfrom and/or configurable
                 self.rules += [(include, re.compile(patt, re.IGNORECASE))]
         self.initial = (self.rules[0][0] == False) if self.rules else True
+        self.pattern_string = ' '.join('"'+s+'"' if ' ' in s else s
+                                       for s in rule_strings)
+
+    def __str__(self):
+        return self.pattern_string
 
     def test(self, s):
         ret = self.initial
@@ -266,7 +325,7 @@ class State(object):
         self.dir_order = '*+'       # dir sorting
         self.ext_order = '*+'       # extcnt sorting
         self.unit = 'b'             # display size unit
-        self.filter = Filter('*')   # filename filter
+        self.filter = Filter(['*']) # filename filter
         self.tail_count = 0         # listing tail count
         self.aliases = {            # simple command aliases
             '?': 'help', 'cd': 'chdir', 'd': 'dir', 'l': 'list', 'e': 'extcnt',
@@ -282,10 +341,10 @@ class CmdDispatcher(object):
     def __init__(self, state):
         self.state = state
         self.entries = {
-            'help': lambda dummy1, dummy2: show_help(),
+            'help': cmd_help,
             'chdir': cmd_cd,
-            '..': lambda state, params: cmd_cd(state, '..'),
-            '\\': lambda state, params: cmd_cd(state, '\\'),
+            '..': lambda state, params: cmd_cd(state, ['..']),
+            '\\': lambda state, params: cmd_cd(state, ['\\']),
             'dir': cmd_dir,
             'list': cmd_list,
             'extcnt': cmd_extcnt,
@@ -299,8 +358,8 @@ class CmdDispatcher(object):
             'extorder': cmd_extorder,
             'unit': cmd_unit,
             'alias': cmd_alias,
-            'cls': lambda dummy1, dummy2: cmd_cls(),
-            'quit': lambda dummy1, dummy2: cmd_quit(),
+            'cls': cmd_cls,
+            'quit': cmd_quit,
         }
         
     def dispatch(self, cmd, params):
@@ -318,6 +377,7 @@ def tail_filter(seq, count):
         N>0  last N
         N<0  first N
     """
+    # TODO: use itertools.islice instead
     if count == 0:
         for x in seq:
             yield x
@@ -504,12 +564,13 @@ def cmd_root(state, params):
 
 
 def cmd_cd(state, params):
+    if len(params) > 1:
+        raise CmdError('at most one param required')
     if not params:
         uprint(os.path.join(state.root_path, state.rel_path))
         return
-    if params[:1] == params[-1:] == '"':
-        params = params[1:-1]
-    state.rel_path = walk_path(state, *setup_dir_change(state, params.strip()))
+    (target,) = params
+    state.rel_path = walk_path(state, *setup_dir_change(state, target))
 
 
 def size_title_and_formatter(unit):
@@ -535,9 +596,9 @@ def size_title_and_formatter(unit):
 
 
 def cmd_dir(state, params):
-    if params[:1] == params[-1:] == '"':
-        params = params[1:-1]
-    rel_path, dir = locate_dir(state, params.strip())
+    if len(params) > 1:
+        raise CmdError('at most one param required')
+    rel_path, dir = locate_dir(state, params[0] if params else '')
     data_rows = []
     for item in dir.children:
         if isinstance(item, Dir) or state.filter.test(item.name):
@@ -573,9 +634,9 @@ def cmd_dir(state, params):
 
 
 def cmd_list(state, params):
-    if params[:1] == params[-1:] == '"':
-        params = params[1:-1]
-    rel_path, dir = locate_dir(state, params.strip())
+    if len(params) > 1:
+        raise CmdError('at most one param required')
+    rel_path, dir = locate_dir(state, params[0] if params else '')
     data_rows = []
     total_stats = [0, 0, 0]
     file_stats = [0, 0, 0]
@@ -621,9 +682,9 @@ def cmd_list(state, params):
 
 
 def cmd_extcnt(state, params):
-    if params[:1] == params[-1:] == '"':
-        params = params[1:-1]
-    rel_path, dir = locate_dir(state, params.strip())
+    if len(params) > 1:
+        raise CmdError('at most one param required')
+    rel_path, dir = locate_dir(state, params[0] if params else '')
     stats_dict = collections.defaultdict(lambda: ExtStats())
     for item in dir.children:
         item.add_ext_stats(stats_dict, state.filter)
@@ -659,9 +720,9 @@ def cmd_extcnt(state, params):
 
 
 def cmd_scan(state, params):
-    if params[:1] == params[-1:] == '"':
-        params = params[1:-1]
-    rel_path, dir = locate_dir(state, params.strip())
+    if len(params) > 1:
+        raise CmdError('at most one param required')
+    rel_path, dir = locate_dir(state, params[0] if params else '')
     abs_path = os.path.join(state.root_path, rel_path)
     uprint('scanning "%s" ...' % os.path.join(state.root_path, abs_path))
     with ScanStatus(abs_path) as status:
@@ -669,37 +730,42 @@ def cmd_scan(state, params):
 
 
 def cmd_go(state, params):
-    if params[:1] == params[-1:] == '"':
-        params = params[1:-1]
-    rel_path, dir = locate_dir(state, params.strip())
+    if len(params) > 1:
+        raise CmdError('at most one param required')
+    rel_path, dir = locate_dir(state, params[0] if params else '')
     abs_path = os.path.join(state.root_path, rel_path)
     os.startfile(abs_path)
 
 
 def cmd_filter(state, params):
     if not params:
-        print state.filter.pattern
+        print str(state.filter)
         return
     state.filter = Filter(params)
 
 
 def cmd_tail(state, params):
+    if len(params) > 1:
+        raise CmdError('at most one param required')
     if not params:
         print state.tail_count
         return
     try:
-        state.tail_count = int(params, 10)
+        state.tail_count = int(params[0], 10)
     except ValueError:
         raise CmdError('invalid number "%s"' % params)
 
 
 def cmd_order(state, params, attr, col_flags):
+    if len(params) > 1:
+        raise CmdError('at most one param required')
     cur = getattr(state, attr)
     if not params:
         uprint(cur)
         return
     new_col, new_dir = '', ''
-    for c in params.lower():
+    # FIXME: warn about multiple flags; currently only the last is used
+    for c in params[0].lower():
         if c in col_flags:
             new_col = c
         elif c in '+-':
@@ -726,18 +792,20 @@ def cmd_extorder(state, params):
 
 
 def cmd_unit(state, params):
+    if len(params) > 1:
+        raise CmdError('at most one param required')
     if not params:
         uprint(state.unit)
         return
-    if len(params) != 1 or params not in 'bkmgtpe*':
-        raise CmdError('invalid size unit "%s"' % params)
-    state.unit = params
+    unit = params[0]
+    if unit not in 'bkmgtpe*':
+        raise CmdError('invalid size unit "%s"' % unit)
+    state.unit = unit
 
 
 def cmd_alias(state, params):
     aliases = state.aliases
     keys = sorted(aliases.keys())
-    params = params.split()
     if not params:
         for key in keys:
             uprint(key + '=' + aliases[key])
@@ -757,11 +825,15 @@ def cmd_alias(state, params):
             aliases[name] = value
 
 
-def cmd_cls():
+def cmd_cls(state, params):
+    if params:
+        raise CmdError('no params required')
     console_stuff.cls()
 
 
-def cmd_quit():
+def cmd_quit(state, params):
+    if params:
+        raise CmdError('no params required')
     raise SystemExit
 
 
@@ -792,7 +864,7 @@ if __name__ == '__main__':
     while True:
         try:
             prompt_flags = []
-            if state.filter.pattern != '*':
+            if str(state.filter) != '*':
                 prompt_flags += ['f']
             if state.tail_count:
                 prompt_flags += [str(state.tail_count)]
@@ -810,16 +882,12 @@ if __name__ == '__main__':
                 acmgr.completer = lambda s: get_candidate_paths(state, s)
                 s = acmgr.input(prompt)
 
-            if not s:
+            params = split_cmd(s)
+            if not params:
                 continue
-            m = RX_CMD.match(s)
-            if not m:
-                uprint('ERROR: invalid cmd line')
-                continue
-            cmd, params = m.groups()
-            cmd = cmd.lower()
+
+            cmd, params = params[0].lower(), params[1:]
             cmd = state.aliases.get(cmd, cmd)
-            params = params or ''
             cmd_dispatcher.dispatch(cmd, params)
         except (CmdError, PathError) as x:
             uprint('ERROR: ' + str(x))
