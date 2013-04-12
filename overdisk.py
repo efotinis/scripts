@@ -10,6 +10,7 @@
 # TODO: option to display full attribs
 # TODO: option to display numbers/sizes as percentage of total
 # TODO: make commands case-sensitive
+# TODO: allow multiple dir params to commands that it make sense (e.g. extcnt, scan, and go)
 
 import os
 import re
@@ -187,9 +188,9 @@ Commands:
   TAIL [n]      Set (or show) tail count for listings.
                 0: all, >0: last n, <0: first n
                 Affects LIST and EXTCNT output.
-  DIRORDER [dircol][dirctn]
-  LISTORDER [listcol][dirctn]  
-  EXTORDER [extcol][dirctn]
+  DIRORDER [dircol]
+  LISTORDER [listcol]
+  EXTORDER [extcol]
                 Set (or show) sort order for DIR, LIST and EXTCNT.
   UNIT [unit]   Set (or show) size unit. One of "bkmgtpe*".
   ALIAS [name[=[value]]]
@@ -202,14 +203,14 @@ Commands:
 
 DIR, LIST, EXTCNT and SCAN default to current directory.
 
-Order flags:
-  listcol      dircol         extcol       dirctn
-  -----------  -------------  -----------  ------------
-  d dirs       m modify date  f files      + ascending
-  f files      s size         s size       - descending
-  s size       a attributes   n name       
+Order flags (lowercase is ascending; use uppercase for descending):
+  listcol      dircol         extcol
+  -----------  -------------  -----------
+  d dirs       m modify date  f files
+  f files      s size         s size
+  s size       a attributes   n name
   n name       n name         * unordered
-  * unordered  * unordered    
+  * unordered  * unordered
 
 Dir display extra attribute flags (hex):
   01 temporary      10 offline
@@ -321,9 +322,9 @@ class State(object):
         self.root = None            # root Dir object
         self.root_path = ''         # root dir path (must be unicode -> listdir bug)
         self.rel_path = ''          # current relative dir path
-        self.list_order = '*+'      # list sorting
-        self.dir_order = '*+'       # dir sorting
-        self.ext_order = '*+'       # extcnt sorting
+        self.list_order = '*'       # list sorting
+        self.dir_order = '*'        # dir sorting
+        self.ext_order = '*'        # extcnt sorting
         self.unit = 'b'             # display size unit
         self.filter = Filter(['*']) # filename filter
         self.tail_count = 0         # listing tail count
@@ -377,7 +378,7 @@ def tail_filter(seq, count):
         N>0  last N
         N<0  first N
     """
-    # TODO: use itertools.islice instead
+    # NOTE: we can't use itertools.islice, since it doesn't support negative indices
     if count == 0:
         for x in seq:
             yield x
@@ -604,11 +605,11 @@ def cmd_dir(state, params):
         if isinstance(item, Dir) or state.filter.test(item.name):
             data_rows += [(item.mdate, item.size, item.attr, item.name)]
     order_index_map = {'m':0, 's':1, 'a':2, 'n':3, '*':None}
-    order_index = order_index_map[state.dir_order[0]]
+    order_index = order_index_map[state.dir_order.lower()]
     if order_index is not None:
         data_rows.sort(
             key=operator.itemgetter(order_index),
-            reverse=(state.list_order[1] == '-')
+            reverse=(not state.list_order.islower())
         )
 
     is_dir_row = lambda row: bool(row[2] & win32file.FILE_ATTRIBUTE_DIRECTORY)
@@ -655,11 +656,11 @@ def cmd_list(state, params):
                 total_stats[1] += 1
                 total_stats[2] += item.size
     order_index_map = {'d':0, 'f':1, 's':2, 'n':3, '*':None}
-    order_index = order_index_map[state.list_order[0]]
+    order_index = order_index_map[state.list_order.lower()]
     if order_index is not None:
         data_rows.sort(
             key=operator.itemgetter(order_index),
-            reverse=(state.list_order[1] == '-')
+            reverse=(not state.list_order.islower())
         )
 
     data_rows = list(tail_filter(data_rows, state.tail_count))
@@ -695,11 +696,11 @@ def cmd_extcnt(state, params):
         total_files += stats.files
         total_size += stats.bytes
     order_index_map = {'f':0, 's':1, 'n':2, '*':None}
-    order_index = order_index_map[state.ext_order[0]]
+    order_index = order_index_map[state.ext_order.lower()]
     if order_index is not None:
         data_rows.sort(
             key=operator.itemgetter(order_index),
-            reverse=(state.ext_order[1] == '-')
+            reverse=(not state.ext_order.islower())
         )
 
     data_rows = list(tail_filter(data_rows, state.tail_count))
@@ -756,39 +757,29 @@ def cmd_tail(state, params):
         raise CmdError('invalid number "%s"' % params)
 
 
-def cmd_order(state, params, attr, col_flags):
+def cmd_order(state, params, attr, accepted_flags):
     if len(params) > 1:
         raise CmdError('at most one param required')
     cur = getattr(state, attr)
     if not params:
         uprint(cur)
         return
-    new_col, new_dir = '', ''
-    # FIXME: warn about multiple flags; currently only the last is used
-    for c in params[0].lower():
-        if c in col_flags:
-            new_col = c
-        elif c in '+-':
-            new_dir = c
-        else:
-            raise CmdError('invalid order flag "%s"' % c)
-    if new_col:
-        cur = new_col + cur[1]
-    if new_dir:
-        cur = cur[0] + new_dir
-    setattr(state, attr, cur)
+    new_flag = params[0]
+    if not new_flag in accepted_flags:
+        raise CmdError('invalid order flag "%s"' % new_flag)
+    setattr(state, attr, new_flag)
 
 
 def cmd_listorder(state, params):
-    cmd_order(state, params, 'list_order', 'dfsn*')
+    cmd_order(state, params, 'list_order', '*dfsnDFSN')
 
 
 def cmd_dirorder(state, params):
-    cmd_order(state, params, 'dir_order', 'msan*')
+    cmd_order(state, params, 'dir_order', '*msanMSAN')
 
 
 def cmd_extorder(state, params):
-    cmd_order(state, params, 'ext_order', 'fsn*')
+    cmd_order(state, params, 'ext_order', '*fsnFSN')
 
 
 def cmd_unit(state, params):
