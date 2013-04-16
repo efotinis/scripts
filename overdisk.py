@@ -197,6 +197,7 @@ Commands:
                 Set (or show) one or more simply command aliases.
                 No params show all aliases, 'name' shows aliases starting
                 with name, 'name=' deletes and 'name=value' sets an alias.
+  COLSEP [sep]  Set (or show) the string used to separate table columns.
   CLS           Clear screen.
   HELP          Show help.
   QUIT          Exit.
@@ -233,7 +234,6 @@ def split_cmd(s):
     # the trailing space of an non-terminated quoted token;
     # s3 is an unquoted token
     a = [None if space else s1+s2+s3 for space, s1, s2, s3 in a]
-
 
     # remove trailing space; the leading space, if any, is needed
     if a and a[-1] is None:
@@ -332,8 +332,10 @@ class State(object):
             '?': 'help', 'cd': 'chdir', 'd': 'dir', 'l': 'list', 'e': 'extcnt',
             'r': 'root', 's': 'scan', 'g': 'go', 'f': 'filter', 't': 'tail',
             'lo': 'listorder', 'do': 'dirorder', 'eo': 'extorder', 'u': 'unit',
+            'cs': 'colsep', 
             'a': 'alias', 'q': 'quit'
         }
+        self.colsep = '  '          # table column separator
 
 
 class CmdDispatcher(object):
@@ -359,6 +361,7 @@ class CmdDispatcher(object):
             'extorder': cmd_extorder,
             'unit': cmd_unit,
             'alias': cmd_alias,
+            'colsep': cmd_colsep,
             'cls': cmd_cls,
             'quit': cmd_quit,
         }
@@ -406,7 +409,7 @@ def pad_table_row(a, alignments, widths, joiner):
     return joiner.join(a)
 
 
-def output_table(cols, data, footer=0):
+def output_table(cols, data, colsep, footer=0):
     """Generate table rows, given a list of TableColumn objects and a 2D list of cell values."""
     rows = [[col.formatter(x, a) for (x, col) in zip(a, cols)]
             for a in data]
@@ -414,20 +417,19 @@ def output_table(cols, data, footer=0):
     max_widths = [max(len(row[i]) for row in itertools.chain([captions], rows))
                   for i in range(len(cols))]
     alignments = [c.alignment for c in cols]
-    joiner = '  '
 
-    yield pad_table_row(captions, alignments, max_widths, joiner)
-    yield pad_table_row(['-' * n for n in max_widths], alignments, max_widths, joiner)
+    yield pad_table_row(captions, alignments, max_widths, colsep)
+    yield pad_table_row(['-' * n for n in max_widths], alignments, max_widths, colsep)
     if footer > 0:
         rows, footer_rows = rows[:-footer], rows[-footer:]
     else:
         rows, footer_rows = rows, []
     for row in rows:
-        yield pad_table_row(row, alignments, max_widths, joiner)
+        yield pad_table_row(row, alignments, max_widths, colsep)
     if footer_rows:
-        yield pad_table_row(['-' * n for n in max_widths], alignments, max_widths, joiner)
+        yield pad_table_row(['-' * n for n in max_widths], alignments, max_widths, colsep)
         for row in footer_rows:
-            yield pad_table_row(row, alignments, max_widths, joiner)
+            yield pad_table_row(row, alignments, max_widths, colsep)
 
 
 def get_candidate_paths(state, seed):
@@ -550,12 +552,14 @@ def trim_name(s, n):
 
 
 def cmd_root(state, params):
+    if len(params) > 1:
+        raise CmdError('at most one param required')
     if not params:
         uprint(state.root_path)
         return
     if params[:1] == params[-1:] == '"':
         params = params[1:-1]
-    new_root_path = os.path.abspath(unicode(params))
+    new_root_path = os.path.abspath(unicode(params[0]))
     if not os.path.isdir(new_root_path):
         raise PathError('not a dir: "%s"' % new_root_path)
     with ScanStatus(new_root_path) as status:
@@ -630,7 +634,7 @@ def cmd_dir(state, params):
         TableColumn('attr', 'l', attr_str),
         TableColumn('name', '', name_str),
         ]
-    for s in output_table(cols, data_rows):
+    for s in output_table(cols, data_rows, state.colsep):
         uprint(s)
 
 
@@ -678,7 +682,7 @@ def cmd_list(state, params):
         TableColumn(size_title, 'r', size_str),
         TableColumn('name', '', identity),
         ]
-    for s in output_table(cols, data_rows, 2):
+    for s in output_table(cols, data_rows, state.colsep, 2):
         uprint(s)
 
 
@@ -716,7 +720,7 @@ def cmd_extcnt(state, params):
         TableColumn(size_title, 'r', size_str),
         TableColumn('ext', '', identity),
         ]
-    for s in output_table(cols, data_rows, 1):
+    for s in output_table(cols, data_rows, state.colsep, 1):
         uprint(s)
 
 
@@ -814,6 +818,18 @@ def cmd_alias(state, params):
             del aliases[name]
         else:
             aliases[name] = value
+
+
+def cmd_colsep(state, params):
+    if len(params) > 1:
+        raise CmdError('at most one param required')
+    if not params:
+        s = state.colsep
+        if ' ' in s:
+            s = '"' + s + '"'
+        uprint(s)
+        return
+    state.colsep = params[0]
 
 
 def cmd_cls(state, params):
