@@ -6,39 +6,48 @@ containing all its files (local only; no subdir recursion).
 Generated CBZ files are uncompressed.
 """
 
-import os, sys, zipfile
+import os
+import sys
+import zipfile
+import argparse
 import CommonTools
 
 
-def showhelp():
-    print 'Convert subdirs to CBZ files.'
-    print
-    print '%s [root]' % (CommonTools.scriptname().upper(), )
-    print
-    print '  root  The directory to process. Defaults to the current one.'
-    print
-    print 'Only first level subdir files are stored (no recursion).'
+def parse_args():
+    ap = argparse.ArgumentParser(description='make CBZ files from subdirectory files')
+    add = ap.add_argument
+    add('dirs', metavar='DIR', nargs='+',
+        help='parent directory whose subdirs to process')
+    add('-o', dest='outdir',
+        help='output directory; by default, the parent directories are used')
+    return ap.parse_args()
 
 
-def main(args):
-    if '/?' in args:
-        showhelp()
-        raise SystemExit
-
-    if len(args) > 1:
-        raise SystemExit('too many arguments')
-
-    root = args[0] if args else '.'
-    if not os.path.isdir(root):
-        raise SystemExit('invalid directory specified')
-    
-    for dirname in CommonTools.listdirs(root):
-        print 'processing "%s" ...' % dirname
-        zippath = os.path.join(root, dirname + '.cbz')
-        z = zipfile.ZipFile(zippath, 'w', zipfile.ZIP_STORED)
-        for s in CommonTools.listfiles(os.path.join(root, dirname)):
-            z.write(os.path.join(root, dirname, s), s)
-        z.close()
+def make_cbz_from_dir(zippath, dirpath):
+    z = zipfile.ZipFile(zippath, 'w', zipfile.ZIP_STORED)
+    for s in CommonTools.listfiles(dirpath):
+        z.write(os.path.join(dirpath, s), s)
+    z.close()
 
 
-main(sys.argv[1:])
+if __name__ == '__main__':
+    args = parse_args()
+
+    if args.outdir and not os.path.isdir(args.outdir):
+        try:
+            os.makedirs(args.outdir)
+        except os.error as x:
+            print >>sys.stderr, 'could not create output dir;', x
+            sys.exit(1)
+
+    for parent in args.dirs:
+
+        if not os.path.isdir(parent):
+            print >>sys.stderr, 'parent doesn\'t exist: "%s"' % parent
+            continue
+        
+        for dirname in CommonTools.listdirs(parent):
+            dirpath = os.path.join(parent, dirname)
+            zippath = os.path.join(args.outdir or parent, dirname) + '.cbz'
+            print 'processing "%s" => "%s"' % (dirpath, zippath)
+            make_cbz_from_dir(zippath, dirpath)
