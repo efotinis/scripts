@@ -38,6 +38,12 @@ def time_string(s):
 
 def pretty_time(seconds, decimals=0):
     """Convert seconds to 'hh:mm:ss.ss' string."""
+
+    # round the seconds to the requested output decimals before divmod
+    # to prevent cases where the seconds of the output string gets rounded
+    # incorrectly (e.g. pretty_time('.3333h', 0) -> '00:19:60')
+    seconds = round(seconds, decimals)
+
     hours, minutes, seconds = mathutil.multi_divmod(seconds, 60, 60)
     secsize = 2 + decimals + int(decimals > 0)
     return '%02d:%02d:%0*.*f' % (hours, minutes, secsize, decimals, seconds)
