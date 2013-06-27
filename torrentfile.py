@@ -1,139 +1,94 @@
-"""Torrent file reader.
+"""Torrent file utilities.
 
-When run as a script, it pretty-prints the contents of the torrent files
-specified as arguments (hash values excluded for brevity).
-
-Exceptions thrown from this module:
-- IOError: data read error
-- ValueError: bad data
-
-File format specs taken from:
-    <http://wiki.theory.org/BitTorrentSpecification>
+When run as a script, it displays various types of information.
 """
 
 import os
 import re
 import hashlib
-
-import fileutil
-
-
-intformat = re.compile(r'^(?:0|-?[1-9][0-9]*)$')
-
-
-"""
-bencoding format
-    ascii_num:  r'0|-?[1-9][0-9]*'
-    item:       str | int | list | dict
-    str:        ascii_num ':' ('ascii_num' bytes)
-    int:        'i' ascii_num 'e'
-    list:       'l' item+ 'e'
-    dict:       'd' pair+ 'e'
-    pair:       str item
-"""
+import bencode
+import sys
+import pprint
+import argparse
+import glob
 
 
-def readstr(f, lead=''):
-    """Read a bencoded string. Accepts leading bytes that are already read."""
-    size = int(lead + fileutil.readupto(f, ':'))
-    if size < 0:
-        raise ValueError('bad string size')
-    return fileutil.readexactly(f, size)
+def calchash(obj):
+    """String hash of a torrent bencode object.
 
-
-def readint(f):
-    """Read a bencoded integer (after leading 'i')."""
-    s = fileutil.readupto(f, 'e')
-    if not intformat.match(s):
-        raise ValueError('bad integer')
-    return int(s, 10)
-
-
-def readlist(f):
-    """Read a bencoded list (after leading 'l')."""
-    ret = []
-    while True:
-        x = readvalue(f, checkend=True)
-        if x is None:
-            return ret
-        ret += [x]
-    
-
-def readdict(f):
-    """Read a bencoded dictionary (after leading 'd')."""
-    ret = {}
-    while True:
-        c = fileutil.readexactly(f, 1)
-        if c == 'e':
-            return ret
-        key = readstr(f, c)
-        ret[key] = readvalue(f)
-
-
-def readvalue(f, checkend=False):
-    """Read any bencoded value.
-
-    Will return None if next char is 'e' and checkend=True.
-    """
-    c = fileutil.readexactly(f, 1)
-    if checkend and c == 'e':
-        return None
-    try:
-        return {'i':readint, 'l':readlist, 'd':readdict}[c](f)
-    except KeyError:
-        return readstr(f, c)
-
-
-def calchash(f):
-    """Get the hex string of a Torrent's hash
-
-    The file pointer must be at the beginning of the torrent data on entry.
-
-    The hash is the SHA1 of the "info" dict.
+    This is the SHA1 hexdigest of the 'info' dict.
     Source:
         Index >> Protocol Design Discussion >> How to get Hash out of .torrent file ?
         http://forum.utorrent.com/viewtopic.php?id=47411
     """
-    if fileutil.readexactly(f, 1) != 'd':
-        raise ValueError('first item is not a dict')
-    while True:
-        c = fileutil.readexactly(f, 1)
-        if c == 'e':
-            break
-        key = readstr(f, c)
-        beg = f.tell()
-        val = readvalue(f)
-        end = f.tell()
-        if key == 'info':
-            if not isinstance(val, dict):
-                raise ValueError('"info" item is not a dict')
-            f.seek(beg)
-            data = fileutil.readexactly(f, end - beg)
-            return hashlib.new('sha1', data).hexdigest()
-    raise ValueError('"info" item not found')
+    data = bencode.dumps(obj['info'])
+    return hashlib.sha1(data).hexdigest()
 
 
-def filesinfo(data):
-    """Generate the full path and size of each file in a torrent data object."""
-    for entry in data['info']['files']:
-        yield os.path.sep.join(entry['path']), entry['length']
+def filesinfo(obj):
+    """Generate the full path and size of each file in a torrent bencode object."""
+    if 'files' in obj['info']:
+        for entry in obj['info']['files']:
+            yield os.path.sep.join(entry['path']), entry['length']
+    else:
+        yield obj['info']['name'], obj['info']['length']
+
+
+def parse_args():
+    ap = argparse.ArgumentParser(description='print torrent contents')
+    ap.add_argument('patterns', metavar='FILE', nargs='*',
+                    help='torrent files (globs allowed)')
+    group = ap.add_mutually_exclusive_group()
+    group.add_argument('-x', dest='hashes', action='store_true',
+                       help='print torrent hash and path instead')
+    group.add_argument('-l', dest='listing', action='store_true',
+                       help='print list of file sizes and paths instead')
+    return ap.parse_args()
+
+
+def gen_file_paths(patterns):
+    """Generate file paths from script arguments.
+
+    Additionally, print a warning when a pattern doesn't match anything.
+    """
+    for patt in patterns:
+        paths = glob.glob(patt)
+        if not paths:
+            print >>sys.stderr, 'nothing matched "%d"' % patt
+            continue
+        for path in paths:
+            yield path
 
 
 if __name__ == '__main__':
-    import sys
-    import pprint
-    args = sys.argv[1:]
-    if not args:
-        print 'no torrent files specified'
-    else:
-        for s in args:
-            print s
-            print '-' * 78
-            with open(s, 'rb') as f:
-                data = readvalue(f)
-            if 'info' in data and 'pieces' in data['info']:
-                data['info']['pieces'] = '<hash data omitted>'
-            pprint.pprint(data)
-            print
-            with open(s, 'rb') as f:
-                print 'torrent hash:', calchash(f)
+    args = parse_args()
+
+    for path in gen_file_paths(args.patterns):
+
+        try:
+            obj = bencode.load(open(path, 'rb'))
+        except Exception as x:
+            print >>sys.stderr, 'could not load "%s"; %s' % (path, x)
+            continue
+
+        if args.hashes:
+            try:
+                hash = calchash(obj)
+            except Exception as x:
+                print >>sys.stderr, 'could not get hash of "%s"; %s' % (path, x)
+            else:
+                print hash, path
+
+        elif args.listing:            
+            print path
+            for item_path, size in filesinfo(obj):
+                print '  %15d  %s' % (size, item_path)
+
+        else:
+            print '----', path
+            try:
+                obj['info']['pieces'] = '<expunged>'
+            except KeyError:
+                pass
+            pprint.pprint(obj)
+            
