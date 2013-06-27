@@ -109,14 +109,14 @@ def compare_dirs(root1, root2, rel, stats, args):
             if isdir:
                 list_unmatched_dir(root1, os.path.join(rel, name), stats, 'only_in_a', '1 ')
             else:
-                print '1 ', os.path.join(rel, name)
+                CommonTools.conout('1 ', os.path.join(rel, name))
                 stats['only_in_a'] += 1
         elif where == '>':
             isdir = os.path.isdir(os.path.join(root2, rel, name))
             if isdir:
                 list_unmatched_dir(root2, os.path.join(rel, name), stats, 'only_in_b', ' 2')
             else:
-                print ' 2', os.path.join(rel, name)
+                CommonTools.conout(' 2', os.path.join(rel, name))
                 stats['only_in_b'] += 1
         else:
             isdir1 = os.path.isdir(os.path.join(root1, rel, name))
@@ -128,18 +128,18 @@ def compare_dirs(root1, root2, rel, stats, args):
                 path2 = os.path.join(root2, rel, name)
                 if args.content_matcher(path1, path2):
                     if args.verbose:
-                        print '==', os.path.join(rel, name)
+                        CommonTools.conout('==', os.path.join(rel, name))
                     stats['matched_files'] += 1
                 else:
-                    print '**', os.path.join(rel, name)
+                    CommonTools.conout('**', os.path.join(rel, name))
                     stats['mismatched_files'] += 1
             else:  # file <-> dir
                 if isdir1:
                     list_unmatched_dir(root1, os.path.join(rel, name), stats, 'only_in_a', '1 ')
-                    print ' 2', os.path.join(rel, name)
+                    CommonTools.conout(' 2', os.path.join(rel, name))
                     stats['only_in_b'] += 1
                 else:
-                    print '1 ', os.path.join(rel, name)
+                    CommonTools.conout('1 ', os.path.join(rel, name))
                     stats['only_in_a'] += 1
                     list_unmatched_dir(root2, os.path.join(rel, name), stats, 'only_in_b', ' 2')
 
@@ -151,7 +151,7 @@ def list_unmatched_dir(root, rel, stats, stats_key, prefix):
         if isdir:
             list_unmatched_dir(root, os.path.join(rel, name), stats, stats_key, prefix)
         else:
-            print prefix, os.path.join(rel, name)
+            CommonTools.conout(prefix, os.path.join(rel, name))
             stats[stats_key] += 1
 
 
@@ -225,6 +225,3 @@ if __name__ == '__main__':
         print '  ( 2)  only in 2:', stats['only_in_b']
     except KeyboardInterrupt:
         sys.exit('cancelled by user')
-    except UnicodeError as x:
-        print repr(x)
-        

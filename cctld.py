@@ -3,6 +3,7 @@ import sys
 import BeautifulSoup as bs
 import urllib2
 import pickle
+from CommonTools import conout
 
 
 def readAsBrowser(url):
@@ -82,7 +83,7 @@ def main(args):
             country, note = d[s]
             print country
             if note:
-                print '   ', note.encode('mbcs')
+                conout('   ', note)
         except KeyError:
             print 'UNUSED'
             allok = False

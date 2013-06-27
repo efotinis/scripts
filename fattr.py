@@ -5,6 +5,7 @@ import sys
 import argparse
 import collections
 import win32file
+import CommonTools
 
 
 INVALID_FILE_ATTRIBUTES = 0xffffffff
@@ -70,7 +71,7 @@ if __name__ == '__main__':
 
     for dir_path in args.paths:
         if not os.path.isdir(dir_path):
-            print >>sys.stderr, 'not a directory: "%s"' % dir_path
+            CommonTools.conerr('not a directory: "%s"' % dir_path)
             continue
         for p,d,f in os.walk(dir_path):
             items = []
@@ -82,13 +83,13 @@ if __name__ == '__main__':
                 path = os.path.join(p, s)
                 attr = win32file.GetFileAttributesW(path) & 0xffffffff
                 if attr == INVALID_FILE_ATTRIBUTES:
-                    print >>sys.stderr, 'could not get attributes of "%s"' % path
+                    CommonTools.conerr('could not get attributes of "%s"' % path)
                     continue
                 for n in FLAGS:
                     if attr & n:
                         counter[n] += 1
                 if args.listmask is not None and attr & args.listmask:
-                    print path
+                    CommonTools.conout(path)
                 item_count += 1
 
     if args.listmask is None:
