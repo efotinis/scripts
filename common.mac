@@ -28,18 +28,31 @@ forever=for /l %_ in (0,0,0) $*
 ;= Start Device Manager with non-present devices support.
 devmgr=(set devmgr_show_nonpresent_devices=1)$t(start devmgmt.msc)
 
-;= Launch programs.
-sr="%ProgramFiles(x86)%\Streamripper\streamripper.exe" $*
-lame="%UserProfile%\Program Files\lame\lame.exe" $*
+;= go to parent
+..=cd.. $*
+...=cd..\.. $*
+....=cd..\..\.. $*
+
+;= Program aliases. Note possible the install locations:
+;= * %UserProfile%          private user install
+;= * %ProgramFiles(x86)%    32-bit
+;= * %ProgramFiles%         OS bitness
+;=
 7z="%ProgramFiles%\7-Zip\7z.exe" $*
-upx="C:\Users\Elias\Program Files\upx304w\upx.exe" $*
 cs="%WinDir%\System32\cscript.exe" //nologo $*
+ed="%UserProfile%\Program Files\notepad2\Notepad2.exe" $*
+lame="%UserProfile%\Program Files\lame\lame.exe" $*
 mi="%UserProfile%\Program Files\MediaInfo\MediaInfo.exe" $*
-wget="C:\Program Files (x86)\GnuWin32\bin\wget.exe" $*
+mp3="%UserProfile%\Program Files\mpg123\mpg123.exe" $*
+nircmd="%UserProfile%\Program Files\nircmd\nircmdc.exe" $*
 od=overdisk.py $*
+spk="%ProgramFiles(x86)%\eSpeak\command_line\espeak.exe" $*
+sr="%ProgramFiles(x86)%\Streamripper\streamripper.exe" $*
 sw=istopwatch $*
-nircmd="C:\Users\Elias\Program Files\nircmd\nircmdc.exe" $*
-spk="C:\Program Files (x86)\eSpeak\command_line\espeak.exe" $*
+upx="%UserProfile%\Program Files\upx304w\upx.exe" $*
+wget="%ProgramFiles(x86)%\GnuWin32\bin\wget.exe" $*
+yd="%UserProfile%\Program Files\youtube-dl.exe" $*
+br="%UserProfile%\Program Files\bright.exe" $*
 
 ;= Remove dummy macro used for above comments.
 ;=
