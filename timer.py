@@ -49,6 +49,15 @@ def pretty_time(seconds, decimals=0):
     return '%02d:%02d:%0*.*f' % (hours, minutes, secsize, decimals, seconds)
 
 
+def timer(seconds, step):
+    """Countdown seconds and yield remaining time in every step."""
+    while seconds > step:
+        yield seconds
+        time.sleep(step)
+        seconds -= step
+    time.sleep(seconds)
+
+
 def countdown(seconds, step=1.0, decimals=0, fmt='{}'):
     """Countdown display.
 
@@ -56,12 +65,9 @@ def countdown(seconds, step=1.0, decimals=0, fmt='{}'):
     """
     spo = console_stuff.SamePosOutput()
     try:
-        while seconds > step:
+        for seconds in my_timer(seconds, step):
             spo.restore(eolclear=True)
             sys.stdout.write(fmt.format(pretty_time(seconds, decimals)))
-            time.sleep(step)
-            seconds -= step
-        time.sleep(seconds)
     finally:
         spo.restore(eolclear=True)
         #sys.stdout.write(pretty_time(0))
@@ -85,12 +91,9 @@ def countdown_bigecho(font, seconds, step=1.0, decimals=0, fmt='{}'):
     scroll_pos = win32console.PyCOORDType(pos.X, pos.Y - font.height)
 
     try:
-        while seconds > step:
+        for seconds in my_timer(seconds, step):
             cout.SetConsoleCursorPosition(pos)
             font.uprint(fmt.format(pretty_time(seconds, decimals)))
-            time.sleep(step)
-            seconds -= step
-        time.sleep(seconds)
     finally:
         cout.SetConsoleCursorPosition(pos)
         cout.ScrollConsoleScreenBuffer(rect, rect, scroll_pos, u' ', attrib)
