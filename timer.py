@@ -82,7 +82,7 @@ def countdown(seconds, step=1.0, decimals=0, fmt='{}'):
     """
     spo = console_stuff.SamePosOutput()
     try:
-        for seconds in my_timer(seconds, step):
+        for seconds in timer(seconds, step):
             spo.restore(eolclear=True)
             sys.stdout.write(fmt.format(pretty_time(seconds, decimals)))
     finally:
@@ -108,7 +108,7 @@ def countdown_bigecho(font, seconds, step=1.0, decimals=0, fmt='{}'):
     scroll_pos = win32console.PyCOORDType(pos.X, pos.Y - font.height)
 
     try:
-        for seconds in my_timer(seconds, step):
+        for seconds in timer(seconds, step):
             cout.SetConsoleCursorPosition(pos)
             font.uprint(fmt.format(pretty_time(seconds, decimals)))
     finally:
