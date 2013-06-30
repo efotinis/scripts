@@ -236,22 +236,34 @@ def compare_filetime(ft1, ft2):
     return CompareFileTime(ft1, ft2)
 
 
-def get_tick_count(bits=32, fallback=False):
-    """Get uptime msec (32 or 64-bit).
+def get_tick32():
+    """Get system 32-bit tick count."""
+    return GetTickCount() & 0xffffffff
 
-    If fallback is true and the 64-bit counter is not available, the 32-bit one is returned.
+
+_tick32_last = get_tick32()
+_tick32_high = 0
+
+
+def get_tick64():
+    """Get system 64-bit tick count.
+
+    On systems without a native 64-bit counter, this value is emulated
+    using the 32-bit counter and checking for overflow.
     """
-    if bits == 32:
-        return GetTickCount()
-    elif bits == 64:
-        if GetTickCount64:
-            return GetTickCount64()
-        elif fallback:
-            return GetTickCount()
-        else:
-            raise NotImplementedError('64-bit tick counter is not available')
-    else:
-        raise ValueError('invalid bit value; must be 32 or 64')
+    if GetTickCount64:
+        return GetTickCount64()
+    # emulate
+    n = get_tick32()
+    if n < _tick32_last:
+        _tick32_high += 1
+    _tick32_last = n
+    return (_tick32_high << 32) | n
+        
+
+def has_native_tick64():
+    """Native system support of 64-bit tick counter."""
+    return GetTickCount64 is not None
 
 
 def get_file_time(f):
