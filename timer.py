@@ -12,6 +12,7 @@ import win32console
 import mathutil
 import console_stuff
 import bigecho
+import wintime
 
 
 def time_string(s):
@@ -50,12 +51,28 @@ def pretty_time(seconds, decimals=0):
 
 
 def timer(seconds, step):
-    """Countdown seconds and yield remaining time in every step."""
-    while seconds > step:
-        yield seconds
-        time.sleep(step)
-        seconds -= step
-    time.sleep(seconds)
+    """Countdown seconds and yield remaining time in every step.
+
+    A final value of 0 is always returned.
+
+    Although the intermediate steps may not be extremely accurate, the total
+    time is guaranteed to be accurate to the millisecond, regardless of the
+    step size.
+
+    Suspending the system during countdown is not supported.
+    """
+    cur = wintime.get_tick64()
+    end = cur + int(seconds * 1000)
+    while cur < end:
+        seconds_left = (end - cur) / 1000.0
+        yield seconds_left
+        if step < seconds_left:
+            time.sleep(step)
+            cur = wintime.get_tick64()
+        else:
+            time.sleep(seconds_left)
+            yield 0.0
+            return
 
 
 def countdown(seconds, step=1.0, decimals=0, fmt='{}'):
@@ -123,6 +140,7 @@ X X  X  XXX XXX XXX XXX XXX  X  XXX XXX
 X X  X  X     X   X   X X X X   X X   X      X  
 XXX XXX XXX XXX   X XXX XXX X   XXX XXX  X      
 '''
+
 
 if __name__ == '__main__':
     args = parse_args()
