@@ -1,17 +1,15 @@
 """Get external IP via the Internet IP service du jour.
 
-Call without arguments to display IP.
-Call with a filename (env.vars accepted) to append local time and IP to it.
-
 Old services used:
 - whatismyip.com; stopped offering free scripting support at the beginning of 2013;
   see http://forum.whatismyip.com/showpost.php?p=9092&postcount=6
 """
 
-import urllib2
-import time
-import sys
 import os
+import sys
+import time
+import urllib2
+import argparse
 
 
 def query():
@@ -20,21 +18,28 @@ def query():
     return urllib2.urlopen('http://icanhazip.com/').read().rstrip('\n')
 
 
+def parse_args():
+    ap = argparse.ArgumentParser(
+        description='show WAN external IP')
+    ap.add_argument('-l', dest='logfile',
+        help='append date/IP to file, instead of printing to stdout')
+    return ap.parse_args()
+
+
 if __name__ == '__main__':
-    args = sys.argv[1:]
-    if len(args) > 1:
-        raise SystemExit('too many parameters')
-    if not args:
-        print query()
+    args = parse_args()
+
+    try:
+        ip, error = query(), None
+    except urllib2.URLError as x:
+        ip, error = None, str(x)
+
+    if args.logfile:
+        result = ip or ('<' + error + '>')
+        with open(args.logfile, 'a') as f:
+            print >>f, time.ctime(), '-', result
     else:
-        ok = True
-        try:
-            ip = query()
-        except urllib2.URLError as x:
-            ok = False
-            ip = '<' + str(x) + '>'
-        fn = os.path.expandvars(args[0])
-        with open(fn, 'a') as f:
-            print >>f, time.ctime(), '-', ip
-        if not ok:
-            sys.exit(1)
+        if ip:
+            print ip
+        else:
+            sys.exit(error)
