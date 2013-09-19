@@ -13,9 +13,13 @@ def wget(url):
 
     Added to the interactive interpreter via PYTHONSTARTUP.
     """
-    # add user agent, because some sites (e.g. Wikipedia)
-    # forbid access to unknown/blank user-agents
-    req = _urllib.Request(url, headers={'User-Agent':'Opera'})
+    # add headers to disguise ourselves from some servers 
+    # that block non-browser access (i.e. Wikipedia)
+    # and specify that we accept everything
+    req = _urllib.Request(url, headers={
+        'User-Agent': 'Opera/9.80 (Windows NT 6.1; WOW64) Presto/2.12.388 Version/12.16',
+        'Accept': '*/*',
+    })
     return _urllib.urlopen(req).read()
 
 
