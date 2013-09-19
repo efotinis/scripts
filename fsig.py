@@ -1,8 +1,4 @@
 # File hash calculator.
-#
-# TODO: only allow DOS-style wildcards by default (add switch -g for explicit globbing)
-# - Add a switch for strict error checking (exit on first range or file error).
-# TODO: report glob patterns that match no files (currently they are silently ignored)
 
 import os
 import sys
@@ -17,8 +13,7 @@ import copy
 
 import console_stuff
 import fileutil
-import CommonTools
-import optparseutil
+import UnicodeArgv
 
 
 HASH_TYPES = set(hashlib.algorithms + ('crc32',))
@@ -102,9 +97,11 @@ def parse_args():
     add('-P', dest='progress', action='store_false', default=True,
          help='do not display progress indicator; '
               'set automatically when STDOUT is not a console')
+    add('-G', dest='glob', action='store_false', default=True,
+         help='disable globbing of input paths')
     add('-?', action='help', help='this help')
 
-    args = parser.parse_args()
+    args = parser.parse_args(UnicodeArgv.getargvw())
 
     if not console_stuff.iscon():
         args.progress = False
@@ -135,7 +132,6 @@ def parse_args():
             a += [s]
         args.verify = a
 
-    args.files = [unicode(s, 'mbcs') for s in args.files]
     return args
 
 
@@ -229,7 +225,7 @@ if __name__ == '__main__':
 ##    sys.exit()
 
     empty_globs = EmptyGlobHandler()
-    filepaths = files_gen(args.files, empty_globs)
+    filepaths = files_gen(args.files, empty_globs) if args.glob else args.files
 
     if args.verify:
         # check for length match early
