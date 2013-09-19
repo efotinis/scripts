@@ -15,7 +15,9 @@ def loads(s):
 
 
 def load(f):
-    """Read an object from a file."""
+    """Read an object from a file (or file path)."""
+    if isinstance(f, basestring):
+        f = open(f, 'rb')
     return readany(f)
 
 
@@ -27,7 +29,9 @@ def dumps(obj):
 
 
 def dump(f, obj):
-    """Write an object to a file."""
+    """Write an object to a file (or file path)."""
+    if isinstance(f, basestring):
+        f = open(f, 'wb')
     writeany(f, obj)
 
 
