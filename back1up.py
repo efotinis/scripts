@@ -79,6 +79,10 @@ if __name__ == '__main__':
         changed = cur_sig.lower() != last_sig.lower()
     except EmptyLogError:
         changed = True
+    # dummy seek to switch to writing;
+    # note that log.flush() (with or without a following os.fsync(log.fileno()))
+    # does not work (flush() only seems to work when switching *from* writing)
+    log.seek(0, os.SEEK_CUR)
     print >>log, cur_ctime, cur_mtime, cur_sig, cur_name
 
     # make copy if needed
