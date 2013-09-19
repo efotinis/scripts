@@ -44,3 +44,12 @@ def win_attrib_str(n):
     return binutil.flagchars(n, 32, 'RHS DA NTXPCOIE V')
 
 
+def os_walk_rel(top, topdown=True, onerror=None, followlinks=False):
+    """os.walk variant returning relative dir paths instead of full parent.
+
+    The first iteration will always return '' for the top dir, so joining
+    the relative path with the top will match the original parent.
+    """
+    for parent, dirs, files in os.walk(top, topdown, onerror, followlinks):
+        rel = parent[len(top):].lstrip(os.path.sep)
+        yield rel, dirs, files
