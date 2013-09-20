@@ -8,11 +8,12 @@ import argparse
 
 import FindFileW
 import CommonTools
-import UnicodeArgv
+import winfixargv
 
 
 # TODO: cleanup needed (esp. old Python bugs)
 # FIXME: '.' doesn't display cur dir
+# FIXME: Unicode output
 
 
 MAX_PATH = 260
@@ -138,7 +139,7 @@ def parse_args():
         help='source directory; wildcards allowed; default is the current dir')
     add('-?', action='help', help='this help')
 
-    args = ap.parse_args(args=UnicodeArgv.getargvw()[1:])
+    args = ap.parse_args()
 
     args.decs = min(max(0, args.decs), 10)
     args.unit = 1024 ** UNITS.index(args.unit)

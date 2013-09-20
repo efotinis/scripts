@@ -13,7 +13,7 @@ import copy
 
 import console_stuff
 import fileutil
-import UnicodeArgv
+import winfixargv
 
 
 HASH_TYPES = set(hashlib.algorithms + ('crc32',))
@@ -101,7 +101,7 @@ def parse_args():
          help='disable globbing of input paths')
     add('-?', action='help', help='this help')
 
-    args = parser.parse_args(UnicodeArgv.getargvw())
+    args = parser.parse_args()
 
     if not console_stuff.iscon():
         args.progress = False

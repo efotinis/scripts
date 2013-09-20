@@ -4,7 +4,7 @@
 2007.12.02  added Unicode support (cmdline & msgbox)
 """
 
-import os, sys, time, win32api, win32con, UnicodeArgv, MessageBoxW
+import os, sys, time, win32api, win32con, winfixargv, MessageBoxW
 
 def scriptname():
     return os.path.splitext(os.path.basename(sys.argv[0]))[0]
@@ -40,7 +40,7 @@ def main(args):
     msgbox('\n\n'.join(outputblocks))
 
 try:
-    main(UnicodeArgv.getargvw()[1:])
+    main(sys.argv[1:])
 except Exception, x:
     # not very useful without a trace, but better than no output at all
     msgbox(str(x), win32con.MB_ICONERROR)

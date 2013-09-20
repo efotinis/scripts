@@ -10,7 +10,7 @@ import argparse
 
 import CommonTools
 import console_stuff
-import UnicodeArgv
+import winfixargv
 
 
 HASH_BUFLEN = 2**20
@@ -146,7 +146,7 @@ def parse_args():
         help='ignore files with specified, comma-delimitied hashes')
     add('-?', action='help', help='this help')
 
-    args = ap.parse_args(UnicodeArgv.getargvw()[1:])
+    args = ap.parse_args()
 
     return args
 
