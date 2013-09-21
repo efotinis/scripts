@@ -19,7 +19,7 @@ def preserve_cwd(path=None):
 
 
 def win_attrib_str(n):
-    """Windows DWORD attributes string.Formatter
+    """Windows DWORD attributes string.
 
     Returns string with fixed len of 32, using spaces for missing/unknown flags.
     Only documented/unreserved flags are returned:

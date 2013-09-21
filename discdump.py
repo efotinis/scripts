@@ -1,12 +1,19 @@
-import os, sys, FindFileW, bz2, pickle, CommonTools, win32api
+import os
+import sys
+import bz2
+import pickle
+
+import win32api
+
+import CommonTools
+import winfiles
 
 
 def datadump(dpath):
-    items = FindFileW.dirList(dpath)
     a = []
-    for i in items:
+    for i in winfiles.find(os.path.join(dpath, '*')):
         a += [[i.name, i.attr, i.create, i.modify, i.size]]
-        if i.isDir():
+        if winfiles.is_dir(i.attr):
             a[-1] += [datadump(os.path.join(dpath, i.name))]
     return a
     

@@ -6,7 +6,6 @@ import locale
 import re
 import argparse
 
-import FindFileW
 import CommonTools
 import winfixargv
 
@@ -16,21 +15,16 @@ import winfixargv
 # FIXME: Unicode output
 
 
-MAX_PATH = 260
-RAWPATH_PFX = '\\\\?\\'  # allows system funcs to accept paths longer than MAX_PATH
+RAWPATH_PREFIX = '\\\\?\\'  # disable path parsing
 
 
 def getsize(path):
     """Get the size of a file, even if len(path) > MAX_PATH."""
-    if len(path) <= MAX_PATH:
+    try:
         return os.path.getsize(path)
-    # os.path.getsize uses os.stat, which doesn't accept a '\\?\' prefix;
-    # so we have to use FindXxxFile
-    info = FindFileW.getInfo(RAWPATH_PFX + path)
-    ret = info.nFileSizeLow
-    if info.nFileSizeHigh:
-        ret += info.nFileSizeHigh << 32
-    return ret
+    except WindowsError:
+        # probably ERROR_PATH_NOT_FOUND
+        return os.path.getsize(RAWPATH_PREFIX + path)
 
 
 def deepDir(root):

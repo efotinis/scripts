@@ -26,7 +26,6 @@ import string
 import win32file
 
 import AutoComplete
-import FindFileW
 import console_stuff
 import CommonTools
 
@@ -62,31 +61,29 @@ class ExtStats(object):
         self.bytes = 0
 
 
+def get_file_info(path):
+    """Get size, attributes, modify and create times."""
+    return (os.path.getsize(path),
+            win32file.GetFileAttributesExW(path),
+            os.path.getmtime(path),
+            os.path.getctime(path))
+
+
 class Item(object):
     """Base directory item."""
     
     def __init__(self, path):
         self.name = os.path.basename(path)
-        # os.path.getmtime and family fail with non-ACP chars
-        info = FindFileW.getInfo(path)
-        if info is None:
-            # goddamn securom... (names with trailing space)
-            info = FindFileW.getInfo('\\\\?\\' + path)
-            if info is None:
-                if not self.name:
-                    # root dirs have no info
-                    self.size = None
-                    self.attr = None
-                    self.mdate = None
-                    self.cdate = None
-                    return
-                else:
-                    uprint('FATAL: could not get info for "%s"' % path)
-                    raise SystemExit(-1)
-        self.size = info.size
-        self.attr = info.attr
-        self.mdate = CommonTools.wintime_to_pyseconds(info.modify)
-        self.cdate = CommonTools.wintime_to_pyseconds(info.create)
+        try:
+            info = get_file_info(path)
+        except WindowsError:
+            try:
+                info = get_file_info('\\\\?\\' + path)
+            except WindowsError:
+                # FIXME: don't abort
+                uprint('FATAL: could not get info for "%s"' % path)
+                raise SystemExit(-1)
+        self.size, self.attr, self.mdate, self.cdate = info
 
 
 class File(Item):
