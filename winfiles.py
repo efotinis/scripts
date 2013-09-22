@@ -1,17 +1,31 @@
 """Windows directory functions based on FindFirstFile/FindNextFile.
 
-We can't use the win32file functions (FindFilesW, FindFilesIterator,
-GetFileInformationByHandle, etc), because they return PyTime objects,
-which (the last time I checked) are broken beyond all repair.
-"""
+All file times returned by the API are UTC, regardless of the file 
+system. Note, however, that FAT dates are correct only when accessed 
+in a system with a time zone equal to the one is use when originally 
+saved, since they are saved in local time, but without any time zone
+information [1].
 
-##TODO:
-##    walk()
-##        - better follow os.walk, i.e. list dirs/files separately
-##            (use case for unified listing?)
-##    listdir()
-##        - simply: list(find(os.path.join(path, '*'), dots, times))
-##        - too simple to add? (use case?)
+I've avoided using the win32file functions (FindFilesW,
+FindFilesIterator, GetFileInformationByHandle, etc), because they
+return PyTime objects, which (in the past, at least) were somewhat
+broken (IIRC, they were automatically converted to local time).
+
+[1]: http://msdn.microsoft.com/en-us/library/windows/desktop/ms724290.aspx
+    System Services > Windows System Information > Time > About Time > File Times
+
+TODO: is there a use case of walk()'s unified option?
+
+NOTE: I think it's better to restrict times to UTC. Converting to Unix
+    and Python types is complex enough. UTC-to-local conversions should
+    be in a different module. Here are some relevant links:
+        - http://stackoverflow.com/questions/12262479/
+            Using pytz to convert from a known timezone to local
+        - http://stackoverflow.com/questions/7986776/
+            How do you convert a naive datetime to DST-aware datetime in Python?
+        - http://stackoverflow.com/questions/16156597/
+            How can I convert windows timezones to timezones pytz understands?
+"""
 
 import ctypes
 import collections
@@ -25,6 +39,18 @@ from win32con import FILE_ATTRIBUTE_DIRECTORY
 
 import CommonTools
 
+
+__all__ = ['FindData', 'FileInfo', 'find', 'is_dir', 'walk', 'get_info']
+
+
+# PSA/NOTE: [from: ctypes / Fundamental data types]
+#   "Fundamental data types, when returned as foreign function call
+#   results, or, for example, by retrieving structure field members or
+#   array items, are transparently converted to native Python types. In
+#   other words, if a foreign function has a restype of c_char_p, you
+#   will always receive a Python string, not a c_char_p instance."
+#
+#   So, for example, FindFirstFileW returns int (since HANDLE is c_void_p).
 
 FindFirstFileW = ctypes.windll.kernel32.FindFirstFileW
 FindFirstFileW.argtypes = [LPCWSTR, ctypes.POINTER(WIN32_FIND_DATAW)]
@@ -65,13 +91,6 @@ FILE_SHARE_ALL = (win32file.FILE_SHARE_READ | win32file.FILE_SHARE_WRITE |
                   win32file.FILE_SHARE_DELETE)
 
 
-FindData = collections.namedtuple('FindData',
-    'attr create access modify size res0 res1 name altname')
-
-FileInfo = collections.namedtuple('FileInfo',
-    'attr create access modify volume size links index')
-
-
 def filetime_to_windows(ft):
     return ft.dwLowDateTime | (ft.dwHighDateTime << 32)
 
@@ -82,11 +101,18 @@ def filetime_to_python(ft):
     return datetime.datetime.utcfromtimestamp(filetime_to_unix(ft))
 
 
-TIME_CONV = {
+TIME_CONVERSIONS = {
     'windows': filetime_to_windows,
     'unix': filetime_to_unix,
     'python': filetime_to_python,
 }
+
+
+FindData = collections.namedtuple('FindData',
+    'attr create access modify size res0 res1 name altname')
+
+FileInfo = collections.namedtuple('FileInfo',
+    'attr create access modify volume size links index')
 
 
 def find(path, dots=False, times='windows'):
@@ -100,10 +126,10 @@ def find(path, dots=False, times='windows'):
         'unix'      float seconds since Unix epoch (Jan 1, 1970)
         'python'    datetime object
     """
-    times = TIME_CONV[times]
+    times = TIME_CONVERSIONS[times]
     data = WIN32_FIND_DATAW()
     h = FindFirstFileW(path, data)
-    if h.value == -1:  # INVALID_HANDLE_VALUE
+    if h == INVALID_HANDLE_VALUE:
         x = ctypes.WinError()
         x.filename = path
         raise x
@@ -116,8 +142,8 @@ def find(path, dots=False, times='windows'):
                     access=times(data.ftLastAccessTime),
                     modify=times(data.ftLastWriteTime),
                     size=data.nFileSizeLow | (data.nFileSizeHigh << 32),
-                    reserved0=data.dwReserved0,
-                    reserved1=data.dwReserved1,
+                    res0=data.dwReserved0,
+                    res1=data.dwReserved1,
                     name=data.cFileName,
                     altname=data.cAlternateFileName)
             if not FindNextFileW(h, data):
@@ -169,8 +195,8 @@ def _walk(path, times='windows', unified=False, onerror=None):
 
 
 def get_info(path, times='windows'):
-    """Get file information (BY_HANDLE_FILE_INFORMATION)."""
-    times = TIME_CONV[times]
+    """Get FileInfo object (based on BY_HANDLE_FILE_INFORMATION)."""
+    times = TIME_CONVERSIONS[times]
     h = win32file.CreateFile(path, 0, FILE_SHARE_ALL, None,
                              win32file.OPEN_EXISTING, 0, 0)
     try:
@@ -188,3 +214,25 @@ def get_info(path, times='windows'):
             index=hfi.nFileIndexLow | (hfi.nFileIndexHigh << 32))
     finally:
         h.Close()
+
+
+# useful one-liners:
+#
+#   def listdir(dirpath):
+#       return list(find(os.path.join(dirpath, '*')))
+#
+#   def find_first(path):
+#       return find(path).next()
+
+
+if __name__ == '__main__':
+    import fsutil
+    dp = os.path.expanduser('~')
+    print 'listing of "%s"' % dp
+    for info in find(os.path.join(dp, '*'), times='python'):
+        attr = fsutil.win_attrib_str(info.attr & 0xffff)[:16].replace(' ', '').ljust(16)
+        size = CommonTools.prettysize(info.size).rjust(10)
+        altname = info.altname.ljust(12)
+        modified = info.modify
+        print ' | '.join([modified, size, attr, altname, info.name])
+
