@@ -1,32 +1,41 @@
-"""Web utilities."""
+"""Web utilities.
+
+tags: web
+compat: 2.7+, 3.3+
+platform: any
+"""
 
 try:
-    # Python 2.x
-    import urllib2 as _urllib
+    import urllib2 as urllib_req
 except ImportError:
-    # Python 3.x
-    import urllib.request as _urllib
+    import urllib.request as urllib_req
 
 
-def wget(url):
-    """Read a Web resource.
-
-    Added to the interactive interpreter via PYTHONSTARTUP.
-    """
-    # add headers to disguise ourselves from some servers 
-    # that block non-browser access (i.e. Wikipedia)
-    # and specify that we accept everything
-    req = _urllib.Request(url, headers={
-        'User-Agent': 'Opera/9.80 (Windows NT 6.1; WOW64) Presto/2.12.388 Version/12.16',
+def _req_headers(user_headers):
+    """Merge user headers dict with module's default headers."""
+    headers = {
+        # override Python's default UA, which gets blocked by some sites
+        'User-Agent': 'webutil.py/0.1',
+        # this should be implied, but some sites require it
         'Accept': '*/*',
-    })
-    return _urllib.urlopen(req).read()
+    }
+    headers.update(user_headers)
+    return headers
 
 
-class HeadRequest(_urllib.Request):
+def wget(url, headers={}):
+    """Get a Web resource. Useful for the interactive interpreter."""
+    req = urllib_req.Request(url, headers=_req_headers(headers))
+    return urllib_req.urlopen(req).read()
+
+
+class HeadRequest(urllib_req.Request):
     """HEAD request.
 
     Source: http://stackoverflow.com/questions/107405/how-do-you-send-a-head-http-request-in-python/2070916#2070916
+
+    Note: some sites deliberately reject HEAD requests, often due to
+    the dynamic nature of the content being served.
 
     >>> url = 'http://skeptoid.com/audio/skeptoid-4246.mp3'
     >>> res = urllib2.urlopen(HeadRequest(url))
@@ -49,6 +58,6 @@ class HeadRequest(_urllib.Request):
 
 def headers(url, headers={}):
     """Get headers dict of web resource."""
-    res = _urllib.urlopen(HeadRequest(url, headers=headers))
+    res = urllib_req.urlopen(HeadRequest(url, headers=_req_headers(headers)))
     res.close()
-    return res.info().dict
+    return res.info()
