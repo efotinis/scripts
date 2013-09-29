@@ -25,8 +25,13 @@ NOTE: I think it's better to restrict times to UTC. Converting to Unix
             How do you convert a naive datetime to DST-aware datetime in Python?
         - http://stackoverflow.com/questions/16156597/
             How can I convert windows timezones to timezones pytz understands?
+
+tags: filesys
+compat: 2.7+, 3.3+
+platform: Windows
 """
 
+import os
 import ctypes
 import collections
 import datetime
@@ -226,13 +231,4 @@ def get_info(path, times='windows'):
 
 
 if __name__ == '__main__':
-    import fsutil
-    dp = os.path.expanduser('~')
-    print 'listing of "%s"' % dp
-    for info in find(os.path.join(dp, '*'), times='python'):
-        attr = fsutil.win_attrib_str(info.attr & 0xffff)[:16].replace(' ', '').ljust(16)
-        size = CommonTools.prettysize(info.size).rjust(10)
-        altname = info.altname.ljust(12)
-        modified = info.modify
-        print ' | '.join([modified, size, attr, altname, info.name])
-
+    pass
