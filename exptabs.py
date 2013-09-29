@@ -1,64 +1,79 @@
-"""Replace tabs with spaces."""
+"""Replace tabs with spaces.
+
+tags: text
+compat: 2.7+, 3.3+
+platform: any
+"""
 
 import os
 import sys
-import optparse
+import argparse
 
 import CommonTools
 
 
-def parse_cmdline():
-    op = optparse.OptionParser(
-        usage='%prog [options] [INPUT] [OUTPUT]',
-        description='Replace tabs with spaces.',
-        epilog='INPUT/OUTPUT default to STDIN/STDOUT if omitted or set to "".',
-        add_help_option=False)
-    add = op.add_option
-    add('-s', dest='tabsize', type='int', default=8, 
-        help='Tab size. Default is 8.')
+def parse_args():
+    ap = argparse.ArgumentParser(
+        description='replace tabs with spaces')
+    add = ap.add_argument
+    # NOTE: Don't use argparse.FileType, mainly to avoid overwriting
+    #   an existing output file. Another problem is that FileType is
+    #   too eager to open the file (even, for example, if -h is used
+    #   after the file args, or an invalid option is specified).
+    #   http://bugs.python.org/issue13824 suggests a fix using a new 
+    #   class (FileContext), but until that gets implemented (if it
+    #   does) we better use plain path strings.
+    add('input', 
+        help='input file; "-" for stdin')
+    add('output', default='-', nargs='?', 
+        help='output file; must be different from input; '
+        '"-" (default) for stdout')
+    add('-s', dest='tabsize', type=int, default=4, 
+        help='tab size; default: %(default)s')
     add('-b', dest='onlybeg', action='store_true', 
-        help='Process tabs only at the beginning of each line.')
-    add('-w', dest='readwhole', action='store_true', 
-        help='Read whole input file and close it before processing. '
-        'Can be used to replace a file in-place.')
-    add('-?', action='help',
-        help=optparse.SUPPRESS_HELP)
-    return op.parse_args()
+        help='replace tabs only at the beginning of each line')
+    add('-o', dest='overwrite', action='store_true', 
+        help='overwrite output file if it exists')
+    args = ap.parse_args()
+
+    # detect same input/output (only paths are checked)
+    if args.input != '-' or args.output != '-':
+        s1 = os.path.normcase(os.path.normpath(args.input))
+        s2 = os.path.normcase(os.path.normpath(args.output))
+        if s1 == s2:
+            ap.error('input and output files must be different')
+
+    if os.path.exists(args.output) and not args.overwrite:
+        ap.error('output file exists; use -o to overwrite')
+
+    args.input = CommonTools.FileArg(args.input, 'r')
+    args.output = CommonTools.FileArg(args.output, 'w')
+
+    return args
+
+
+def count_leading(s, char):
+    """Number of multiple leading chars in a string."""
+    count = 0
+    for c in s:
+        if c != char:
+            break
+        count += 1
+    return count
+
+
+def expand_tabs(s, tabsize, leading_only=False):
+    if leading_only:
+        n = count_leading(s, '\t')
+        return max(0, tabsize) * n * ' ' + s[n:]
+    else:
+        return s.expandtabs(tabsize)
 
 
 if __name__ == '__main__':
+    args = parse_args()
     try:
-        opt, args = parse_cmdline()
-        if len(args) > 2:
-            raise optparse.OptParseError('at most 2 params are allowed')
-        while len(args) < 2:
-            args.append('')
-    except optparse.OptParseError as err:
-        CommonTools.exiterror(str(err), 2)
-        
-    if opt.onlybeg:
-        def expandfunc(s, tabsize):
-            # count leading tabs
-            count = 0
-            for c in s:
-                if c != '\t':
-                    break
-                count += 1
-            return ' ' * max(0, tabsize) * count + s[count:]
-    else:
-        import string
-        expandfunc = string.expandtabs
-        
-    try:
-        infile = CommonTools.InFile(args[0])
-        outfile = CommonTools.OutFile(args[1])
-        if opt.readwhole:
-            a = infile.readlines()
-            infile.close()
-            for s in a:
-                outfile.write(expandfunc(s, opt.tabsize))
-        else:
-            for s in infile:
-                outfile.write(expandfunc(s, opt.tabsize))
-    except IOError as err:
-        CommonTools.exiterror(str(err))
+        for s in args.input:
+            args.output.write(expand_tabs(s, args.tabsize, args.onlybeg))
+    except IOError as x:
+        sys.exit(x)
