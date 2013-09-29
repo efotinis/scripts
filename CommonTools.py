@@ -1,5 +1,6 @@
 """Common script utilities."""
 
+from __future__ import print_function
 import os
 import sys
 import math
@@ -68,6 +69,48 @@ class OutFile:
         self.f.write(s)
 
 
+class FileArg(object):
+    """File-like class that handles "-" for stdin/out.
+
+    Only a limited set of the file methods are implemented.
+    """
+
+    def __init__(self, path, mode='r', buffering=-1):
+        self.path = path
+        if path == '-':
+            if 'r' in mode:
+                self.file = sys.stdin
+            else:
+                self.file = sys.stdout
+        else:
+            self.file = open(path, mode, buffering)
+
+    def read(self, size=-1):
+        return self.file.read(size)
+
+    def readline(self, size=-1):
+        return self.file.readline(size)
+
+    def write(self, s):
+        return self.file.write(s)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return self.next()
+
+    def next(self):
+        s = self.file.readline()
+        if not s:
+            raise StopIteration()
+        return s
+        
+    def close(self):
+        if self.path != '-':
+            self.file.close()
+
+
 # TODO: move scriptname(), errln() and exiterror() at some 'scriptutil' module
 
 def scriptname():
@@ -97,7 +140,7 @@ def uprint(s):
     try:
         STDOUT.WriteConsole(s + '\n')
     except:
-        print s
+        print(s)
 
 
 def conout(*a, **kw):
