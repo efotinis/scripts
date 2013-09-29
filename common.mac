@@ -54,6 +54,7 @@ od=overdisk.py $*
 spk="%ProgramFiles(x86)%\eSpeak\command_line\espeak.exe" $*
 sr="%ProgramFiles(x86)%\Streamripper\streamripper.exe" $*
 sw=istopwatch $*
+tf=torrentfile.py $*
 upx="%UserProfile%\Program Files\upx304w\upx.exe" $*
 web="%ProgramFiles(x86)%\Opera\opera.exe" $*
 wget="%ProgramFiles(x86)%\GnuWin32\bin\wget.exe" $*
