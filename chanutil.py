@@ -1,8 +1,8 @@
-"""Get resource URLs from imageboards.
+"""Get image boards resource URLs.
 
 tags: web
-comp: 2.7+, 3.3+
-plat: any
+compat: 2.7+, 3.3+
+platform: any
 """
 
 from __future__ import print_function
