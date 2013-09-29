@@ -7,16 +7,16 @@ import datetime
 import contextlib
 import time
 
-import dllutil
-
+import win32file
 from ctypes.wintypes import BOOL, WORD, DWORD, LONG, WCHAR, HANDLE
 LPWORD = ctypes.POINTER(WORD)
 ULONGLONG = ctypes.c_uint64
-
 from win32con import OPEN_EXISTING
 # constants missing from win32con
 FILE_READ_ATTRIBUTES = 0x0080
 FILE_WRITE_ATTRIBUTES = 0x0100
+
+import dllutil
 
 
 class FILETIME(ctypes.Structure):
