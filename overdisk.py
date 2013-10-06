@@ -28,6 +28,7 @@ import win32file
 import AutoComplete
 import console_stuff
 import CommonTools
+import winfiles
 
 uprint = CommonTools.uprint
 
@@ -61,36 +62,22 @@ class ExtStats(object):
         self.bytes = 0
 
 
-def get_file_info(path):
-    """Get size, attributes, modify and create times."""
-    return (os.path.getsize(path),
-            win32file.GetFileAttributesExW(path),
-            os.path.getmtime(path),
-            os.path.getctime(path))
-
-
 class Item(object):
     """Base directory item."""
     
-    def __init__(self, path):
-        self.name = os.path.basename(path)
-        try:
-            info = get_file_info(path)
-        except WindowsError:
-            try:
-                info = get_file_info('\\\\?\\' + path)
-            except WindowsError:
-                # FIXME: don't abort
-                uprint('FATAL: could not get info for "%s"' % path)
-                raise SystemExit(-1)
-        self.size, self.attr, self.mdate, self.cdate = info
+    def __init__(self, path, data):
+        self.name = data.name
+        self.size = data.size
+        self.attr = data.attr
+        self.mdate = data.modify
+        self.cdate = data.create
 
 
 class File(Item):
     """File item."""
     
-    def __init__(self, path, status=None):
-        Item.__init__(self, path)
+    def __init__(self, path, data, status=None):
+        Item.__init__(self, path, data)
             
     def add_list_stats(self, stats, filter_obj):
         if filter_obj.test(self.name):
@@ -108,8 +95,8 @@ class File(Item):
 class Dir(Item):        
     """Directory item."""
     
-    def __init__(self, path, status=None):
-        Item.__init__(self, path)
+    def __init__(self, path, data, status=None):
+        Item.__init__(self, path, data)
         if status:
             status.update(path)
         self.get_children(path, status)
@@ -117,16 +104,14 @@ class Dir(Item):
     def get_children(self, path, status=None):
         self.children = []
         try:
-            # some folders (like "System Volume Information") cannot be listed
-            items = os.listdir(path)
+            for data in winfiles.find(os.path.join(path, '*'), times='unix'):
+                child_path = os.path.join(path, data.name)
+                factory = Dir if winfiles.is_dir(data.attr) else File
+                self.children += [factory(child_path, data, status)]
         except WindowsError as x:
             msg = 'WARNING: could not list contents of "%s"; reason: %s' % (path, x.strerror)
             status.static_print(msg)
             return
-        for s in items:
-            child_path = os.path.join(path, s)
-            factory = Dir if os.path.isdir(child_path) else File
-            self.children += [factory(child_path, status)]
             
     def get_sub_dir(self, name):
         """Return an immediate subdir."""
@@ -560,7 +545,8 @@ def cmd_root(state, params):
     if not os.path.isdir(new_root_path):
         raise PathError('not a dir: "%s"' % new_root_path)
     with ScanStatus(new_root_path) as status:
-        state.root = Dir(new_root_path, status)
+        data = winfiles.find(new_root_path).next()
+        state.root = Dir(new_root_path, data, status)
     state.root_path = new_root_path
     state.rel_path = ''
 
@@ -861,7 +847,8 @@ if __name__ == '__main__':
 
     uprint('scanning "%s" ...' % state.root_path)
     with ScanStatus(state.root_path) as status:
-        state.root = Dir(state.root_path, status)
+        data = winfiles.find(state.root_path).next()
+        state.root = Dir(state.root_path, data, status)
 
     acmgr = AutoComplete.Manager()
 
