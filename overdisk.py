@@ -439,8 +439,15 @@ class ScanStatus(object):
     def __init__(self, root):
         self.spo = console_stuff.SamePosOutput(fallback=True)
         self.root = root
+        self.last_update = time.time()
 
     def update(self, s):
+        t = time.time()
+        # update only every 250ms; speeds up scanning
+        # and gives user time to read the status
+        if t - self.last_update < 0.25:
+            return
+        self.last_update = t
         self.spo.restore(True)
         s = s[len(self.root):]  # trim root
         uprint(s[:79])  # TODO: use a better trimming func, removing middle path elements
@@ -455,9 +462,12 @@ class ScanStatus(object):
         self.spo.reset()
 
     def __enter__(self):
+##        self._start_time = time.time()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+##        t = time.time() - self._start_time
+##        self.static_print('[scan time: %.2f s]' % t)
         self.cleanup()
 
 
