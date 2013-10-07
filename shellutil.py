@@ -1,4 +1,19 @@
-"""Windows Shell utilities."""
+"""Windows Shell utilities.
+
+tags: shell
+compat: 2.7+, 3.3+
+platform: Windows
+"""
+
+import os
+try:
+    import urlparse
+except ImportError:
+    import urllib.parse as urlparse
+
+import win32gui
+import win32com.client
+from win32com.shell import shell, shellcon
 
 
 # TODO: maybe provide a KnownFolders (similar to special folders),
@@ -16,18 +31,10 @@
 #   (handy when manually editing the Registry, for example)
 
 
-import os
-import urlparse
-
-import win32gui
-import win32com.client
-from win32com.shell import shell, shellcon
-
-
-def open_folders():
+def get_open_explorer_directories():
     """Generate the (HWND,path) of open Windows Explorer folder windows.
 
-    Windows of non-filesystem folders are ignored (their URL is '').
+    Only filesystem folders are returned.
     """
 
     shell_app = win32com.client.Dispatch('Shell.Application')
@@ -46,7 +53,7 @@ def open_folders():
                 yield hwnd, url
 
 
-def create_shortcut(path, target, args=None, cwd=None, hotkey=None,
+def create_shortcut(path, target=None, args=None, cwd=None, hotkey=None,
                     wstyle=None, comment=None, icon=None, update=False):
     """Create a Windows shortcut (.LNK).
 
@@ -81,7 +88,8 @@ def create_shortcut(path, target, args=None, cwd=None, hotkey=None,
             pass
     shortcut = wshshell.CreateShortCut(path)  # WshShortcut object
 
-    shortcut.TargetPath = target
+    if target is not None:
+        shortcut.TargetPath = target
     if args is not None:
         shortcut.Arguments = args
     if cwd is not None:
