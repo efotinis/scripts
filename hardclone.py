@@ -23,6 +23,8 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
+    dircount, filecount = 0, 0
+
     for rel, _, files in fsutil.os_walk_rel(args.source):
         srcdir = os.path.join(args.source, rel)
         dstdir = os.path.join(args.target, rel)
@@ -31,8 +33,13 @@ if __name__ == '__main__':
             os.makedirs(dstdir)  # create full chain for top dir
         else:
             os.mkdir(dstdir)
+        dircount += 1
             
         for s in files:
             existing = os.path.join(srcdir, s)
             newlink = os.path.join(dstdir, s)
             win32file.CreateHardLink(newlink, existing)
+            filecount += 1
+
+    print 'directories created:', dircount
+    print 'files hardlinked:', filecount
