@@ -132,8 +132,7 @@ def hash_set_param(s):
 
 def parse_args():
     ap = argparse.ArgumentParser(
-        description='locate duplicate files using MD5 hashes',
-        add_help=False)
+        description='locate duplicate files using MD5 hashes')
     add = ap.add_argument
 
     add('dirs', nargs='*', metavar='DIR', default=['.'],
@@ -144,7 +143,8 @@ def parse_args():
         help='include empty files (ignored by default)')
     add('-i', dest='ignoresigs', type=hash_set_param, metavar='HASHES', default=[],
         help='ignore files with specified, comma-delimitied hashes')
-    add('-?', action='help', help='this help')
+    add('--delete', action='store_true',
+        help='delete duplicates in each set except for one (randomly selected)')
 
     args = ap.parse_args()
 
@@ -212,6 +212,19 @@ if __name__ == '__main__':
     #dups = [len(a) for a in sigNames.itervalues() if len(a) > 1]
     print
     print 'dup files/groups: %d, %d' % (dupFiles, dupGroups)
-    print 'total/uniq/extra size of dups: %s, %s, %s' % (
+    print 'total/unique/extra size of dups: %s, %s, %s' % (
         sizeStr(dupBytes), sizeStr(uniqBytes), sizeStr(dupBytes - uniqBytes))
     print 'ignored files:', ignored
+
+    if args.delete:
+        print
+        print 'deleting duplicates...'
+        n = 0
+        for sig, files in sigNames.iteritems():
+            for s in files[1:]:  # keep the first one
+                try:
+                    os.unlink(s)
+                    n += 1
+                except OSError:
+                    CommonTools.uprint('could not delete "%s"' % s)
+        print 'files deleted:', n
