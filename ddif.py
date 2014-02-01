@@ -157,8 +157,7 @@ def list_unmatched_dir(root, rel, stats, stats_key, prefix):
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='compare the files in two directories',
-        add_help=False)
+        description='compare the files in two directories')
 
     add = parser.add_argument
     add('dir1', metavar='DIR1', help='first directory')
@@ -170,7 +169,6 @@ def parse_args():
         help='file contents comparison; n: none (default), h: MD5 hash, b: bytes')
     #add('-b', dest='buflen', type=int, default=2*20, help='file I/O buffer size')
     add('-v', dest='verbose', action='store_true', help='verbose output; shows matched items')
-    add('-?', action='help', help='this help')
     args = parser.parse_args()
     
     if args.relpath:

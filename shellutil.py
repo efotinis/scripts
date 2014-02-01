@@ -1,5 +1,7 @@
 """Windows Shell utilities.
 
+TODO: replace with winshell by Tim Golden.
+
 tags: shell
 compat: 2.7+, 3.3+
 platform: Windows
