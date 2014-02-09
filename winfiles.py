@@ -92,8 +92,6 @@ GetFileInformationByHandle.restype = BOOL
 
 
 INVALID_HANDLE_VALUE = -1
-FILE_SHARE_ALL = (win32file.FILE_SHARE_READ | win32file.FILE_SHARE_WRITE |
-                  win32file.FILE_SHARE_DELETE)
 
 
 def filetime_to_windows(ft):
@@ -202,8 +200,15 @@ def _walk(path, times='windows', unified=False, onerror=None):
 def get_info(path, times='windows'):
     """Get FileInfo object (based on BY_HANDLE_FILE_INFORMATION)."""
     times = TIME_CONVERSIONS[times]
-    h = win32file.CreateFile(path, 0, FILE_SHARE_ALL, None,
-                             win32file.OPEN_EXISTING, 0, 0)
+    access = 0
+    share = (win32file.FILE_SHARE_READ |
+             win32file.FILE_SHARE_WRITE |
+             win32file.FILE_SHARE_DELETE)
+    # FILE_FLAG_BACKUP_SEMANTICS is required for dirs, but we use it
+    # for files as well to avoid an extra call to GetFileAttributes
+    flags = win32file.FILE_FLAG_BACKUP_SEMANTICS
+    h = win32file.CreateFile(path, access, share, None,
+                             win32file.OPEN_EXISTING, flags, 0)
     try:
         hfi = BY_HANDLE_FILE_INFORMATION()
         if not GetFileInformationByHandle(int(h), hfi):
@@ -219,6 +224,11 @@ def get_info(path, times='windows'):
             index=hfi.nFileIndexLow | (hfi.nFileIndexHigh << 32))
     finally:
         h.Close()
+
+
+
+
+
 
 
 # useful one-liners:

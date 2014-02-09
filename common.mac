@@ -45,6 +45,7 @@ clrs=clrprint "{,0}  {r}0 {,1}  {r}1 {,2}  {r}2 {,3}  {r}3 {,4}  {r}4 {,5}  {r}5
 br="%UserProfile%\Program Files\bright.exe" $*
 cs="%WinDir%\System32\cscript.exe" //nologo $*
 ed="%UserProfile%\Program Files\notepad2\Notepad2.exe" $*
+ff="%UserProfile%\Program Files\ffmpeg-20130226-git-f6fff8e-win32-shared\bin\ffmpeg.exe" $*
 lame="%UserProfile%\Program Files\lame\lame.exe" $*
 mi="%UserProfile%\Program Files\MediaInfo\MediaInfo.exe" $*
 mp3="%UserProfile%\Program Files\mpg123\mpg123.exe" $*
