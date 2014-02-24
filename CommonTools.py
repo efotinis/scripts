@@ -8,6 +8,7 @@ import itertools
 import re
 import collections
 import operator
+import datetime
 
 import win32console
 
@@ -292,3 +293,27 @@ def nukeglobals(keep=None):
     for item in main_globals.keys():
         if not re.match(r'__.+__', item) and item not in keep:
             del main_globals[item]
+
+
+def get_timestamp(date=None, utc=False, compact=False, fract=2):
+    """Timestamp string.
+
+    If 'date' is not provided, the current one is used (local or utc,
+    depending on 'utc'). If 'compact' is true, no delimiters are used,
+    except for a single dash before hours. 'fract' specifies the count
+    of fractional second digits (0-6).
+    """
+    if date is None:
+        date = datetime.datetime.utcnow() if utc else datetime.datetime.now()
+
+    if compact:
+        s = date.strftime('%Y%m%d-%H%M%S')
+    else:
+        s = date.strftime('%Y-%m-%d %H:%M:%S')
+
+    if 0 < fract <= 6:
+        if not compact:
+            s += '.'
+        s += date.strftime("%f")[:fract]
+
+    return s
