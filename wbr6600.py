@@ -2,7 +2,6 @@
 
 import re
 import telnetlib
-import getpass
 
 
 PROMPT = 'WBR-6600>'
@@ -119,12 +118,14 @@ class Telnet(object):
         return 'noise margin %s/%s dB up/down, attenuation %s/%s dB up/down' % (
             marginUp, marginDown, attenUp, attenDown)
 
+    def getSysUptime(self):
+        # returns: '6 days,  3 hours 03 minutes'
+        return self.communicate('sys uptime').splitlines()[1]
 
-if __name__ == '__main__':
-    password = getpass.getpass('router admin password: ')
-    with Telnet('192.168.0.1', 'admin', password) as t:
-        ip = t.getWanProtoStatus()['IP address']
-        chan = t.getWanAdslChandataSummary()
-        opmode = t.getWanAdslOpmode()['operational mode']
-        noise = t.getNoiseSummary()
-        print '%s, %s, %s, %s' % (ip, chan, opmode, noise)
+    def getAdslUptime(self):
+        # returns: '1 day 21 hr 20 min 25 sec'
+        s = self.communicate('wan adsl uptime').splitlines()[1]
+        prefix = 'ADSL uptime:'
+        if s.startswith(prefix):
+            s = s[len(prefix):].strip()
+        return s
