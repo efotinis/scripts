@@ -135,7 +135,7 @@ def parse_args():
         description='locate duplicate files using MD5 hashes')
     add = ap.add_argument
 
-    add('dirs', nargs='*', metavar='DIR', default=['.'],
+    add('dirs', nargs='*', metavar='DIR', default=[u'.'],
         help='directory to scan ("." if none specified)')
     add('-r', dest='recurse', action='store_true',
         help='recurse into subdirectories')

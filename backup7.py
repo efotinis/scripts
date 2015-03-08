@@ -1,5 +1,11 @@
 """7-Zip-based full/differential backup."""
 
+'''
+TODO: reset archive flag of files added to archive file:
+    - use List command to get added files
+        >>> subprocess.check_output([sz, 'l', '-pXXX', ar])
+'''
+
 import os
 import sys
 import argparse

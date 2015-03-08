@@ -93,7 +93,7 @@ def compare_file_bytes(path1, path2):
             else:
                 if s1 != s2:
                     return False
-        
+
 
 def compare_dirs(root1, root2, rel, stats, args):
     """Compare two dirs."""
@@ -146,7 +146,13 @@ def compare_dirs(root1, root2, rel, stats, args):
 
 def list_unmatched_dir(root, rel, stats, stats_key, prefix):
     """Recursively print all files under an unmatched directory."""
-    for name in os.listdir(os.path.join(root, rel)):
+    dpath = os.path.join(root, rel)
+    try:
+        items = os.listdir(dpath)
+    except OSError as x:
+        CommonTools.conerr('ERROR: could not list dir "%s";' % dpath, str(x))
+        return
+    for name in items:
         isdir = os.path.isdir(os.path.join(root, rel, name))
         if isdir:
             list_unmatched_dir(root, os.path.join(rel, name), stats, stats_key, prefix)

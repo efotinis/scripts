@@ -2,6 +2,7 @@
 
 import os
 import contextlib
+import hashlib
 
 
 @contextlib.contextmanager
@@ -49,3 +50,12 @@ def readupto(f, delim, keep=False):
                 ret += c
             return ret
         ret += c
+
+
+def fsig(path, name='md5', buflen=2**10):
+    """Calculate a file hash."""
+    hash = hashlib.new(name)
+    with open(path, 'rb') as f:
+        for s in iter(lambda: f.read(buflen), ''):
+            hash.update(s)
+    return hash.hexdigest()

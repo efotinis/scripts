@@ -9,6 +9,7 @@ import re
 import collections
 import operator
 import datetime
+import csv
 
 import win32console
 
@@ -317,3 +318,34 @@ def get_timestamp(date=None, utc=False, compact=False, fract=2):
         s += date.strftime("%f")[:fract]
 
     return s
+
+
+def load_csv_table(f, typename, fieldnames, **converters):
+    """Generate the table entries of a CSV file as namedtuple objects.
+
+    A new namedtuple object ('typename') is created, using the
+    specified field names (or the first data row, if None).
+
+    The remaining named args are used to convert the field values, by passing
+    the original string value. Not all fields need to be converted, but the
+    specified ones are checked for existance.
+    """
+    reader = csv.reader(f)
+    if fieldnames is None:
+        fieldnames = reader.next()
+    rec_type = collections.namedtuple(typename, fieldnames)
+    fieldnames = rec_type._fields
+
+    # replace converter keys with field name indices
+    for name in converters.keys():
+        try:
+            i = fieldnames.index(name)
+        except ValueError:
+            raise ValueError('converter name not in fields', name, fieldnames)
+        converters[i] = converters[name]
+        del converters[name]
+
+    for row in reader:
+        for i, func in converters.iteritems():
+            row[i] = func(row[i])
+        yield rec_type(*row)

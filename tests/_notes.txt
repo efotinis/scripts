@@ -1,0 +1,7 @@
+If we need to run tests with "py -m unittest (options) (testfile)" (e.g. to add options like -v), they must have a name different than the corresponding script (e.g. xyz_test.py). If they have the same name, addind ".." to sys.path in order to import the target script from the test script will fail (the test script will be bound to the name instead). This is not a problem when running the test script by itself, only when invoking the unittest module as a script.
+
+Also note that, when using unittest as a module, we must *not* add the .py extension to the the target script, since that will make unittest try to find a "py" submodule.
+
+-------------------
+
+Setuptools' tests are in a 'tests' folder and are named 'test_xyz.py'.

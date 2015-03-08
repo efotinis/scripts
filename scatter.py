@@ -4,6 +4,7 @@ import os
 import argparse
 import math
 import fsutil
+import CommonTools
 
 
 def parse_args():
@@ -23,7 +24,7 @@ def parse_args():
 
 
 def group_sizes(count, total):
-    """Split 'total' to 'count' groups as best as possible.
+    """Split 'total' to 'count' groups as evenly as possible.
 
     This means that all groups should be equal, apart from the last,
     which may be smaller.
@@ -43,6 +44,13 @@ if __name__ == '__main__':
             a, fnames = fnames[:count], fnames[count:]
             dest_dir = str(i)
             if not os.path.exists(dest_dir):
-                os.mkdir(dest_dir)
+                try:
+                    os.mkdir(dest_dir)
+                except OSError as x:
+                    CommonTools.conerr('could not create "%s"; %s' % (dest_dir, x))
+                    continue
             for s in a:
-                os.rename(s, os.path.join(dest_dir, s))
+                try:
+                    os.rename(s, os.path.join(dest_dir, s))
+                except OSError as x:
+                    CommonTools.conerr('could not move "%s"; %s' % (s, x))

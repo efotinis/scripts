@@ -1,8 +1,7 @@
 import os
 import sys
 import re
-import getopt
-import string
+import optparse
 import urllib2
 import socket
 import pickle
@@ -14,12 +13,16 @@ import random
 
 import webdir
 import CommonTools
+import mathutil
 import console_stuff
+
+# FIXME: handle non-resumable downloads ('accept-ranges: none'; e.g. Coral Cache files)
 
 TIMEOUT = 20  # timeout in seconds for urllib2's blocking operations
 TIMEOUT_RETRIES = 5  # times to retry timeouts
 PARTIAL_SUFFIX = '.PARTIAL'  # appended to partial downloads
 DEF_CACHEFILE = 'PAGECACHE'
+DEF_BUFSIZE_KB = 4
 IGNORE_DIRS = ['_vti_cnf/']
 
 
@@ -92,197 +95,164 @@ def percent(value, total):
     return str(int(round(100.0 * value / total))) + '%'
 
 
-def showhelp():
-    """Print help."""
-    scriptname = CommonTools.scriptname()
-    defcachefile = DEF_CACHEFILE
-    ignoredirs = ', '.join(IGNORE_DIRS)
-    print '''
-Server dir scraper.
-
-%(scriptname)s [options] URL
-
-  -o OUTDIR     Output directory (default '.').
-  -c CACHEFILE  Page cache file (default '<OUTDIR>\%(defcachefile)s').
-  -a            Beep when downloading completes.
-  -b            Read buffer size in KB (default=4).
-  --ile         Ignore listing errors.
-  --shuffle     Download files in random order (default is listing order).
-  --all         Include these directories, which are normally ignored:
-                    %(ignoredirs)s
-
-                ---- Actions ----
-  -t            Display tree structure.
-  -l            Display file listing.
-  -g ORDER      Display extension groups info (count/size).
-                Order is one of:
-                    n: name(default), c: count, s: size
-                and:
-                    +: ascending(default), -: descending
-  -d            Download files.
-
-                ---- Filters ----
-  -x EXTLIST    List of extensions to process, separated by ';'.
-                Leading dot is optional. Default is all.
-                Multiple values are accumulated.
-  -D STATUS     Download status. One or more of:
-                    d: fully downloaded, p: partial, n: not downloaded.
-  --irx RX      Regexp of names to include.
-  --erx RX      Regexp of names to exclude.
-                Multiple regexps are accumulated.
-  --rxcs        Subsequent regexps are case-sensitive.
-  --rxci        Subsequent regexps are case-insensitive (default).
-                    
-'''[1:-1] % locals()
 
 
-def existstate(path):
-    """Get file exist state: 'd': downloaded, 'p': partial, 'n': missing."""
-    if os.path.exists(path):
-        return 'd'
-    elif os.path.exists(path + PARTIAL_SUFFIX):
-        return 'p'
-    else:
-        return 'n'
 
 
-class Options(object):
-    """Script options."""
 
-    def __init__(self, args):
-        self.help = False
-        self.topurl = None
-        self.outdir = '.'
-        self.cachefile = None
-        self.extensions = []
-        self.listing = False
-        self.groups = False
-        self.groupsorder = self._parse_groups_order('n+')
-        self.download = False
-        self.regexps = []
-        self.beep = False
-        self.showtree = False
-        self.downloadstatus = self._parse_download_status('dpn')
-        self.bufsize = 4 * 1024
-        self.ignorelisterrors = False
-        self.shuffle = False
-        self.includeall = False
 
-        regex_casesens = False    
 
-        # use gnu_getopt to allow switches after first param
-        switches, params = getopt.gnu_getopt(args,
-            '?o:c:x:lg:datD:b:',
-            'irx= erx= rxcs rxci ile shuffle all'.split())
 
-        if len(params) != 1:
-            raise getopt.error('exactly one param required')
-        self.topurl = params[0]
+def parse_cmdline():
+    parser = optparse.OptionParser(usage='%prog [options] URL', description='Server dir scraper.', add_help_option=False,
+                                   epilog='Multiple filter regexps are allowed and they are processed in the order they were specified.')
 
-        for sw, val in switches:
-            if sw == '-?':
-                self.help = True
-            elif sw == '-o':
-                self.outdir = val
-            elif sw == '-c':
-                self.cachefile = val
-            elif sw == '-x':
-                self.extensions.extend(val.split(';'))
-            elif sw == '-l':
-                self.listing = True
-            elif sw == '-g':
-                self.groups = True
-                self.groupsorder = self._parse_groups_order(val)
-            elif sw == '-d':
-                self.download = True
-            elif sw in ('--irx', '--erx'):
-                try:
-                    self.regexps += [(
-                        sw == '--irx',
-                        re.compile(val, 0 if regex_casesens else re.I))]
-                except re.error:
-                    raise getopt.error('invalid regexp: "%s"' % val)
-            elif sw == '--rxcs':
-                regex_casesens = True
-            elif sw == '--rxci':
-                regex_casesens = False
-            elif sw == '-a':
-                self.beep = True
-            elif sw == '-t':
-                self.showtree = True
-            elif sw == '-D':
-                self.downloadstatus = self._parse_download_status(val)
-            elif sw == '-b':
-                try:
-                    self.bufsize = int(val)
-                    if self.bufsize < 1:
-                        raise ValueError
-                    self.bufsize *= 1024
-                except ValueError:
-                    raise getopt.error('invalid buffer size: "%s"' % val)
-            elif sw == '--ile':
-                self.ignorelisterrors = True
-            elif sw == '--shuffle':
-                self.shuffle = True
-            elif sw == '--all':
-                self.includeall = True
+    parser.add_option('-o', dest='outdir', default='.', metavar='DIR', help='Output directory. Default is "%default".')
+    parser.add_option('-c', dest='cachefile', metavar='FILE', help='Page cache file. Default is "<output dir>\%s".' % DEF_CACHEFILE)
+    parser.add_option('-a', dest='beep', action='store_true', help='Beep when downloading completes.')
+    parser.add_option('-b', dest='bufsize', type='int', default=DEF_BUFSIZE_KB, help='Read buffer size in KB. Default is %default.')
+    parser.add_option('--ile', dest='ignorelisterrors', action='store_true', help='Ignore listing errors.')
+    parser.add_option('--shuffle', dest='shuffle', action='store_true', help='Download files in random order (default is listing order).')
+    parser.add_option('--all', dest='includeall', action='store_true', help='Include these directories, which are normally ignored: ' + ', '.join(IGNORE_DIRS))
+    parser.add_option('-?', action='help', help='This help.')
 
-        if not self.cachefile:
-            self.cachefile = os.path.join(self.outdir, DEF_CACHEFILE)
+    group = optparse.OptionGroup(parser, 'Actions')
+    group.add_option('-t', dest='showtree', action='store_true', help='Display tree structure.')
+    group.add_option('-l', dest='listing', action='store_true', help='Display file listing.')
+    group.add_option('-g', dest='groupsorder', metavar='ORDER', help='Display extension groups info (count/size). Order can be "n", "c" or "s" for ascending name, count or size, and "N", "C", or "S" for descending.')
+    group.add_option('-d', dest='download', action='store_true', help='Download files.')
+    parser.add_option_group(group)
 
-        self.extensions = frozenset(
-            ext if (not ext or ext.startswith('.')) else '.'+ext
-            for ext in map(string.lower, self.extensions))
+    group = optparse.OptionGroup(parser, 'Filters')
+    group.add_option('-x', dest='extensions', action='append', metavar='LIST', help='List of extensions to process, separated by ";". Leading dot is optional. Default is all. Multiple options are allowed.')
+    group.add_option('-D', dest='downloadstatus', metavar='STATUS', help='Download status. One or more of: "d" (fully downloaded), "p" (partial), "n" (not downloaded). Default is all ("dpn").')
+    group.add_option('--iri', dest='regexps', type='str', action='callback', callback=_rx_opt_callback, callback_kwargs={'_include':True, '_ignorecase':True}, metavar='RX', help='Name include regexp (ignore case).')
+    group.add_option('--irc', dest='regexps', type='str', action='callback', callback=_rx_opt_callback, callback_kwargs={'_include':True, '_ignorecase':False}, metavar='RX', help='Name include regexp (match case).')
+    group.add_option('--xri', dest='regexps', type='str', action='callback', callback=_rx_opt_callback, callback_kwargs={'_include':False, '_ignorecase':True}, metavar='RX', help='Name exclude regexp (ignore case).')
+    group.add_option('--xrc', dest='regexps', type='str', action='callback', callback=_rx_opt_callback, callback_kwargs={'_include':False, '_ignorecase':False}, metavar='RX', help='Name exclude regexp (match case).')
+    parser.add_option_group(group)
+    parser.set_defaults(regexps=[])
+
+    opts, args = parser.parse_args()
+
+    if len(args) != 1:
+        parser.error('exactly one param required')
+    opts.topurl = args[0]
+
+    opts.bufsize *= 1024
+    if opts.bufsize <= 0:
+        parser.error('invalid buffer size')
+
+    if opts.extensions:
+        extlist = (';'.join(opts.extensions)).split(';')
+        sanitize_ext = lambda s: s if (not s or s.startswith('.')) else '.' + s
+        opts.extensions = frozenset(sanitize_ext(s).lower() for s in extlist)
+
+    if opts.groupsorder is not None:
+        try:
+            opts.groupsorder = GroupsOrdering(opts.groupsorder)
+        except ValueError:
+            parser.error('invalid groups order: "%s"' % opts.groupsorder)
+
+    try:
+        opts.downloadstatus = DownloadStateFilter(opts.downloadstatus)
+    except ValueError:
+        parser.error('invalid download status: "%s"' % opts.downloadstatus)
+
+    if not opts.cachefile:
+        opts.cachefile = os.path.join(opts.outdir, DEF_CACHEFILE)
+
+    return opts        
+
+        
+class GroupsOrdering(object):
+
+    def __init__(self, patt):
+        try:
+            attr = {'n':'name', 'c':'count', 's':'size'}[patt.lower()]
+            self.key = operator.attrgetter(self.attrname)
+        except KeyError:
+            raise ValueError('invalid group ordering pattern')
+        self.reverse = not patt.islower()
+
+    def sort(self, a):
+        a.sort(key=self.key, reverse=self.reverse)
+
+
+class DownloadStateFilter(object):
+
+    def __init__(self, patt=None):
+        if patt is None:
+            patt = 'dpn'
+        self.states = frozenset(patt)
+        if not self.states:
+            raise ValueError('no download status flags specified')
+        if not self.states.issubset(set('dpn')):
+            raise ValueError('invalid download status: "%s"' % s)
 
     @staticmethod
-    def _parse_groups_order(s):
-        fields = {
-            'n': lambda x: x.name,
-            'c': lambda x: x.count,
-            's': lambda x: x.size}
-        orders = {
-            '+': True,
-            '-': False}
-        field = fields['n']
-        order = orders['+']
-        for c in s:
-            if c in fields:
-                field = fields[c]
-            elif c in orders:
-                order = orders[c]
-            else:
-                raise getopt.error('invalid groups order: "%s"' % s)
-        return field, order
-
-    @staticmethod
-    def _parse_download_status(s):
-        ret = frozenset(s)
-        if ret.issubset(frozenset('dpn')):
-            return ret
+    def getstate(path):
+        """Get file state: 'd': downloaded, 'p': partial, 'n': missing."""
+        if os.path.exists(path):
+            return 'd'
+        elif os.path.exists(path + PARTIAL_SUFFIX):
+            return 'p'
         else:
-            raise getopt.error('invalid download status: "%s"' % s)
+            return 'n'
 
-    def filter(self, relpath, fname):
-        """Test filename against all filters."""
-        fname = urllib2.unquote(fname)  # BUGFIX: needed to make filtering regexps work (need to rethink url quoting and filtering)
-        ext = os.path.splitext(fname)[1].lower()
-        return (not self.extensions or ext in self.extensions) and \
-            self._test_regexps(fname) and \
-            self._test_existance(relpath, fname)
+    def test(self, path):
+        return self.getstate(path) in self.states
 
-    def _test_regexps(self, fname):
-        """Test filename against all regexps."""
-        for must_match, rx in self.regexps:
-            matched = bool(rx.search(fname))
-            if matched != must_match:
-                return False
-        # all checks succeeded or no checks specified; it's a match
-        return True
+    def __repr__(self):
+        return 'DownloadStateFilter(%r)' % ''.join(self.states)
+        
 
-    def _test_existance(self, relpath, fname):
-        """Test filename against exist flags."""
-        dst = safename(urllib2.unquote(os.path.join(self.outdir, relpath + f.name)))
-        return existstate(dst) in opt.downloadstatus
+def _parse_download_status(s):
+    ret = frozenset(s)
+    if not ret.issubset(set('dpn')):
+        raise ValueError('invalid download status: "%s"' % s)
+    return ret
+
+
+def _rx_opt_callback(option, opt, value, parser, _include, _ignorecase):
+    flags = re.IGNORECASE if _ignorecase else 0
+    try:
+        parser.values.regexps.append(NameRegexpFilter(_include, value, flags))
+    except re.error:
+        parser.error('invalid filter regexp: "%s"' % value)
+
+
+class NameRegexpFilter(object):
+
+    def __init__(self, include, patt, flags=0):
+        self.include = include
+        self.rx = re.compile(patt, flags)
+        # patt and flags stored just for __repr__()
+        self.patt = patt
+        self.flags = flags
+
+    def test(self, s):
+        return self.include == bool(self.rx.search(s))
+
+    def __repr__(self):
+        return 'NameRegexpFilter(%s, %r, %s)' % (self.include, self.patt, self.flags)
+
+
+def filter_item(relpath, fname, opts):
+    """Determine whether an item will be processed, based on filter options."""
+    fname = urllib2.unquote(fname)  # BUGFIX: needed to make filtering regexps work (need to rethink url quoting and filtering)
+    # extension
+    ext = os.path.splitext(fname)[1].lower()
+    if opts.extensions and ext not in opts.extensions:
+        return False
+    # name regexps
+    if not all(rx.test(fname) for rx in opts.regexps):
+        return False
+    # download state
+    dst = safename(urllib2.unquote(os.path.join(opts.outdir, relpath + f.name)))
+    if not opts.downloadstatus.test(dst):
+        return False
+    return True    
 
 
 class MovingAverage:
@@ -330,7 +300,7 @@ def download_resumable_file(src, dst, bufsize, totalsize, totaldone, movavg):
     ret_size = None
 
     # It seems that when a socket read times out
-    # and we retry the read, the data gets out of sync.
+    # and we retry the read, the data stream gets out of sync.
     # So, on read timeouts, we reopen the connection.
     completed = False
     while not completed:
@@ -366,12 +336,12 @@ def download_resumable_file(src, dst, bufsize, totalsize, totaldone, movavg):
 
                 file_eta = (filesize - filedone) / speed if speed else 0
                 if file_eta < 0: file_eta = 0
-                sec, min, hr = CommonTools.splitunits(file_eta, (60,60))
+                hr, min, sec = mathutil.multi_divmod(file_eta, 60, 60)
                 file_eta = '%d:%02d:%02d' % (hr, min, sec)
 
                 total_eta = (totalsize - totaldone) / speed if speed else 0
                 if total_eta < 0: total_eta = 0
-                sec, min, hr = CommonTools.splitunits(total_eta, (60,60))
+                hr, min, sec = mathutil.multi_divmod(total_eta, 60, 60)
                 total_eta = '%d:%02d:%02d' % (hr, min, sec)
 
                 spo.restore(eolclear=True)
@@ -480,21 +450,6 @@ def printtree(dirobj, idents):
         printtree(sub, idents + [sub is not dirobj.subs[-1]])
 
 
-try:
-    opt = Options(sys.argv[1:])
-except getopt.error as x:
-    print >>sys.stderr, str(x)
-    sys.exit(2)
-
-if opt.help:
-    showhelp()
-    sys.exit(0)
-
-cachedir = os.path.dirname(opt.cachefile)
-if not os.path.exists(cachedir):
-    os.makedirs(cachedir)
-cache = Cache(opt.cachefile)
-
 def squeezeprint(pfx, sfx, conwidth):
     maxsfxlen = conwidth - 1 - len(pfx) - 3  # 3 for '...', 1 to avoid wrapping
     if len(sfx) > maxsfxlen:
@@ -548,135 +503,149 @@ class ColorOutput(object):
         self.write(fg, bg, text + '\n')
 
 
-try:
-    totalsize = 0
-    totaldone = 0  # incl. partial downloads and skipped due to timeouts
-    totalfiles = 0
-    filtered_items = []
+if __name__ == '__main__':
+    opt = parse_cmdline()
 
-    spo = console_stuff.SamePosOutput(fallback=True)
-    conwidth = console_stuff.consolesize()[1]
+##    # debug #########
+##    from pprint import pprint as pp
+##    pp(dict(opt.__dict__.items()))  # get a real dict for pretty-printing
+##    raise SystemExit
+##    # ###############
+
+    cachedir = os.path.dirname(opt.cachefile)
+    if not os.path.exists(cachedir):
+        os.makedirs(cachedir)
+    cache = Cache(opt.cachefile)
+
     try:
-        for url, dirs, files in webdir.walk(opt.topurl, reader=myreader(cache), handler=myhandler(cache, spo, opt.ignorelisterrors)):
-            relpath = url[len(opt.topurl):]
-            spo.restore(eolclear=True)
-            squeezeprint('reading: ', urllib2.unquote(url), conwidth)
-            for f in files:
-                if opt.filter(relpath, f.name):
-                    totalfiles += 1
-                    totalsize += f.size
-                    dst = safename(urllib2.unquote(os.path.join(opt.outdir, relpath + f.name)))
-                    totaldone += getdownloadedsize(dst)
-                    filtered_items += [(relpath, f)]
-            if not opt.includeall:
-                # remove ignored dirs so they are not walked into
-                for i in range(len(dirs)-1, -1, -1):
-                    if dirs[i].name in IGNORE_DIRS:
-                        dirs[i:i+1] = []
-    finally:
-        cache.flush()
-        spo.restore(eolclear=True)
+        totalsize = 0
+        totaldone = 0  # incl. partial downloads and skipped due to timeouts
+        totalfiles = 0
+        filtered_items = []
 
-    if opt.showtree:
-        print
-        print '---- Tree ----'
-        root = Dir('')
-        for relpath, item in filtered_items:
-            dir = root[relpath]
-            dir.count += 1
-            dir.size += item.size
-        root.name = opt.topurl
-        printtree(root, [])
-
-    if opt.listing:
-        print
-        print '---- List ----'
-        currelpath = None
-        for relpath, f in filtered_items:
-            # lazy-print path only when it changes
-            if currelpath != relpath:
-                if currelpath is not None:
-                    print
-                CommonTools.uprint(opt.topurl + relpath)
-                currelpath = relpath
-            dst = safename(urllib2.unquote(os.path.join(opt.outdir, relpath + f.name)))
-            exists = os.path.exists(dst)
-            partial = not exists and os.path.exists(dst + PARTIAL_SUFFIX)
-            CommonTools.uprint('  %s %10s %c %s' % (
-                compressdate(f.date),
-                f.size,
-                '*' if exists else '%' if partial else ' ',
-                urllib2.unquote(f.name)))
-
-    if opt.groups:
-        print
-        print '---- Groups ----'
-        exts = collections.defaultdict(lambda: [0,0])
-        for relpath, f in filtered_items:
-            ext = os.path.splitext(f.name)[1].lower()
-            exts[ext][0] += 1
-            exts[ext][1] += f.size
-
-        BLACK,BLUE,GREEN,CYAN,RED,MAGENTA,YELLOW,GRAY = range(8)
-
-        filetypes = {
-            'video':     [BLUE, 'avi mov mpeg mpg wmv'],
-            'audio':     [YELLOW, 'm4a mp3 wav wma'],
-            'documents': [GREEN, 'doc pdf pps xls'],
-            'images':    [RED, 'bmp gif jpeg jpg pcx png tga tif tiff'],
-            'archives':  [GRAY, '7z ace bzip gz rar tar zip']}
-##        for s in filetypes:
-##            filetypes[s][1] = filetypes[s][1].split()
-        extclrs = {}
-        for clr, extlist in filetypes.values():
-            for ext in extlist.split():
-                extclrs[ext] = clr
-
-        clrout = ColorOutput()
-
-        GroupItem = collections.namedtuple('GroupItem', 'name count size')
-        items = [GroupItem(ext, cnt, size) for ext, (cnt, size) in exts.iteritems()]
-        items.sort(key=opt.groupsorder[0], reverse=not opt.groupsorder[1])
-        for item in items:
-            clrout.write(0, extclrs.get(item.name.lstrip('.').lower(), 0), '  ')
-            sys.stdout.write(' ')
-            CommonTools.uprint('%-12s  %4d  %9s (%12d bytes)' % (item.name, item.count, CommonTools.prettysize(item.size), item.size))
-
-    print
-    print '---- Summary ----'
-    print 'files: %d' % (totalfiles,)
-    print 'size: %s (%d bytes)' % (CommonTools.prettysize(totalsize), totalsize)
-
-    if opt.download:
-        print
-        print '---- Download ----'
-        if opt.shuffle:
-            random.shuffle(filtered_items)
-        incomplete = []
-        movavg = MovingAverage(30)  # speed counter
+        spo = console_stuff.SamePosOutput(fallback=True)
+        conwidth = console_stuff.consolesize()[1]
         try:
-            for relpath, f in filtered_items:
-                curoutdir = safename(urllib2.unquote(os.path.join(opt.outdir, relpath)))
-                if not os.path.exists(curoutdir):
-                    os.makedirs(curoutdir)
-                src = opt.topurl + relpath + f.name
-                dst = safename(urllib2.unquote(os.path.join(opt.outdir, relpath + f.name)))
-                CommonTools.uprint(safename(urllib2.unquote(relpath + f.name)))
-                if not os.path.exists(dst):
-                    start, done, size = download_resumable_file(src, dst, opt.bufsize, totalsize, totaldone, movavg)
-                    if done != size:  # even if size is None
-                        incomplete += [dst]
-                    # subtract the initial partial size
-                    # and add the whole file size (whether completed or not)
-                    totaldone -= start
-                    totaldone += size or f.size
+            for url, dirs, files in webdir.walk(opt.topurl, reader=myreader(cache), handler=myhandler(cache, spo, opt.ignorelisterrors)):
+                relpath = url[len(opt.topurl):]
+                spo.restore(eolclear=True)
+                squeezeprint('reading: ', urllib2.unquote(url), conwidth)
+                for f in files:
+                    if filter_item(relpath, f.name, opt):
+                        totalfiles += 1
+                        totalsize += f.size
+                        dst = safename(urllib2.unquote(os.path.join(opt.outdir, relpath + f.name)))
+                        totaldone += getdownloadedsize(dst)
+                        filtered_items += [(relpath, f)]
+                if not opt.includeall:
+                    # remove ignored dirs so they are not walked into
+                    for i in range(len(dirs)-1, -1, -1):
+                        if dirs[i].name in IGNORE_DIRS:
+                            dirs[i:i+1] = []
         finally:
-            if incomplete:
-                print 'Incomplete files:', len(incomplete)
-                for s in incomplete:
-                    CommonTools.uprint('  ' + s)
-            if opt.beep:
-                win32api.MessageBeep(-1)
-            
-except KeyboardInterrupt:
-    print 'Cancelled by user.'
+            cache.flush()
+            spo.restore(eolclear=True)
+
+        if opt.showtree:
+            print
+            print '---- Tree ----'
+            root = Dir('')
+            for relpath, item in filtered_items:
+                dir = root[relpath]
+                dir.count += 1
+                dir.size += item.size
+            root.name = opt.topurl
+            printtree(root, [])
+
+        if opt.listing:
+            print
+            print '---- List ----'
+            currelpath = None
+            for relpath, f in filtered_items:
+                # lazy-print path only when it changes
+                if currelpath != relpath:
+                    if currelpath is not None:
+                        print
+                    CommonTools.uprint(opt.topurl + relpath)
+                    currelpath = relpath
+                dst = safename(urllib2.unquote(os.path.join(opt.outdir, relpath + f.name)))
+                exists = os.path.exists(dst)
+                partial = not exists and os.path.exists(dst + PARTIAL_SUFFIX)
+                CommonTools.uprint('  %s %10s %c %s' % (
+                    compressdate(f.date),
+                    f.size,
+                    '*' if exists else '%' if partial else ' ',
+                    urllib2.unquote(f.name)))
+
+        if opt.groupsorder:
+            print
+            print '---- Groups ----'
+            exts = collections.defaultdict(lambda: [0,0])
+            for relpath, f in filtered_items:
+                ext = os.path.splitext(f.name)[1].lower()
+                exts[ext][0] += 1
+                exts[ext][1] += f.size
+
+            BLACK,BLUE,GREEN,CYAN,RED,MAGENTA,YELLOW,GRAY = range(8)
+
+            filetypes = {
+                'video':     [BLUE, 'avi mov mpeg mpg wmv'],
+                'audio':     [YELLOW, 'm4a mp3 wav wma'],
+                'documents': [GREEN, 'doc pdf pps xls'],
+                'images':    [RED, 'bmp gif jpeg jpg pcx png tga tif tiff'],
+                'archives':  [GRAY, '7z ace bzip gz rar tar zip']}
+    ##        for s in filetypes:
+    ##            filetypes[s][1] = filetypes[s][1].split()
+            extclrs = {}
+            for clr, extlist in filetypes.values():
+                for ext in extlist.split():
+                    extclrs[ext] = clr
+
+            clrout = ColorOutput()
+
+            GroupItem = collections.namedtuple('GroupItem', 'name count size')
+            items = [GroupItem(ext, cnt, size) for ext, (cnt, size) in exts.iteritems()]
+            groupsorder.sort(items)
+            for item in items:
+                clrout.write(0, extclrs.get(item.name.lstrip('.').lower(), 0), '  ')
+                sys.stdout.write(' ')
+                CommonTools.uprint('%-12s  %4d  %9s (%12d bytes)' % (item.name, item.count, CommonTools.prettysize(item.size), item.size))
+
+        print
+        print '---- Summary ----'
+        print 'files: %d' % (totalfiles,)
+        print 'size: %s (%d bytes)' % (CommonTools.prettysize(totalsize), totalsize)
+
+        if opt.download:
+            print
+            print '---- Download ----'
+            if opt.shuffle:
+                random.shuffle(filtered_items)
+            incomplete = []
+            movavg = MovingAverage(30)  # speed counter
+            try:
+                for relpath, f in filtered_items:
+                    curoutdir = safename(urllib2.unquote(os.path.join(opt.outdir, relpath)))
+                    if not os.path.exists(curoutdir):
+                        os.makedirs(curoutdir)
+                    src = opt.topurl + relpath + f.name
+                    dst = safename(urllib2.unquote(os.path.join(opt.outdir, relpath + f.name)))
+                    CommonTools.uprint(safename(urllib2.unquote(relpath + f.name)))
+                    if not os.path.exists(dst):
+                        start, done, size = download_resumable_file(src, dst, opt.bufsize, totalsize, totaldone, movavg)
+                        if done != size:  # even if size is None
+                            incomplete += [dst]
+                        # subtract the initial partial size
+                        # and add the whole file size (whether completed or not)
+                        totaldone -= start
+                        totaldone += size or f.size
+            finally:
+                if incomplete:
+                    print 'Incomplete files:', len(incomplete)
+                    for s in incomplete:
+                        CommonTools.uprint('  ' + s)
+                if opt.beep:
+                    win32api.MessageBeep(-1)
+                
+    except KeyboardInterrupt:
+        print 'Cancelled by user.'

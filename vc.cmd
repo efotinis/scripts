@@ -21,6 +21,9 @@ IF %VER%==2008 GOTO VC90
 IF %VER%==10 GOTO VC100
 IF %VER%==10.0 GOTO VC100
 IF %VER%==2010 GOTO VC100
+IF %VER%==12 GOTO VC120
+IF %VER%==12.0 GOTO VC120
+IF %VER%==2013 GOTO VC120
 ECHO ERROR: Unsupported version ID.
 GOTO usage
 
@@ -50,6 +53,11 @@ GOTO exec
 :VC100
 SET NAME=Visual Studio 2010
 SET BATCH="%VS100COMNTOOLS%\..\..\VC\vcvarsall.bat" %1 %2 %3 %4 %5 %6 %7 %8 %9
+GOTO exec
+
+:VC120
+SET NAME=Visual Studio 2013
+SET BATCH="%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" %1 %2 %3 %4 %5 %6 %7 %8 %9
 GOTO exec
 
 

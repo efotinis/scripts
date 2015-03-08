@@ -1,4 +1,4 @@
-"""Calculate the difference between two times."""
+"""Calculate timestamp differences."""
 
 from __future__ import print_function
 import re
@@ -40,7 +40,7 @@ def timestr_to_sec(timestr):
 
 def sec_to_timestr(sec):
     """Convert seconds to a time string."""
-    sign = ''
+    sign = ' '
     if sec < 0:
         sec = -sec
         sign = '-'
@@ -50,27 +50,30 @@ def sec_to_timestr(sec):
 
 def parse_args():
     ap = argparse.ArgumentParser(
-        description='calculate the difference between two times',
-        epilog='input time format: [-][[hr:]min:]sec[.fract]')
+        description='calculate lap/total times from timestamp differences',
+        epilog='input time format: [-][[hr:]min:]sec[.fract]; '
+               'note that the first timestamp specified is used as the start '
+               '(use 0 if needed)')
     add = ap.add_argument
-    add('-v', dest='verbose', action='store_true', help='verbose output: include the (normalized) input times')
-    add('start_t', metavar='START', type=timestr_to_sec, help='start time')
-    add('end_t', metavar='END', type=timestr_to_sec, help='end time')
+    add('times', metavar='TIME', nargs='*', type=timestr_to_sec,
+        help='time')
     return ap.parse_args()
+
+
+def calc(a):
+    """Calculate lap and total times, given 2 or more timestamps."""
+    if len(a) < 1:
+        raise ValueError('need 2 or more timestamps')
+    a = iter(a)
+    start = previous = a.next()
+    for n in a:
+        yield n - previous, n - start
+        previous = n
 
 
 if __name__ == '__main__':
 
     args = parse_args()
 
-    diff = args.end_t - args.start_t
-    sign = ''
-    if diff < 0:
-        diff = -diff
-        sign = '-'
-    if args.verbose:
-        print('%s ... %s -> ' % (
-                sec_to_timestr(args.start_t),
-                sec_to_timestr(args.end_t)),
-            end='')
-    print('%s%s' % (sign, sec_to_timestr(diff)))
+    for i, (lap, total) in enumerate(calc(args.times), 1):
+        print(i, sec_to_timestr(lap), sec_to_timestr(total))

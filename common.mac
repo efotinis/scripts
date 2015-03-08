@@ -47,7 +47,7 @@ cs="%WinDir%\System32\cscript.exe" //nologo $*
 ed="%ProgramFiles%\notepad2\Notepad2.exe" $*
 ff="C:\prg\ffmpeg\bin\ffmpeg.exe" $*
 lame="C:\prg\lame\lame.exe" $*
-mi="%ProgramFiles%\MediaInfo\MediaInfo.exe" $*
+mi="C:\prg\MediaInfo\MediaInfo.exe" $*
 mp3="C:\prg\mpg123\mpg123.exe" $*
 mtn="C:\prg\movie thumbnailer\mtn.exe" $*
 nircmd="C:\prg\nircmd\nircmdc.exe" $*
@@ -57,7 +57,7 @@ sr="%ProgramFiles(x86)%\Streamripper\streamripper.exe" $*
 sw=istopwatch $*
 tf=torrentfile.py $*
 upx="C:\prg\upx304w\upx.exe" $*
-web="%ProgramFiles(x86)%\Opera\opera.exe" $*
+web="%ProgramFiles(x86)%\Mozilla Firefox\firefox.exe" -new-tab $*
 wget="%ProgramFiles(x86)%\GnuWin32\bin\wget.exe" $*
 yd="C:\prg\youtube-dl.exe" $*
 

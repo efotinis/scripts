@@ -39,7 +39,6 @@ class Wildcard:
         """A wildcard object."""
         self.rx = build(s, casesens)
     def test(self, s):
-        return test(self.rx, s, casesens)
+        return test(self.rx, s)
     def listdir(self, dir):
-        return listdir(self.rx, dir, casesens)
-    
+        return listdir(self.rx, dir)

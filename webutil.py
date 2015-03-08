@@ -5,6 +5,9 @@ compat: 2.7+, 3.3+
 platform: any
 """
 
+import pickle
+
+
 try:
     import urllib2 as urllib_req
 except ImportError:
@@ -27,6 +30,42 @@ def wget(url, headers={}):
     """Get a Web resource. Useful for the interactive interpreter."""
     req = urllib_req.Request(url, headers=_req_headers(headers))
     return urllib_req.urlopen(req).read()
+
+
+class UrlCache(object):
+    """Cache URL resources."""
+    
+    def __init__(self, path):
+        self.path = path
+        try:
+            with open(self.path, 'rb') as f:
+                self.store = pickle.load(f)
+        except IOError:
+            self.store = {}
+
+    def save(self):
+        with open(self.path, 'wb') as f:
+            pickle.dump(self.store, f, pickle.HIGHEST_PROTOCOL)
+
+##    def load(self, path):
+##        pass
+##
+##    def save(self, path):
+##        pass
+##
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.save()
+
+    def wget(self, url, headers={}):
+        key = (url, tuple((k,headers[k]) for k in sorted(headers.keys())))
+        try:
+            data = self.store[key]
+        except KeyError:
+            data = self.store[key] = wget(url, headers)
+        return data
 
 
 class HeadRequest(urllib_req.Request):
