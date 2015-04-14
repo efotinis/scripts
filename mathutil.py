@@ -3,29 +3,40 @@
 from __future__ import division
 import math
 import string
+import operator
 
 
 BASE36_DIGITS = string.digits + string.ascii_lowercase
 
 
-def gcd(a, b):
-    """Calculate greatest common divisor.
+def gcd(a, *seq):
+    """Calculate the greatest common divisor of one or more numbers.
 
-    reduce(gcd, <seq>) can be used for more than 2 numbers.
+    Better than fractions.gcd() in that:
+    - it accepts multiple arguments
+    - input numbers are implicitly converted to integer
+    - result is always non-negative
+    - commutativity works
+
+    See <http://bugs.python.org/issue22477>.
     """
-    if int(a) != a or int(b) != b:
-        raise ValueError('gcd() only accepts integral values')
-    while b != 0:
-        a, b = b, a % b
+    a = int(a)
+    for b in seq:
+        b = int(b)
+        while b:
+            a, b = b, a % b
     return abs(a)
 
 
-def lcm(a, b):
-    """Calculate least common multiplier.
+def lcm(a, *seq):
+    """Calculate the least common multiplier of one or more non-zero numbers.
 
-    Uses the fact that gcd(x,y)*lcm(x,y)==x*y.
+    Input numbers are implicitly converted to integer. Result is always
+    non-negative.
+    
+    Note that gcd(x,y)*lcm(x,y)==|x*y| is only true for 2 numbers.
     """
-    return (a * b) // gcd(a, b)
+    return abs(reduce(lambda x, y: x * y // gcd(x, y), seq, a))
 
 
 def countcombinations(n, m):
