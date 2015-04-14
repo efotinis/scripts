@@ -30,7 +30,7 @@ def read_file(path, offset, size, width):
         f.seek(offset, os.SEEK_SET if offset >= 0 else os.SEEK_END)
         offset = f.tell()
         while size is None or size > 0:
-            data = f.read(min(width, size))
+            data = f.read(min(width, size) if size is not None else width)
             if not data:
                 break
             yield offset, data
