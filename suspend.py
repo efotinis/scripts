@@ -24,7 +24,10 @@ def wait_and_suspend(seconds, hibernate, force):
         msg('canceled by user')
         return
     try:
-        msg('suspending')
+        s = 'hibernating' if hibernate else 'suspending'
+        if force:
+            s += ' (forced)'
+        msg(s)
         with secutil.privilege_elevation([win32security.SE_SHUTDOWN_NAME]):
             win32api.SetSystemPowerState(not hibernate, force)
     except win32api.error as x:
