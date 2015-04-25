@@ -1,35 +1,30 @@
 """Common script utilities."""
 
 from __future__ import print_function
-import os
-import sys
-import math
-import itertools
-import re
 import collections
-import operator
-import datetime
 import csv
+import datetime
+import itertools
+import math
+import operator
+import os
+import re
+import sys
 
 import win32console
 
-import wintime
 import shellutil
+import wintime
 
-# When STD_OUTPUT_HANDLE is not available (e.g. in PythonWin)
-# GetStdHandle's behavior varies:
-# - in Python 2.5 GetStdHandle succeeds but the returned handle is unusable
-#   (so we just grab the handle and handle failure later during output)
-# - in Python 2.6 GetStdHandle fails immediatelly,
-#   so we need a try block
-try:
-    STDOUT = win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
-except win32console.error:
-    STDOUT = None
-try:
-    STDERR = win32console.GetStdHandle(win32console.STD_ERROR_HANDLE)
-except win32console.error:
-    STDERR = None
+
+def winconout():
+    """Windows standard output (PyConsoleScreenBuffer) or None."""
+    return win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
+
+
+def winconerr():
+    """Windows standard error (PyConsoleScreenBuffer) or None."""
+    return win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
 
 
 class InFile:
@@ -139,9 +134,11 @@ def uprint(s):
 
     Useful for printing Unicode strings in the Windows console.
     """
-    try:
-        STDOUT.WriteConsole(s + '\n')
-    except:
+    h = winconout()
+    if h:
+        h.WriteConsole(s + '\n')
+        h.Close()
+    else:
         print(s)
 
 
@@ -166,38 +163,42 @@ def conout(*a, **kw):
     sep = kw.pop('sep', ' ')
     end = kw.pop('end', '\n')
     error = kw.pop('error', False)
-    if error:
-        PY_STREAM = sys.stderr
-        WIN_STREAM = STDERR
-    else:
-        PY_STREAM = sys.stdout
-        WIN_STREAM = STDOUT
     if kw:
         raise TypeError('unexpected keyword arguments: ' + str(kw.keys()))
-    try:
-        isatty = PY_STREAM.isatty()
-    except AttributeError:
-        # probably PythonWin's interactive window;
-        # PythonWin handles Unicode property, but its sys.stdout/stderr.encoding
-        # is 'utf-8'; we prefer to decode 8-bit strings with CP_ACP ('mbcs')
-        encoding = 'mbcs'
-        a = [s if isinstance(s, unicode) else s.decode(encoding, 'replace')
-             for s in a]
-        PY_STREAM.write(sep.join(a) + end)
-        return
-    if isatty:
-        # on Windows, this means the console, which is natively Unicode;
-        # 8-bit strings should be decoded with the console output codepage
-        encoding = 'cp' + str(win32console.GetConsoleOutputCP())
-        a = [s if isinstance(s, unicode) else s.decode(encoding)
-             for s in a]
-        WIN_STREAM.WriteConsole(sep.join(a) + end)  # accepts both str and unicode
+    if error:
+        PY_STREAM = sys.stderr
+        WIN_STREAM = winconerr()
     else:
-        # file or pipe; encode Unicode strings with the console output codepage
-        encoding = 'cp' + str(win32console.GetConsoleOutputCP())
-        a = [s.encode(encoding, 'replace') if isinstance(s, unicode) else s
-             for s in a]
-        PY_STREAM.write(sep.join(a) + end)
+        PY_STREAM = sys.stdout
+        WIN_STREAM = winconout()
+    try:
+        try:
+            isatty = PY_STREAM.isatty()
+        except AttributeError:
+            # probably PythonWin's interactive window;
+            # PythonWin handles Unicode property, but its sys.stdout/stderr.encoding
+            # is 'utf-8'; we prefer to decode 8-bit strings with CP_ACP ('mbcs')
+            encoding = 'mbcs'
+            a = [s if isinstance(s, unicode) else s.decode(encoding, 'replace')
+                 for s in a]
+            PY_STREAM.write(sep.join(a) + end)
+            return
+        if isatty:
+            # on Windows, this means the console, which is natively Unicode;
+            # 8-bit strings should be decoded with the console output codepage
+            encoding = 'cp' + str(win32console.GetConsoleOutputCP())
+            a = [s if isinstance(s, unicode) else s.decode(encoding)
+                 for s in a]
+            WIN_STREAM.WriteConsole(sep.join(a) + end)  # accepts both str and unicode
+        else:
+            # file or pipe; encode Unicode strings with the console output codepage
+            encoding = 'cp' + str(win32console.GetConsoleOutputCP())
+            a = [s.encode(encoding, 'replace') if isinstance(s, unicode) else s
+                 for s in a]
+            PY_STREAM.write(sep.join(a) + end)
+    finally:
+        if WIN_STREAM:
+            WIN_STREAM.Close()
     
 
 def conerr(*a, **kw):
