@@ -1,4 +1,4 @@
-"""Various mathematical utilities."""
+"""Math utilities."""
 
 from __future__ import division
 import math
@@ -34,30 +34,37 @@ def lcm(a, *seq):
     Input numbers are implicitly converted to integer. Result is always
     non-negative.
     
-    Note that gcd(x,y)*lcm(x,y)==|x*y| is only true for 2 numbers.
+    Note that we calculate the result by using the identity
+    gcd(x,y)*lcm(x,y)==|x*y|, which is only true for 2 numbers, and
+    applying it successively.
     """
     return abs(reduce(lambda x, y: x * y // gcd(x, y), seq, a))
 
 
-def countcombinations(n, m):
-    """Count combinations of m out of n items."""
-    if n < m:
-        raise ValueError
-    return math.factorial(n) // (math.factorial(m) * math.factorial(n - m))
+def countcombinations(n, r):
+    """Count combinations of r out of n items."""
+    if n < r:
+        raise ValueError('set size is less than subset size')
+    return math.factorial(n) // (math.factorial(r) * math.factorial(n - r))
 
 
-def countpermutations(n, m):
-    """Count permutations of m out of n items."""
-    if n < m:
-        raise ValueError
-    return math.factorial(n) // math.factorial(n - m)
+def countpermutations(n, r):
+    """Count permutations of r out of n items."""
+    if n < r:
+        raise ValueError('set size is less than subset size')
+    return math.factorial(n) // math.factorial(n - r)
+
+
+# names commonly used in calculators
+nCr = countcombinations
+nPr = countpermutations
 
 
 def str_base(num, base, digits=BASE36_DIGITS):
     """Convert an integer to a custom base string.
 
     Inverse of int(s,base), except that no base prefix is added.
-    Based on http://code.activestate.com/recipes/65212/#c10 .
+    Based on <http://code.activestate.com/recipes/65212/#c10>.
     """
     if not 2 <= base <= len(digits):
         raise ValueError('base must be >= 2 and <= %d' % len(digits))
@@ -79,7 +86,7 @@ def multi_divmod(numerator, *denominators):
     """Multiple-divisor divmod(); see PEP 303 (rejected).
 
     This implementation is a slighty faster variation of the one in 
-    <http://mail.python.org/pipermail/python-dev/2005-June/054285.html> .
+    <http://mail.python.org/pipermail/python-dev/2005-June/054285.html>.
     """
     ret = ()
     for denominator in reversed(denominators):
