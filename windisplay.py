@@ -1,9 +1,10 @@
 # new (more Pythonic) module, based on Display.py
 
+from __future__ import print_function
+
 import win32api
 import win32con
 import pywintypes
-from types import NoneType
 
 
 # EnumDisplaySettingsEx flag
@@ -38,7 +39,7 @@ def getMode(adapter=None, registry=False):
 
 def setMode(adapter=None, mode=None, flags=0):
     """Change mode using a PyDEVMODE or (width,height,bpp,freq)."""
-    if not isinstance(mode, (NoneType, pywintypes.DEVMODEType)):
+    if mode is not None and not isinstance(mode, pywintypes.DEVMODEType):
         mode = makeDevMode(mode)
     return win32api.ChangeDisplaySettingsEx(adapter, mode, flags)
 
@@ -64,13 +65,16 @@ class _Enumerator(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         try:
             ret = self.enum(self.index)
             self.index += 1
             return ret
         except win32api.error:
             raise StopIteration
+
+    def next(self):
+        return self.__next__()
 
 
 class _Devices(_Enumerator):
@@ -127,19 +131,19 @@ if __name__ == '__main__':
         except win32api.error:
             return None
 
-    print
-    print 'Display adapters:'
+    print()
+    print('Display adapters:')
     for adp in adapters():
-        print
-        print '{0} [{1}]'.format(adp.DeviceString, adp.DeviceName)
+        print()
+        print('{0} [{1}]'.format(adp.DeviceString, adp.DeviceName))
         supModes = tuple(modes(adp.DeviceName))
         rawModes = tuple(modes(adp.DeviceName, raw=True))
         supResls = tuple(sorted(set(getDevMode(m)[:2] for m in supModes)))
         rawResls = tuple(sorted(set(getDevMode(m)[:2] for m in rawModes)))
-        print '  monitors:', ', '.join(mon.DeviceString for mon in monitors(adp.DeviceName))
-        print '  current mode:', getModeStrSafely(adp.DeviceName)
-        print '  registry mode:', getModeStrSafely(adp.DeviceName, registry=True)
-        print '  modes (supported/raw):', len(supModes), len(rawModes)
-        print '  resolutions:', ', '.join(
+        print('  monitors:', ', '.join(mon.DeviceString for mon in monitors(adp.DeviceName)))
+        print('  current mode:', getModeStrSafely(adp.DeviceName))
+        print('  registry mode:', getModeStrSafely(adp.DeviceName, registry=True))
+        print('  modes (supported/raw):', len(supModes), len(rawModes))
+        print('  resolutions:', ', '.join(
             ('{0}x{1}' if wh in supResls else '({0}x{1})').format(*wh)
-            for wh in rawResls)
+            for wh in rawResls))

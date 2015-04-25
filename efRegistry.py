@@ -120,7 +120,7 @@ def regKeyExists(keypath):
         _winreg.CloseKey(openKeyPath(keypath))
         return True
     except WindowsError, x:
-        if x.errno <> winerror.ERROR_FILE_NOT_FOUND:
+        if x.errno != winerror.ERROR_FILE_NOT_FOUND:
             raise
     return False
 

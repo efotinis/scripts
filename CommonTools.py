@@ -5,8 +5,6 @@ import collections
 import csv
 import datetime
 import itertools
-import math
-import operator
 import os
 import re
 import sys

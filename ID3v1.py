@@ -152,11 +152,3 @@ def getsafename(s, c='_'):
     Useful when creating filenames from tags.
     """
     return _BADCHAR_RX.sub(c, s)
-
-
-if __name__ == '__main__':
-    from glob import glob
-    for s in glob(r'D:\2burn\mp3\*.mp3'):
-        print s
-        print readtag(open(s, 'rb'), prune=True)
-        print
