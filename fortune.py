@@ -2,13 +2,13 @@
 
 See <http://en.wikipedia.org/wiki/Fortune_(Unix)>.
 """
-import os
-import sys
-import random
-import getopt
-import struct
-import re
+import argparse
 import codecs
+import os
+import random
+import re
+import struct
+import sys
 import time
 
 import CommonTools
@@ -169,126 +169,109 @@ def indexname(s):
     return s + '.dat'
 
 
-def parsecmdline():
-    """Parse cmdline and return options and arguments."""
-    opt, args = getopt.gnu_getopt(sys.argv[1:], '?aoefm:ilsn:wjc')
-    if args:
-        raise getopt.GetoptError('arguments not supported yet')
+def parse_args():
+    ap = argparse.ArgumentParser(
+        description='Unix fortune in Python')
 
-    d = {'help':False, 'all':False, 'offensive':False, 'equalfileprob':False,
-         'filenamesonly':False, 'matchpattern':None, 'onlylong':False,
-         'onlyshort':False, 'shortlen':160, 'wait':False, 'showsource':False,
-         'countmatches':False}
-    casesens = True
-    patt = ''
-    for sw, val in opt:
-        if sw == '-?':   d['help'] = True
-        elif sw == '-a': d['all'] = True
-        elif sw == '-o': d['offensive'] = True
-        elif sw == '-e': d['equalfileprob'] = True
-        elif sw == '-f': d['filenamesonly'] = True
-        elif sw == '-m': patt = val
-        elif sw == '-i': casesens = False
-        elif sw == '-l': d['onlylong'] = True
-        elif sw == '-s': d['onlyshort'] = True
-        elif sw == '-n': d['shortlen'] = int(val)
-        elif sw == '-w': d['wait'] = True
-        elif sw == '-j': d['showsource'] = True
-        elif sw == '-c': d['countmatches'] = True
-    if d['onlylong'] and d['onlyshort']:
-        raise getopt.GetoptError('-l and -s are mutually exclusive')
-    if patt:
-        flags = re.DOTALL | (0 if casesens else re.IGNORECASE)
+    grp = ap.add_argument_group('filters')
+    add = grp.add_argument
+    add('-a', dest='all', action='store_true',
+        help='choose from all databases, regardless of whether they are '
+        'considered "offensive"')
+    add('-o', dest='offensive', action='store_true',
+        help='choose only from "offensive" databases')
+    add('-e', dest='equalfileprob', action='store_true',
+        help='make the probability of choosing a fortune file equal to '
+        'that of all other files')
+    grp2 = grp.add_mutually_exclusive_group()
+    add2 = grp2.add_argument
+    add2('-l', dest='onlylong', action='store_true',
+        help='use only long quotations; see -n')
+    add2('-s', dest='onlyshort', action='store_true',
+        help='use only short quotations; see -n')
+    add('-n', dest='shortlen', type=int, default=160, metavar='LEN', 
+        help='specify the size boundary between short and long '
+        'quotations; default: %(default)s')
+
+    grp = ap.add_argument_group('listing')
+    add = grp.add_argument
+    add('-f', dest='filenamesonly', action='store_true',
+        help='print out a list of all fortune files that would have been '
+        'searched, but do not print a fortune')
+    add('-m', dest='matchpattern', metavar='PATT', 
+        help='print all fortunes matching the regexp specified; see -c')
+    add('-i', dest='ignorecase', action='store_true',
+        help='make the regexp of -m case-insensitive')
+
+    grp = ap.add_argument_group('misc')
+    add = grp.add_argument
+    add('-w', dest='wait', action='store_true',
+        help='wait for a period of time (proportionate to the quotation '
+        'size) before exiting')
+
+    grp = ap.add_argument_group('extensions')
+    add = grp.add_argument
+    add('-j', dest='showsource', action='store_true',
+        help='prepend source file/index to quotations')
+    add('-c', dest='countmatches', action='store_true',
+        help='when used with -m, print count of matches instead')
+
+    args = ap.parse_args()
+
+    # TODO: support input files
+
+    rxflags = re.DOTALL
+    if args.ignorecase:
+        rxflags |= re.IGNORECASE
+    if args.matchpattern:
         try:
-            d['matchpattern'] = re.compile(patt, flags)
-        except re.error as err:
-            raise getopt.GetoptError('invalid regexp: ' + str(err))
-    opt = d
-    return opt, args
+            args.matchpattern = re.compile(args.matchpattern, rxflags)
+        except re.error as x:
+            ap.error('invalid regexp; ' + str(err))
+
+    return args
 
 
-def showhelp():
-    scriptname = CommonTools.scriptname().upper()
-    print '''
-Python implementation of *nix fortune.
-
-%(scriptname)s [options]
-
-         [Filters]
-  -a       Choose from all databases, regardless of whether they are considered
-           "offensive".
-  -o       Choose only from "offensive" databases.
-  -e       Make the probability of choosing a fortune file equal to that of all
-           other files
-  -l       Use only long quotations (see -n).
-  -s       Use only short quotations (see -n).
-  -n LEN   Specify the size boundary between short and long quotations.
-           Default is 160.
-
-         [Listing]
-  -f       Print out a list of all fortune files that would have been searched,
-           but do not print a fortune.
-  -m PATT  Print all fortunes matching the regexp specified. See also -c.
-  -i       Make the regexp of -m case-insensitive.
-  
-         [Misc]
-  -w       Wait for a period of time (proportionate to the quotation size)
-           before exiting.
-
-         [Extensions]
-  -j       Prepend source file/index to quotations.
-  -c       When used with -m, print count of matches instead.
-           
-'''[1:-1] % locals()
-
-
-def main():
-    try:
-        opt, args = parsecmdline()
-    except getopt.GetoptError as err:
-        raise SystemExit(err)
-
-    if opt['help']:
-        showhelp()
-        return
+if __name__ == '__main__':
+    args = parse_args()
 
     # get paths of files
-    files = getfiles(opt['all'], opt['offensive'])
+    files = getfiles(args.all, args.offensive)
 
     # if requested, show filenames and exit
-    if opt['filenamesonly']:
+    if args.filenamesonly:
         for s in files:
             print s
-        return
+        sys.exit()
 
-    sizefilter = makesizefilter(opt['onlylong'], opt['onlyshort'], opt['shortlen'])
+    sizefilter = makesizefilter(args.onlylong, args.onlyshort, args.shortlen)
 
     # if pattern matching is requested, show items and exit
-    if opt['matchpattern']:
+    if args.matchpattern:
         count = 0
         for datafile in files:
             try:
                 ndx = Index(indexname(datafile))
                 for i, s in enumerate(File(datafile, ndx)):
-                    if sizefilter(len(s)) and opt['matchpattern'].search(s):
-                        if opt['countmatches']:
+                    if sizefilter(len(s)) and args.matchpattern.search(s):
+                        if args.countmatches:
                             count += 1
                         else:
-                            if opt['showsource']:
+                            if args.showsource:
                                 print '[%s:%d]' % (datafile, i)
                             sys.stdout.write(s + ndx.delim + '\n')
             except IOError:
                 # probably index file not found
                 pass
-        if opt['countmatches']:
+        if args.countmatches:
             print count, 'matches'
-        return
+        sys.exit()
                     
     # count items according to size constaints
     counts = [countitems(indexname(s), sizefilter) for s in files]
 
     if not files:
-        raise SystemExit('no fortune files')
+        sys.exit('no fortune files')
 
     # remove files and counts when count is 0
     # FIXME: fails when all items are removed
@@ -297,9 +280,9 @@ def main():
         if n])
 
     if not files:
-        raise SystemExit('nothing matches criteria')
+        sys.exit('nothing matches criteria')
 
-    if opt['equalfileprob']:
+    if args.equalfileprob:
         filename, count = random.choice(zip(files, counts))
         i = random.randint(0, count-1)
     else:
@@ -315,11 +298,8 @@ def main():
     ndx = Index(indexname(filename))
     i = findnth(ndx, i, sizefilter)
     message = File(filename, ndx)[i]
-    if opt['showsource']:
+    if args.showsource:
         print '[%s:%d]' % (filename, i)
     sys.stdout.write(message)
-    if opt['wait']:
+    if args.wait:
         time.sleep(2 + (len(message) / 20.0))
-
-
-main()
