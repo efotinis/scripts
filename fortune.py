@@ -2,6 +2,7 @@
 
 See <http://en.wikipedia.org/wiki/Fortune_(Unix)>.
 """
+from __future__ import print_function, division
 import argparse
 import codecs
 import os
@@ -12,6 +13,9 @@ import sys
 import time
 
 import CommonTools
+
+
+PY2 = sys.version_info.major == 2
 
 
 def getfiles(all=False, offensive=False):
@@ -52,6 +56,8 @@ class Index(object):
         hdr = self.f.read(self.HEADER_LEN)
         (self.version, self.count, self.maxlen, self.minlen,
          self.flags, self.delim, padding) = struct.unpack(self.HEADER, hdr)
+        if not PY2:
+            self.delim = str(self.delim, 'ascii')
         assert self.version == self.VERSION
 
     def __len__(self):
@@ -73,13 +79,14 @@ class Index(object):
             self.cur = 0
         def __iter__(self):
             return self
-        def next(self):
+        def __next__(self):
             try:
                 self.cur += 1
                 return self.ndx[self.cur - 1]
             except IndexError:
                 self.cur -= 1
                 raise StopIteration
+        next = __next__
 
     def __iter__(self):
         return self._Iter(self)
@@ -90,7 +97,7 @@ class File(object):
     ROT13_DECODER = codecs.getdecoder('rot13')
     
     def __init__(self, fpath, index):
-        self.f = open(fpath, 'rb')
+        self.f = open(fpath, 'rt')
         self.index = index
         
     def __getitem__(self, i):
@@ -100,7 +107,7 @@ class File(object):
         """
         beg, end = self.index[i]
         self.f.seek(beg)
-        s = self.f.read(end - beg)
+        s = self.f.read(end - beg)  # FIXME: non-ASCII text fails here with Py3
         if s[-2:] == self.index.delim + '\n':
             # this 'if' used to be an assert, but the delim+'\n'
             # of one file was missing at the last entry
@@ -115,13 +122,14 @@ class File(object):
             self.cur = 0
         def __iter__(self):
             return self
-        def next(self):
+        def __next__(self):
             try:
                 self.cur += 1
                 return self.dat[self.cur - 1]
             except IndexError:
                 self.cur -= 1
                 raise StopIteration
+        next = __next__
 
     def __iter__(self):
         return self._Iter(self)
@@ -241,7 +249,7 @@ if __name__ == '__main__':
     # if requested, show filenames and exit
     if args.filenamesonly:
         for s in files:
-            print s
+            print(s)
         sys.exit()
 
     sizefilter = makesizefilter(args.onlylong, args.onlyshort, args.shortlen)
@@ -258,13 +266,13 @@ if __name__ == '__main__':
                             count += 1
                         else:
                             if args.showsource:
-                                print '[%s:%d]' % (datafile, i)
+                                print('[%s:%d]' % (datafile, i))
                             sys.stdout.write(s + ndx.delim + '\n')
             except IOError:
                 # probably index file not found
                 pass
         if args.countmatches:
-            print count, 'matches'
+            print(count, 'matches')
         sys.exit()
                     
     # count items according to size constaints
@@ -299,7 +307,7 @@ if __name__ == '__main__':
     i = findnth(ndx, i, sizefilter)
     message = File(filename, ndx)[i]
     if args.showsource:
-        print '[%s:%d]' % (filename, i)
+        print('[%s:%d]' % (filename, i))
     sys.stdout.write(message)
     if args.wait:
-        time.sleep(2 + (len(message) / 20.0))
+        time.sleep(2 + (len(message) / 20))
