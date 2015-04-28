@@ -1,12 +1,16 @@
 """Print using large letters. Inspired by BIGECHO.COM."""
 
-from PIL import Image
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
+
 import iterutil
 import CommonTools
 
-UPPER_HALF = unichr(0x2580)
-LOWER_HALF = unichr(0x2584)
-FULL_BLOCK = unichr(0x2588)
+UPPER_HALF = u'\u2580'
+LOWER_HALF = u'\u2584'
+FULL_BLOCK = u'\u2588'
 
 
 # TODO: add height param to Font's init, so that we can specify bitmaps
@@ -23,6 +27,8 @@ def chars_from_image(path, cell, spacing):
         cell        (width,height) of char cells
         spacing     (x,y) spacing between cells
     """
+    if not Image:
+        raise NameError('PIL.Image not available')
     im = Image.open(path)
     for y in range(0, im.size[1], cell[1] + spacing[1]):
         for x in range(0, im.size[0], cell[0] + spacing[0]):

@@ -1,5 +1,6 @@
 """Size/time/speed calculator."""
 
+from __future__ import print_function
 import sys
 import re
 import argparse
@@ -86,27 +87,27 @@ def parse_value(s):
         return 'size', parse_size(s)
 
 
-def fmt_value((type_, val, orig_str)):
+def fmt_value(type_, val, orig_str):
     p = globals()['fmt_' + type_]
     return '%s: %s (%s)' % (type_, orig_str, p(val))
 
 
 def parse_cmdline():
     value_parser = lambda s: parse_value(s) + (s,)  # append original string
-    value_parser.func_name = 'Parameter'  # HACK: provide a meaningful name for argparse error reporting
+    value_parser.func_name = 'Parameter'  # HACK: provide a meaningful name
+                                          # for argparse error reporting
     parser = argparse.ArgumentParser(
-        description='Given two of size/time/speed, calculate the third.',
-        add_help=False)
+        description='Given two of size/time/speed, calculate the third.')
     parser.add_argument('value1', metavar='VAL1', type=value_parser,
-                        help='First value.')
+                        help='first value')
     parser.add_argument('value2', metavar='VAL2', type=value_parser,
-                        help='Second value.')
-    parser.add_argument('-t', choices='smhdw', metavar='UNIT', default='s', dest='timeunit',
-                        help='Time unit for speed output. Default: "%(default)s".')
+                        help='second value.')
+    parser.add_argument('-t', choices='smhdw', metavar='UNIT', default='s',
+                        dest='timeunit',
+                        help='time unit for speed output; use initials of: '
+                        'second, minute, hour, day, week; default: "%(default)s".')
     parser.add_argument('-v', action='store_true', dest='verbose',
-                        help='Verbose output (includes interpreted input values).')
-    parser.add_argument('-?', action='help',
-                        help='This help.')
+                        help='verbose output; includes interpreted input values')
     opt = parser.parse_args()
     if opt.value1[0] == opt.value2[0]:
         parser.error('both value types are the same ("%s")' % opt.value1[0])
@@ -121,12 +122,12 @@ if __name__ == '__main__':
     values[opt.value2[0]] = opt.value2[1]
 
     if opt.verbose:
-        print fmt_value(opt.value1)
-        print fmt_value(opt.value2)
+        print(fmt_value(*opt.value1))
+        print(fmt_value(*opt.value2))
 
     if values['size'] is None:
-        print 'size:', fmt_size(values['speed'] * values['time'])
+        print('size:', fmt_size(values['speed'] * values['time']))
     elif values['time'] is None:
-        print 'time:', fmt_time(values['size'] / values['speed'])
+        print('time:', fmt_time(values['size'] / values['speed']))
     else:
-        print 'speed:', fmt_speed(values['size'] / values['time'], opt.timeunit)
+        print('speed:', fmt_speed(values['size'] / values['time'], opt.timeunit))

@@ -76,8 +76,7 @@ def get_system_uptime(include_suspended):
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='display the system uptime',
-        add_help=False)
+        description='display the system uptime')
     _add = parser.add_argument
     _add('-s', dest='include_suspended', action='store_true',
          help='include time in suspension; only used on Windows; '
@@ -91,7 +90,6 @@ def parse_args():
                'month and year values are approximated').format(units))
     _add('-d', dest='decimals', type=int, default=2, metavar='DEC',
          help='decimal places to use for single unit output; default is %(default)s')
-    _add('-?', action='help', help='this help')
     return parser.parse_args()
 
 
