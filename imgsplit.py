@@ -3,7 +3,7 @@
 import os
 import sys
 import argparse
-from PIL import Image
+from PIL import Image, ImageGrab
 
 
 PATH_FORMAT_VARS = [
@@ -21,23 +21,24 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description='split an image to a grid of subimages')
 
-    _add = parser.add_argument
+    add = parser.add_argument
 
-    _add(dest='infile', metavar='SRC',
-         help='input image')
-    _add(dest='rows', metavar='ROWS', type=int,
-         help='number of rows (>0)')
-    _add(dest='cols', metavar='COLS', type=int,
-         help='number of columns (>0)')
-    _add('-o', dest='outfile', metavar='DST', default=DEFAULT_OUTPATH, 
-         help='output file; can include directory path; '
-              'available {}-style formatting vars: ' +
-               ', '.join('"%s" (%s)' % (name, descr) for (name, descr) in PATH_FORMAT_VARS) + 
-               '; default is "%(default)s"')
-    _add('-f', dest='format', metavar='FMT',
+    VARS_LIST = ', '.join('"%s" (%s)' % (name, descr)
+                          for (name, descr) in PATH_FORMAT_VARS)
+    add(dest='infile', metavar='SRC',
+        help='input image; use "" for Clipboard (implied name: clipboard.bmp)')
+    add(dest='rows', metavar='ROWS', type=int,
+        help='number of rows (>0)')
+    add(dest='cols', metavar='COLS', type=int,
+        help='number of columns (>0)')
+    add('-o', dest='outfile', metavar='DST', default=DEFAULT_OUTPATH, 
+        help='output file; can include directory path; '
+        'available {}-style formatting vars: ' + VARS_LIST +
+        '; default is "%(default)s"')
+    add('-f', dest='format', metavar='FMT',
          help='output image format; default depends on output extension')
-    _add('--overwrite', dest='overwrite', action='store_true', 
-         help='overwrite existing output files; by default an error msg is printed')
+    add('--overwrite', dest='overwrite', action='store_true', 
+         help='overwrite existing output files')
 
     args = parser.parse_args()
 
@@ -53,11 +54,20 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
-    im = Image.open(args.infile)
+    if args.infile:
+        im = Image.open(args.infile)
+    else:
+        im = ImageGrab.grabclipboard()
+        if not im:
+            sys.exit('no image in clipboard')
     width, height = im.size
 
-    name, ext = os.path.splitext(os.path.basename(args.infile))
+    name, ext = os.path.splitext(
+        os.path.basename(args.infile or 'clipboard.bmp'))
     fmt_vars = {'name': name, 'ext': ext}
+
+    inmode = im.mode
+    outmode = 'RGB' + 'A' if 'A' in inmode else ''
 
     errors = 0
     for row in range(args.rows):
@@ -68,7 +78,7 @@ if __name__ == '__main__':
             x2, y2 = width * (col + 1) // args.cols, height * (row + 1) // args.rows
 
             # create subimage
-            imnew = Image.new('RGB', (x2-x1, y2-y1))
+            imnew = Image.new(outmode, (x2-x1, y2-y1))
             imnew.paste(im.copy().crop((x1, y1, x2, y2)))
 
             # format name and save output
