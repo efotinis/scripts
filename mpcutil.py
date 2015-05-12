@@ -1,13 +1,16 @@
 """MPC-HC utilities."""
 
-from __future__ import division
+from __future__ import print_function, division
 import collections
 import os
 import re
 
 import reg_util
 
-from _winreg import HKEY_CURRENT_USER, REG_SZ, REG_DWORD
+try:
+    from _winreg import HKEY_CURRENT_USER, REG_SZ, REG_DWORD, KEY_WRITE
+except ImportError:
+    from winreg import HKEY_CURRENT_USER, REG_SZ, REG_DWORD, KEY_WRITE
 
 
 #ROOT = 'Software\\Gabest\\Media Player Classic\\'  # used before ~v1.7.2
@@ -35,20 +38,48 @@ Favorite = collections.namedtuple('Favorite', 'name position reldrive path')
 Recent = collections.namedtuple('Recent', 'path position')
 
 
+def get_exe_path():
+    """MPC-HC executable path, as stored in the Registry, or None."""
+    with reg_util.open_key(HKEY_CURRENT_USER, ROOT) as key:
+        return reg_util.get_value_data(key, 'ExePath', REG_SZ)
+
+
+def fav_from_str(s):
+    """Convert Registry string value to Favorite."""
+    # NOTE: only ';' is escaped to '\;'; nothing else (not even '\')
+    a = re.split(r'(?<!\\);', s)  # split on non-escaped semicolons
+    return Favorite(
+        name=a[0].replace('\;', ';'),
+        position=int(a[1]) / TIMERES,
+        reldrive=bool(int(a[2])),
+        path=a[3].replace('\;', ';')
+    )
+
+
+def fav_to_str(fav):
+    """Convert Favorite to Registry string value."""
+    return ';'.join([
+        fav.name.replace(';', '\;'),
+        str(int(round(fav.position * TIMERES))),
+        '1' if fav.reldrive else '0',
+        fav.path.replace(';', '\;')
+    ])
+
+
 def get_favorites():
     """Get Favorite objects from the Registry."""
     ret = []
     with reg_util.open_key(HKEY_CURRENT_USER, REG_FAVORITES) as key:
         for i, data in reg_util.get_list(key, 'Name', REG_SZ, start=0):
-            # NOTE: only ';' is escaped to '\;'; nothing else (not even '\')
-            a = re.split(r'(?<!\\);', data)  # split on non-escaped semicolons
-            ret.append(Favorite(
-                name=a[0].replace('\;', ';'),
-                position=int(a[1]) / TIMERES,
-                reldrive=bool(int(a[2])),
-                path=a[3].replace('\;', ';')
-            ))
+            ret.append(fav_from_str(data))
     return ret
+
+
+def set_favorites(favs):
+    """Set Favorite objects to the Registry and return total success."""
+    data = [fav_to_str(fav) for fav in favs]
+    with reg_util.create_key(HKEY_CURRENT_USER, REG_FAVORITES) as key:
+        return reg_util.set_list(key, 'Name', REG_SZ, data, start=0)
 
 
 def get_saved_positions():
@@ -90,15 +121,15 @@ def get_recent_files_count():
 
 if __name__ == '__main__':
     from timer import pretty_time
-    print 'favorites:'
+    print('favorites:')
     for fav in get_favorites():
         timepos = pretty_time(fav.position)
         s = '  {} "{}"'.format(timepos, fav.path)
         if fav.name != os.path.basename(fav.path):
             s += ' ({})'.format(fav.name)
-        print s
-    print 'recent:'
+        print(s)
+    print('recent:')
     for rec in get_recent_files():
         timepos = pretty_time(rec.position)
         s = '  {} "{}"'.format(timepos, rec.path)
-        print s
+        print(s)
