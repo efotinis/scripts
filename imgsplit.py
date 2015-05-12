@@ -1,5 +1,6 @@
 """Split an image to a grid of subimages."""
 
+from __future__ import print_function
 import os
 import sys
 import argparse
@@ -67,7 +68,7 @@ if __name__ == '__main__':
     fmt_vars = {'name': name, 'ext': ext}
 
     inmode = im.mode
-    outmode = 'RGB' + 'A' if 'A' in inmode else ''
+    outmode = 'RGB' + ('A' if 'A' in inmode else '')
 
     errors = 0
     for row in range(args.rows):
@@ -89,7 +90,7 @@ if __name__ == '__main__':
             outpath = args.outfile.format(**fmt_vars)
 
             if os.path.exists(outpath) and not args.overwrite:
-                print >>sys.stderr, 'file already exists: "%s"' % outpath
+                print('file already exists: "%s"' % outpath, file=sys.stderr)
                 errors += 1
             else:
                 imnew.save(outpath, format=args.format)

@@ -1,5 +1,6 @@
 """Dump current Windows system colors."""
 
+from __future__ import print_function
 import win32api
 
 defines = {
@@ -43,5 +44,5 @@ for i in range(max(defines.keys()) + 1):
     clr = win32api.GetSysColor(i)
     names = defines[i][:2] if i in defines else ('(not defined)',)
     r, g, b = clr&0xff, (clr>>8)&0xff, (clr>>16)&0xff
-    print '%2d: 0x%06x (%3d,%3d,%3d) %s' % (i, clr, r, g, b, ', '.join(names))
+    print('%2d: 0x%06x (%3d,%3d,%3d) %s' % (i, clr, r, g, b, ', '.join(names)))
     

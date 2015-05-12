@@ -1,5 +1,6 @@
 """Compare the files (and optionally their hashes/bytes) of two directories."""
 
+from __future__ import print_function
 import os
 import sys
 import hashlib
@@ -16,6 +17,16 @@ elif os.name == 'nt':
     CASE_SENSITIVE_PLATFORM_PATHS = False
 else:
     CASE_SENSITIVE_PLATFORM_PATHS = None  # will err if user selects it
+
+
+if CommonTools.PY3:
+    def cmp(a, b):
+        if a < b:
+            return -1
+        elif a > b:
+            return 1
+        else:
+            return 0
 
 
 def merged(a, b, case_sens):
@@ -187,8 +198,9 @@ def parse_args():
     if not os.path.isdir(args.dir2):
         parser.error('not a directory: "%s"' % args.dir2)
 
-    args.dir1 = unicode(args.dir1)
-    args.dir2 = unicode(args.dir2)
+    if CommonTools.PY2:
+        args.dir1 = unicode(args.dir1)
+        args.dir2 = unicode(args.dir2)
 
     if args.case_sens == 'm':
         args.case_sens = True
@@ -221,11 +233,11 @@ if __name__ == '__main__':
              'mismatched_files':0, 'matched_files':0}
     try:
         compare_dirs(dir1, dir2, '', stats, args)
-        print
-        print 'Totals:'
-        print '  (==)    matched:', stats['matched_files']
-        print '  (**) mismatched:', stats['mismatched_files']
-        print '  (1 )  only in 1:', stats['only_in_a']
-        print '  ( 2)  only in 2:', stats['only_in_b']
+        print()
+        print('Totals:')
+        print('  (==)    matched:', stats['matched_files'])
+        print('  (**) mismatched:', stats['mismatched_files'])
+        print('  (1 )  only in 1:', stats['only_in_a'])
+        print('  ( 2)  only in 2:', stats['only_in_b'])
     except KeyboardInterrupt:
         sys.exit('cancelled by user')

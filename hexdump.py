@@ -1,5 +1,6 @@
 """File hex dump."""
 
+from __future__ import print_function
 import argparse
 import os
 import CommonTools
@@ -40,10 +41,11 @@ def read_file(path, offset, size, width):
 
 
 def dump(offset, data, width):
-    a = [ord(c) for c in data] + [None] * (width - len(data))
-    hexstr = ' '.join('  ' if n is None else '%02x' % n for n in a)
-    ascstr = ''.join(' ' if n is None else chr(n) if 32<=n<=126 else '.' for n in a)
-    print ' %08x | %s | %s' % (offset, hexstr, ascstr)
+    data = [ord(c) for c in data] if CommonTools.PY2 else list(data)
+    data += [None] * (width - len(data))
+    hexstr = ' '.join('  ' if n is None else '%02x' % n for n in data)
+    ascstr = ''.join(' ' if n is None else chr(n) if 32<=n<=126 else '.' for n in data)
+    print(' %08x | %s | %s' % (offset, hexstr, ascstr))
 
 
 def parse_args():
@@ -70,9 +72,11 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
     for path in args.file:
-        CommonTools.conout('file: ' + path)
+        #CommonTools.conout('file: ' + path)
+        print('file: ' + path)
         try:
             for offset, data in read_file(path, args.offset, args.size, args.width):
                 dump(offset, data, args.width)
         except IOError as x:
             CommonTools.conerr(str(x))
+            

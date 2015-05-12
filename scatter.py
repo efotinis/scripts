@@ -1,5 +1,6 @@
 """Move files to subdirs in equal-sized groups."""
 
+from __future__ import division
 import os
 import argparse
 import math
@@ -29,7 +30,7 @@ def group_sizes(count, total):
     This means that all groups should be equal, apart from the last,
     which may be smaller.
     """
-    group_size = int(math.ceil(total / float(count)))
+    group_size = int(math.ceil(total / count))
     while total > 0:
         n = min(group_size, total)
         yield n

@@ -1,5 +1,6 @@
 """Locate duplicate files using MD5 hashes."""
 
+from __future__ import print_function, division
 import os
 import hashlib
 import sys
@@ -17,6 +18,9 @@ HASH_BUFLEN = 2**20
 STATUS_UPDATE_SEC = 1
 
 
+iteritems = (lambda d: d.iteritems()) if CommonTools.PY2 else (lambda d: d.items())
+
+
 class Status:
     def __init__(self, interval, counter):
         self.lastPrintTime = time.time()
@@ -27,7 +31,7 @@ class Status:
         return self
     def __exit__(self, exc_type, exc_value, traceback):
         self.prnt()
-        print
+        print()
     def add(self, *data):
         self.counter.add(*data)
         t = time.time()
@@ -36,7 +40,7 @@ class Status:
             self.lastPrintTime = t
     def prnt(self):
         self.cursor.restore(True)
-        print str(self.counter),
+        print(str(self.counter), end='')
         sys.stdout.flush()
 
 
@@ -56,7 +60,7 @@ class SizeCounter:
     def add(self, n):
         self.current += n
     def __str__(self):
-        percent = 100.0 * self.current / self.total if self.total else 100
+        percent = 100 * self.current / self.total if self.total else 100
 ##        return str(round(percent)) + '%'
         return str(int(round(percent))) + '%'
 
@@ -104,7 +108,7 @@ def sizeStr(n):
     if n < 1000:
         return str(n) + ' bytes'
     for c in 'KMGTPE':
-        n /= 2.0**10
+        n /= 2**10
         if n < 999.5 or c == 'E':
             return '%.2f %ciB' % (n, c)
 
@@ -154,22 +158,22 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
-    print 'scanning:',
+    print('scanning:', end=' ')
     with Status(STATUS_UPDATE_SEC, ItemCounter()) as status:
         sizeGroups = getSizeGroups(args.dirs, status, args)
 
     totalBytes = sum(size*len(files) for (size,files)
-                     in sizeGroups.iteritems())
+                     in iteritems(sizeGroups))
     bytesToHash = sum(size*len(files) for (size,files)
-                      in sizeGroups.iteritems() if len(files) > 1)
-    print 'total/hash size: %s, %s' % (sizeStr(totalBytes), sizeStr(bytesToHash))
+                      in iteritems(sizeGroups) if len(files) > 1)
+    print('total/hash size: %s, %s' % (sizeStr(totalBytes), sizeStr(bytesToHash)))
 
-    print 'hashing:',
+    print('hashing:', end=' ')
     sigNames = collections.defaultdict(list)
     sigSizes = collections.defaultdict(int)
     ignored = 0
     with Status(STATUS_UPDATE_SEC, SizeCounter(bytesToHash)) as status:
-        for size, files in sizeGroups.iteritems():
+        for size, files in iteritems(sizeGroups):
             if len(files) > 1:
                 for s in files:
                     sig = hashFile(s, status).hexdigest()
@@ -179,29 +183,29 @@ if __name__ == '__main__':
                         sigNames[sig] += [s]
                         sigSizes[sig] = size
 
-    print
-    print 'duplicates:'
-    for sig, files in sigNames.iteritems():
+    print()
+    print('duplicates:')
+    for sig, files in iteritems(sigNames):
         if len(files) > 1:
-            print '---- %s ----' % (sig,)
+            print('---- %s ----' % (sig,))
             for s in files:
                 CommonTools.uprint('  ' + s)
 
     # calc and print dirs and their count of dup files
     dirs = collections.defaultdict(int)
-    for sig, files in sigNames.iteritems():
+    for sig, files in iteritems(sigNames):
         if len(files) > 1:
             for s in files:
                 dirs[os.path.split(s)[0]] += 1
 
-    print
-    print 'dir counts:'
+    print()
+    print('dir counts:')
     for dir, times in sorted(dirs.items(), key=lambda t: t[1], reverse=True):
-        print '  %6d: %s' % (times, dir)
+        print('  %6d: %s' % (times, dir))
 
     dupFiles, dupGroups = 0, 0
     dupBytes, uniqBytes = 0, 0
-    for sig, files in sigNames.iteritems():
+    for sig, files in iteritems(sigNames):
         if len(files) > 1:
             count, size = len(files), sigSizes[sig]
             dupFiles += count
@@ -210,21 +214,21 @@ if __name__ == '__main__':
             uniqBytes += size
             
     #dups = [len(a) for a in sigNames.itervalues() if len(a) > 1]
-    print
-    print 'dup files/groups: %d, %d' % (dupFiles, dupGroups)
-    print 'total/unique/extra size of dups: %s, %s, %s' % (
-        sizeStr(dupBytes), sizeStr(uniqBytes), sizeStr(dupBytes - uniqBytes))
-    print 'ignored files:', ignored
+    print()
+    print('dup files/groups: %d, %d' % (dupFiles, dupGroups))
+    print('total/unique/extra size of dups: %s, %s, %s' % (
+        sizeStr(dupBytes), sizeStr(uniqBytes), sizeStr(dupBytes - uniqBytes)))
+    print('ignored files:', ignored)
 
     if args.delete:
-        print
-        print 'deleting duplicates...'
+        print()
+        print('deleting duplicates...')
         n = 0
-        for sig, files in sigNames.iteritems():
+        for sig, files in iteritems(sigNames):
             for s in files[1:]:  # keep the first one
                 try:
                     os.unlink(s)
                     n += 1
                 except OSError:
                     CommonTools.uprint('could not delete "%s"' % s)
-        print 'files deleted:', n
+        print('files deleted:', n)

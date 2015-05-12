@@ -65,7 +65,7 @@ def calc(a):
     if len(a) < 1:
         raise ValueError('need 2 or more timestamps')
     a = iter(a)
-    start = previous = a.next()
+    start = previous = next(a)
     for n in a:
         yield n - previous, n - start
         previous = n

@@ -1,5 +1,6 @@
 """Print the PATH entries."""
 
+from __future__ import print_function
 import os
 import sys
 import argparse
@@ -23,10 +24,10 @@ if __name__ == '__main__':
     dup_counts = collections.Counter(os.path.normcase(s) for s in items)
     if args.bare:
         for s in items:
-            print s
+            print(s)
     else:
         for s in items:
             flags = ''
             flags += '*' if not os.path.isdir(s) else ' '
             flags += '!' if dup_counts[os.path.normcase(s)] > 1 else ' '
-            print flags, s
+            print(flags, s)

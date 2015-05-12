@@ -4,33 +4,41 @@ Format specs:
     <http://wiki.theory.org/BitTorrentSpecification>
 """
 
-import cStringIO
-import fileutil
 import re
+try:
+    from cStringIO import StringIO as DataIO
+    STR_TYPES = (str, unicode)
+    str2bytes = lambda s: s
+except ImportError:
+    from io import BytesIO as DataIO
+    STR_TYPES = (str,)
+    str2bytes = lambda s: s.encode('latin1')
+
+import fileutil
 
 
 def loads(s):
     """Read an object from a string."""
-    return load(cStringIO.StringIO(s))
+    return load(DataIO(s))
 
 
 def load(f):
     """Read an object from a file (or file path)."""
-    if isinstance(f, basestring):
+    if isinstance(f, STR_TYPES):
         f = open(f, 'rb')
     return readany(f)
 
 
 def dumps(obj):
     """Write an object to a string."""
-    f = cStringIO.StringIO()
+    f = DataIO()
     dump(f, obj)
     return f.getvalue()
 
 
 def dump(f, obj):
     """Write an object to a file (or file path)."""
-    if isinstance(f, basestring):
+    if isinstance(f, STR_TYPES):
         f = open(f, 'wb')
     writeany(f, obj)
 
@@ -47,12 +55,12 @@ bencoding format
 """
 
 
-INT_FORMAT = re.compile(r'^(?:0|-?[1-9][0-9]*)$')
+INT_FORMAT = re.compile(br'^(?:0|-?[1-9][0-9]*)$')
 
 
-def readstr(f, lead=''):
+def readstr(f, lead=b''):
     """Read a bencoded string. Accepts leading bytes that are already read."""
-    size = int(lead + fileutil.readupto(f, ':'))
+    size = int(lead + fileutil.readupto(f, b':'))
     if size < 0:
         raise ValueError('bad string size')
     return fileutil.readexactly(f, size)
@@ -60,7 +68,7 @@ def readstr(f, lead=''):
 
 def readint(f):
     """Read a bencoded integer (after leading 'i')."""
-    s = fileutil.readupto(f, 'e')
+    s = fileutil.readupto(f, b'e')
     if not INT_FORMAT.match(s):
         raise ValueError('bad integer')
     return int(s, 10)
@@ -81,7 +89,7 @@ def readdict(f):
     ret = {}
     while True:
         c = fileutil.readexactly(f, 1)
-        if c == 'e':
+        if c == b'e':
             return ret
         key = readstr(f, c)
         ret[key] = readany(f)
@@ -93,10 +101,10 @@ def readany(f, checkend=False):
     Will return None if next char is 'e' and checkend=True.
     """
     c = fileutil.readexactly(f, 1)
-    if checkend and c == 'e':
+    if checkend and c == b'e':
         return None
     try:
-        return {'i':readint, 'l':readlist, 'd':readdict}[c](f)
+        return {b'i':readint, b'l':readlist, b'd':readdict}[c](f)
     except KeyError:
         return readstr(f, c)
 
@@ -104,19 +112,25 @@ def readany(f, checkend=False):
 def writeany(f, obj):
     """Write any bencoded value."""
     if isinstance(obj, dict):
-        f.write('d')
+        f.write(b'd')
         for k in sorted(obj):
-            if not isinstance(k, str):
+            if not isinstance(k, bytes):
                 raise TypeError('dict key is not a string')
             writeany(f, k)
             writeany(f, obj[k])
-        f.write('e')
+        f.write(b'e')
     elif isinstance(obj, list):
-        f.write('l')
+        f.write(b'l')
         for x in obj:
             writeany(f, x)
-        f.write('e')
-    elif isinstance(obj, str):
-        f.write(str(len(obj)) + ':' + obj)
+        f.write(b'e')
+    elif isinstance(obj, bytes):
+        f.write(str2bytes(str(len(obj))) + b':' + obj)
     else:
-        f.write('i' + str(obj) + 'e')
+        f.write(b'i' + str2bytes(str(obj)) + b'e')
+
+
+##fp = 'c:/users/elias/desktop/1.dat'
+##fp2 = 'c:/users/elias/desktop/2.dat'
+##dump(fp2, load(fp))
+##assert open(fp, 'rb').read() == open(fp2, 'rb').read()

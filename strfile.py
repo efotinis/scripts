@@ -1,5 +1,6 @@
 """Python implementation of Unix strfile."""
 
+from __future__ import print_function
 import sys
 import struct
 
@@ -24,7 +25,7 @@ minsize = 2**31
 maxsize = 0
 
 curpos, lastpos = 0, 0
-fin = open(input)
+fin = open(input, 'rt')
 for s in fin:
     curpos += len(s)
     if s == '%\n':
@@ -38,7 +39,7 @@ for s in fin:
 
 assert fin.tell() == lastpos, 'file does not end with a delimiter'
 
-print minsize, maxsize
+print(minsize, maxsize)
 
 version = 1
 flags = 0

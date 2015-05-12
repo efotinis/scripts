@@ -86,7 +86,7 @@ class IniFile(TextDB):
 
     def __init__(self, path):
         self.sections = {}
-        with open(path) as f:
+        with open(path, 'rt') as f:
             for name, items in self.parse(f):
                 self.sections[name] = {key:value for key, value in items}
 
@@ -123,7 +123,7 @@ class IndentedDB(TextDB):
             item 2b
     """
     def __init__(self, path):
-        with open(path) as f:
+        with open(path, 'rt') as f:
             self.items = {name:items for name,items in self.parse(f)}
     def section(self, s):
         return s.rstrip() if s and s[0] not in ' \t' else None

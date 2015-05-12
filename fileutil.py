@@ -42,7 +42,7 @@ def readupto(f, delim, keep=False):
     The delimiter will be consumed, but it won't appear in the result,
     unless 'keep' is True.
     """
-    ret = ''
+    ret = b''
     while True:
         c = readexactly(f, 1)
         if c == delim:
@@ -56,6 +56,6 @@ def fsig(path, name='md5', buflen=2**10):
     """Calculate a file hash."""
     hash = hashlib.new(name)
     with open(path, 'rb') as f:
-        for s in iter(lambda: f.read(buflen), ''):
+        for s in iter(lambda: f.read(buflen), b''):
             hash.update(s)
     return hash.hexdigest()

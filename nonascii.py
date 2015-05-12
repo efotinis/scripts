@@ -1,5 +1,6 @@
 """Find non-ASCII characters in clipboard text."""
 
+from __future__ import print_function
 import sys
 import getopt
 import clipboard
@@ -14,10 +15,10 @@ except getopt.GetoptError as x:
     sys.exit(str(x))
 
 if '-?' in opts:
-    print 'Finds non-ASCII chars in the clipboard\'s text.'
-    print ''
-    print 'Options:'
-    print '  -?  This help.'
+    print('Finds non-ASCII chars in the clipboard\'s text.')
+    print('')
+    print('Options:')
+    print('  -?  This help.')
     sys.exit()
 
 text = clipboard.get_text()
@@ -29,4 +30,4 @@ if not a:
     sys.exit('no non-ASCII chars found')
 
 for c in a:
-    print ord(c)
+    print(ord(c))

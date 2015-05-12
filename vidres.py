@@ -1,6 +1,6 @@
 """List video resolutions."""
 
-from __future__ import division
+from __future__ import division, print_function
 import argparse
 import fractions
 
@@ -53,15 +53,15 @@ if __name__ == '__main__':
     modes_xy = list(set((mode.PelsWidth, mode.PelsHeight)
                         for mode in windisplay.modes()))
     if args.mpsort:
-        modes_xy.sort(key=lambda (x,y): (x*y))
+        modes_xy.sort(key=lambda xy: xy[0] * xy[1])
     else:
         modes_xy.sort()
 
     if not args.bare:
-        print 'horz vert    MP  ratio x:y'
-        print '---- ----  ----  ----- ---------'
+        print('horz vert    MP  ratio  x:y')
+        print('---- ----  ----  -----  ---------')
     for x, y in modes_xy:
         ratio = fractions.Fraction(x, y)
         if args.ratios is None or ratio in args.ratios:
             mp = x*y/1000000
-            print '%4d %4d  %.2f  %.3f  %s' % (x, y, mp, x/y, ratio_str(ratio))
+            print('%4d %4d  %.2f  %.3f  %s' % (x, y, mp, x/y, ratio_str(ratio)))

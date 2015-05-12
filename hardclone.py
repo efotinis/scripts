@@ -1,5 +1,6 @@
 """Clone a full directory structure using hardlinks for files."""
 
+from __future__ import print_function
 import os
 import argparse
 import win32file
@@ -16,8 +17,9 @@ def parse_args():
     add('target', help='target directory; must not exist')
 
     args = ap.parse_args()
-    args.source = unicode(args.source)
-    args.target = unicode(args.target)
+    if CommonTools.PY2:
+        args.source = unicode(args.source)
+        args.target = unicode(args.target)
 
     if not os.path.exists(args.source):
         ap.error('source dir does not exist: "%s"' % args.source)
@@ -53,6 +55,6 @@ if __name__ == '__main__':
                     os.path.join(rel, s), x))
                 failcount += 1
 
-    print 'directories created:', dircount
-    print 'files hardlinked:', filecount
-    print 'hardlink failures:', failcount
+    print('directories created:', dircount)
+    print('files hardlinked:', filecount)
+    print('hardlink failures:', failcount)

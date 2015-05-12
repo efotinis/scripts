@@ -3,7 +3,9 @@
 Can be used as an Explorer context menu handler.
 """
 
+from __future__ import print_function
 import argparse
+import io
 import os
 import sys
 import time
@@ -16,7 +18,7 @@ import markdown
 
 
 # HTML output template
-TEMPLATE = '''<!doctype html><html>
+TEMPLATE = u'''<!doctype html><html>
 <head><meta charset="utf-8">
 <title>{title}</title></head>
 <body>{body}</body></html>'''
@@ -48,7 +50,7 @@ class TempDir(object):
         """Store item and return its path."""
         name = os.path.splitext(os.path.basename(srcpath))[0]
         tmppath = os.path.join(self.tmpdir, name + '.htm')
-        with open(tmppath, 'w') as f:
+        with io.open(tmppath, 'wt', encoding='utf-8') as f:
             f.write(html)
         return tmppath
     def close(self):
@@ -70,17 +72,18 @@ class TempDir(object):
 
 def convert(path):
     """Convert Markdown file to HTML source."""
-    with open(path) as f:
-        html = markdown.markdown(f.read().decode('utf-8'))  # "assuming" UTF-8
+    # we're assuming input files are always UTF-8
+    with io.open(path, 'rt', encoding='utf-8') as f:
+        html = markdown.markdown(f.read())
     name = os.path.splitext(os.path.basename(path))[0]
-    return TEMPLATE.format(title=name.encode('utf-8'), body=html.encode('utf-8'))
+    return TEMPLATE.format(title=name, body=html)
 
 
 def error(msg, guimode):
     if args.guimode:
         win32api.MessageBox(0, msg, sys.argv[0], MB_ICONEXCLAMATION)
     else:
-        print >>sys.stderr, msg
+        print(msg, file=sys.stderr)
 
 
 def main(args):

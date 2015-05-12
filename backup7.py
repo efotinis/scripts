@@ -1,18 +1,21 @@
-"""7-Zip-based full/differential backup."""
+"""7-Zip-based full/differential backup.
 
-'''
 TODO: reset archive flag of files added to archive file:
     - use List command to get added files
         >>> subprocess.check_output([sz, 'l', '-pXXX', ar])
-'''
+"""
 
+from __future__ import print_function
 import os
 import sys
 import argparse
 import datetime
 import subprocess
 import getpass
-import _winreg
+try:
+    import _winreg as winreg
+except ImportError:
+    import winreg
 
 
 def get_utc_timestamp():
@@ -23,9 +26,9 @@ def get_utc_timestamp():
 
 def get_7zip_path():
     """Get the full path of the 7z.exe using the Registry install dir."""
-    k = _winreg.OpenKey(_winreg.HKEY_CURRENT_USER, 'Software\\7-Zip')
+    k = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Software\\7-Zip')
     try:
-        return os.path.join(_winreg.QueryValueEx(k, 'Path')[0], '7z.exe')
+        return os.path.join(winreg.QueryValueEx(k, 'Path')[0], '7z.exe')
     finally:
         k.Close()
 
@@ -40,7 +43,7 @@ def gen_list_of_full_backups(base, timestamp_len):
     timestamp_len size.
     """
     parent, namebase = os.path.split(base)
-    for s in os.listdir(parent):
+    for s in os.listdir(parent or '.'):
         stem, ext = os.path.splitext(s)
         if os.path.normcase(ext) == '.7z':
             if stem[-5:].lower() == '-full':
@@ -100,10 +103,10 @@ if __name__ == '__main__':
     if args.differential and full_backups:
         output = args.dst + timestamp + '-diff.7z'
         base = full_backups[-1]
-        print 'last full backup found:', base
+        print('last full backup found:', base)
     else:
         if args.differential:
-            print 'no previous full backups found; switching to full backup'
+            print('no previous full backups found; switching to full backup')
             args.differential = False
         output = args.dst + timestamp + '-full.7z'
         base = None

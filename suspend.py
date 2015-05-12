@@ -13,7 +13,7 @@ import timer
 
 def msg(s):
     """Print timestamped message."""
-    print time.ctime(), '-', s
+    print(time.ctime(), '-', s)
 
 
 def wait_and_suspend(seconds, hibernate, force):
