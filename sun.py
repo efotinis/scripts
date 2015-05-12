@@ -1,54 +1,80 @@
-"""Get the next sunrise or sunset time of a place using Google.
+"""Calculate sun event times for a particular location."""
 
-Searching on Google for "sunrise <town> <country>" will display the time
-of the next sunrise (same for sunset) above the search results.
-"""
-
-import re
-import urllib
-import urllib2
-import BeautifulSoup
+from __future__ import print_function
 import argparse
+import astral
+import datetime
+import sys
+
+
+EVENTS = 'dawn sunrise noon sunset dusk'.split()
+EVENT_FLAGS = 'drnsu'
 
 
 def parse_args():
-    ap = argparse.ArgumentParser(add_help=False,
-        description='get the next sunrise or sunset time')
-    ap.add_argument('-s', dest='sunset', action='store_true',
-                    help='get sunset time; default is sunrise')
-    ap.add_argument('place', metavar='PLACE',
-                    help='name of town, city or place')
-    ap.add_argument('country', metavar='COUNTRY', nargs='?',
-                    help='country name; use this if the place name alone doesn\'t work')
-    ap.add_argument('-?', action='help', help='this help')
+    ap = argparse.ArgumentParser(
+        description='calculate sun times')
+    add = ap.add_argument
+    add('location', help='location to get information about '
+        '("City" or "City/Region")')
+    add('-e', dest='events', default=['sunrise', 'sunset'], type=events_param,
+        help='events to display; one or more of: "d" (dawn), "r" (sunrise), '
+        '"n" (noon), "s" (sunset), "u" (dusk); use "*" for all; default is "rs"')
+    add('-d', dest='date', metavar='YYYY-MM-DD', type=date_param,
+        default=datetime.date.today(), 
+        help='date to calculate times for; default is current')
+    add('-n', dest='daycount', type=int, default=1, 
+        help='number of days to output; default is 1')
+    add('-u', dest='utctimes', action='store_true',
+        help='output UTC instead of local times')
+    add('-g', dest='googlegeo', action='store_true',
+        help='use Google Maps API for location information; by default '
+        'a built-in database with major world cities is used')
     return ap.parse_args()
 
 
-def to_str(elem):
-    """Convert a BeautifulSoup element to plain text."""
-    if elem.string is not None:
-        return re.sub(r'\s+', ' ', elem.string)
-    elif elem.name == 'br':
-        return '\n'
+def date_param(s):
+    y, m, d = s.split('-', 2)
+    return datetime.date(int(y), int(m), int(d))
+
+
+def events_param(s):
+    if '*' in s:
+        return EVENTS[:]
     else:
-        return ''.join(to_str(sub) for sub in elem.contents)
+        return [name for name, flag in zip(EVENTS, EVENT_FLAGS) if flag in s]
+
+
+def dates(start, count):
+    """Generate 'count' datetime.date objects beginning from 'start'."""
+    day = datetime.timedelta(days=1)
+    for n in range(count):
+        yield start
+        start += day
 
 
 if __name__ == '__main__':
     args = parse_args()
 
-    query = 'sunset' if args.sunset else 'sunrise'
-    query += ' ' + args.place
-    if args.country:
-        query += ' ' + args.country
+    try:
+        geo = astral.GoogleGeocoder if args.googlegeo else astral.AstralGeocoder
+        ast = astral.Astral(geo)
+        loc = ast[args.location]
+    except astral.AstralError as x:
+        sys.exit(x)
+    except KeyError as x:
+        # strip quotes, since astral inits KeyError with a message instead of a key
+        s = str(x)
+        if s[:1] + s[-1:] in ('""', "''"):
+            s = s[1:-1]
+        sys.exit(s)
 
-    url = 'http://www.google.com/search?' + urllib.urlencode({'q':query})
-    req = urllib2.Request(url, headers={'User-Agent':'Opera'})
-    html = urllib2.urlopen(req).read()
-    soup = BeautifulSoup.BeautifulSoup(html)
-
-    ob = soup.find('table', 'obcontainer')
-    if not ob:
-        raise SystemExit('could not find response')
-
-    print to_str(ob.table.tr.td.nextSibling).strip()
+    print('{:.<12} {}'.format('location ', loc))
+    try:    
+        for date in dates(args.date, args.daycount):
+            print(date)
+            sun = loc.sun(date=date, local=not args.utctimes)
+            for e in args.events:
+                print('{:.<12} {}'.format(e + ' ', sun[e]))
+    except astral.AstralError as x:
+        print(x, file=sys.stderr)
