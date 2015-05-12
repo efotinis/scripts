@@ -7,10 +7,14 @@ it conflicts with a pythonwin module
 
 import contextlib
 import itertools
-import _winreg
 
+try:
+    import _winreg as winreg
+    from _winreg import KEY_READ, KEY_WRITE, REG_SZ
+except ImportError:
+    import winreg
+    from winreg import KEY_READ, KEY_WRITE, REG_SZ
 from winerror import ERROR_FILE_NOT_FOUND
-from _winreg import KEY_READ, REG_SZ
 
 # better leave it to the caller to import needed consts themselves
 ### copy _winreg's numeric attributes so callers need not
@@ -24,7 +28,17 @@ from _winreg import KEY_READ, REG_SZ
 @contextlib.contextmanager
 def open_key(parent, sub, res=0, sam=KEY_READ):
     """Context manager that automatically closes the returned key."""
-    key = _winreg.OpenKey(parent, sub, res, sam)
+    key = winreg.OpenKey(parent, sub, res, sam)
+    try:
+        yield key
+    finally:
+        key.Close()
+
+
+@contextlib.contextmanager
+def create_key(parent, sub, res=0, sam=KEY_WRITE):
+    """Context manager that automatically closes the returned key."""
+    key = winreg.CreateKeyEx(parent, sub, res, sam)
     try:
         yield key
     finally:
@@ -34,23 +48,41 @@ def open_key(parent, sub, res=0, sam=KEY_READ):
 def get_value(key, name, default=(None, None)):
     """Get value data/type; use default if missing."""
     try:
-        return _winreg.QueryValueEx(key, name)
+        return winreg.QueryValueEx(key, name)
     except WindowsError as x:
         if x.winerror == ERROR_FILE_NOT_FOUND:
             return default
         raise
 
 
+def set_value(key, name, x, type_):
+    try:
+        winreg.SetValueEx(key, name, 0, type_, x)
+        return True
+    except WindowsError:
+        return False
+
+
+def delete_value(key, name):
+    try:
+        winreg.DeleteValue(key, name)
+        return True
+    except WindowsError:
+        return False
+
+
 def get_value_data(key, name, type_, default=None):
     """Get value data; use default if missing or of different type."""
     try:
-        data, valtype = _winreg.QueryValueEx(key, name)
+        data, valtype = winreg.QueryValueEx(key, name)
         return data if valtype == type_ else default
     except WindowsError as x:
         if x.winerror == ERROR_FILE_NOT_FOUND:
             return default
         raise
 
+
+# TODO: replace 'end' with 'count'
 
 def get_list(key, basename, type_=REG_SZ, start=0, end=None):
     """Get list of (index,data) of consecutive 'basenameN' values.
@@ -76,3 +108,42 @@ def get_list(key, basename, type_=REG_SZ, start=0, end=None):
             continue
         ret.append((i, data))
     return ret
+
+
+def set_list(key, basename, type_, data, start=0, end=None):
+    """Set homogeneous list (data) of consecutive 'basenameN' values.
+
+    If end is None, the value after the last one is deleted, otherwise
+    all values up to (but not including) the ending index are deleted.
+
+    Returns True if everything succeeded.
+    """
+    if end is not None and end <= start:
+        raise ValueError('end must be >start or None')
+    if end is not None and end - start > len(data):
+        raise ValueError('too many items specified')
+
+    error = False
+
+    i = start
+    for x in data:
+        name = basename + str(i)
+        if set_value(key, name, x, type_):
+            i += 1
+        else:
+            error = True
+
+    if end is None:
+        # unbound list; clear one
+        name = basename + str(i)
+        if not delete_value(key, name):
+            error = True
+    else:
+        # bound list; clear all
+        while i < end:
+            name = basename + str(i)
+            if not delete_value(key, name):
+                error = True
+            i += 1
+
+    return not error
