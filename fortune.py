@@ -97,9 +97,12 @@ class File(object):
     ROT13_DECODER = codecs.getdecoder('rot13')
     
     def __init__(self, fpath, index):
-        self.f = open(fpath, 'rt')
+        # NOTE: since indexing is performed in binary mode, we also
+        # open the file in binary and convert to UTF-8 after reading;
+        # this is necessary for the file positions to match
+        self.f = open(fpath, 'rb')
         self.index = index
-        
+
     def __getitem__(self, i):
         """Get string; index can be negative.
 
@@ -107,7 +110,7 @@ class File(object):
         """
         beg, end = self.index[i]
         self.f.seek(beg)
-        s = self.f.read(end - beg)  # FIXME: non-ASCII text fails here with Py3
+        s = self.f.read(end - beg).decode('utf-8')
         if s[-2:] == self.index.delim + '\n':
             # this 'if' used to be an assert, but the delim+'\n'
             # of one file was missing at the last entry
