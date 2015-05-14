@@ -1,5 +1,6 @@
 """Uses PATH and PATHEXT to locate Windows executables."""
 
+from __future__ import print_function
 import os
 import sys
 import argparse
@@ -32,18 +33,17 @@ def locate_file(name, exts, dirs, find_all):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='locate executable files using the PATH and PATHEXT', add_help=False)
-    aa = parser.add_argument
+    parser = argparse.ArgumentParser(
+        description='locate executable files using the PATH and PATHEXT')
+    add = parser.add_argument
 
-    aa('-a', dest='findall', action='store_true',
+    add('-a', dest='findall', action='store_true',
        help='locate all occurences; by default, only the first one is shown')
-    aa('-b', dest='absolute', action='store_true',
+    add('-b', dest='absolute', action='store_true',
        help='output absolute paths')
-    aa('-v', dest='verbose', action='store_true',
+    add('-v', dest='verbose', action='store_true',
        help='verbose output; includes the input names')
-    aa('-?', action='help',
-       help='this help')
-    aa('files', metavar='FILE', nargs='+',
+    add('files', metavar='FILE', nargs='+',
        help='the file name to locate; directories and wildcards are not allowed')
 
     args = parser.parse_args()
@@ -79,12 +79,11 @@ if __name__ == '__main__':
         if args.absolute:
             a = [os.path.abspath(s) for s in a]
         if args.verbose:
-            print name
+            print(name)
             for s in a:
-                print '  ' + s
+                print('  ' + s)
         else:
             for s in a:
-                print s
+                print(s)
             
-    if not_found:
-        sys.exit(1)
+    sys.exit(1 if not_found else 0)

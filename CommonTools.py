@@ -15,6 +15,10 @@ import shellutil
 import wintime
 
 
+PY2 = sys.version_info.major == 2
+PY3 = sys.version_info.major == 3
+
+
 def winconout():
     """Windows standard output (PyConsoleScreenBuffer) or None."""
     return win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
@@ -177,6 +181,7 @@ def conout(*a, **kw):
             # PythonWin handles Unicode property, but its sys.stdout/stderr.encoding
             # is 'utf-8'; we prefer to decode 8-bit strings with CP_ACP ('mbcs')
             encoding = 'mbcs'
+            # FIXME: no unicode in Py3
             a = [s if isinstance(s, unicode) else s.decode(encoding, 'replace')
                  for s in a]
             PY_STREAM.write(sep.join(a) + end)
@@ -185,6 +190,7 @@ def conout(*a, **kw):
             # on Windows, this means the console, which is natively Unicode;
             # 8-bit strings should be decoded with the console output codepage
             encoding = 'cp' + str(win32console.GetConsoleOutputCP())
+            # FIXME: no unicode in Py3
             a = [s if isinstance(s, unicode) else s.decode(encoding)
                  for s in a]
             WIN_STREAM.WriteConsole(sep.join(a) + end)  # accepts both str and unicode
@@ -336,7 +342,7 @@ def load_csv_table(f, typename, fieldnames, **converters):
     fieldnames = rec_type._fields
 
     # replace converter keys with field name indices
-    for name in converters.keys():
+    for name in list(converters.keys()):  # need copy of keys
         try:
             i = fieldnames.index(name)
         except ValueError:
@@ -345,6 +351,6 @@ def load_csv_table(f, typename, fieldnames, **converters):
         del converters[name]
 
     for row in reader:
-        for i, func in converters.iteritems():
+        for i, func in converters.items():
             row[i] = func(row[i])
         yield rec_type(*row)
