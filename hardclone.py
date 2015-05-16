@@ -6,6 +6,7 @@ import argparse
 import win32file
 import fsutil
 import CommonTools
+import six
 
 
 def parse_args():
@@ -17,9 +18,8 @@ def parse_args():
     add('target', help='target directory; must not exist')
 
     args = ap.parse_args()
-    if CommonTools.PY2:
-        args.source = unicode(args.source)
-        args.target = unicode(args.target)
+    args.source = six.text_type(args.source)
+    args.target = six.text_type(args.target)
 
     if not os.path.exists(args.source):
         ap.error('source dir does not exist: "%s"' % args.source)

@@ -25,15 +25,15 @@ TIMERES = 10000000  # resolution of time positions
 
 
 # fields:
-#   name (unicode): menu item name
+#   name (text): menu item name
 #   position (float): position in seconds
 #   reldrive (bool): relative drive search enabled
-#   path (unicode): file path
+#   path (text): file path
 Favorite = collections.namedtuple('Favorite', 'name position reldrive path')
 
 
 # fields:
-#   path (unicode): file path
+#   path (text): file path
 #   position (float): saved position in seconds (resolution is 1s/10,000,000)
 Recent = collections.namedtuple('Recent', 'path position')
 

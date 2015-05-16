@@ -24,11 +24,11 @@ import itertools
 import string
 
 import win32file
-
 import AutoComplete
 import console_stuff
 import CommonTools
 import winfiles
+import six
 
 uprint = CommonTools.uprint
 
@@ -551,7 +551,7 @@ def cmd_root(state, params):
         return
     if params[:1] == params[-1:] == '"':
         params = params[1:-1]
-    new_root_path = os.path.abspath(unicode(params[0]))
+    new_root_path = os.path.abspath(six.text_type(params[0]))
     if not os.path.isdir(new_root_path):
         raise PathError('not a dir: "%s"' % new_root_path)
     with ScanStatus(new_root_path) as status:
@@ -842,7 +842,7 @@ def parse_args():
     ap.add_argument('root', nargs='?', metavar='DIR', default='.',
                     help='the initial root dir; default: "%(default)s"')
     args = ap.parse_args()
-    args.root = os.path.abspath(unicode(args.root))
+    args.root = os.path.abspath(six.text_type(args.root))
     if not os.path.isdir(args.root):
         ap.error('not a dir: "%s"' % args.root)
     return args

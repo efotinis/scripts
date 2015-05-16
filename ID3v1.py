@@ -3,7 +3,10 @@
 
 # NOTE: file objects must be opened in binary mode
 
-import os, re
+import os
+import re
+
+import six
 
 
 # genres by index (0..79 defined by id3v1; 80..125 by Winamp)
@@ -58,7 +61,7 @@ _BADCHAR_RX = re.compile(r'[\\/:*?"<>|]')
 
 def _open(f, mode):
     """Open file if 'f' is a string, else return 'f'."""
-    return open(f, mode) if isinstance(f, basestring) else f
+    return open(f, mode) if isinstance(f, six.string_types) else f
 
 
 def hastag(f):

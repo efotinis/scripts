@@ -4,8 +4,10 @@ import os
 import sys
 import argparse
 import collections
-import win32file
+
 import CommonTools
+import six
+import win32file
 
 
 INVALID_FILE_ATTRIBUTES = 0xffffffff
@@ -49,7 +51,7 @@ def parse_args():
     group.add_argument('-D', dest='dirs_only', action='store_true', help='process directories only')
 
     args = ap.parse_args()
-    args.paths = map(unicode, args.paths)
+    args.paths = map(six.text_type, args.paths)
     return args
 
 

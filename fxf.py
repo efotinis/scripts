@@ -21,6 +21,7 @@ import glob
 import optparseutil
 import win32file
 import dllutil
+import six
 import CommonTools
 import mathutil
 import console_stuff
@@ -365,7 +366,7 @@ if __name__ == '__main__':
     #print opt
 
     if opt.receivefrom is None:
-        masks = [unicode(s) for s in args]
+        masks = [six.text_type(s) for s in args]
         files = sum((glob.glob(s) for s in masks), [])
         if not files:
             raise SystemExit('no files matched')

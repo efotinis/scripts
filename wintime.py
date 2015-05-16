@@ -7,6 +7,8 @@ import datetime
 import contextlib
 import time
 
+import six
+
 import win32file
 from ctypes.wintypes import BOOL, WORD, DWORD, LONG, WCHAR, HANDLE
 LPWORD = ctypes.POINTER(WORD)
@@ -119,7 +121,7 @@ def filetime_utc_to_local(ft, tzinfo=True):
         if tzinfo is True:
             tzinfo = None
         if not FileTimeToSystemTime(ft, st) or \
-           not SystemTimeToTzSpecificLocalTime(tzInfo, st, lst) or \
+           not SystemTimeToTzSpecificLocalTime(tzinfo, st, lst) or \
            not SystemTimeToFileTime(lst, ret):
                 raise ctypes.WinError()
     return ret
@@ -269,7 +271,7 @@ def has_native_tick64():
 def get_file_time(f):
     """Get the create/access/modify FILETIMEs of a file (Py)HANDLE or path."""
     created, accessed, modified = FILETIME(), FILETIME(), FILETIME()
-    if isinstance(f, basestring):
+    if isinstance(f, six.string_types):
         with contextlib.closing(win32file.CreateFileW(f, FILE_READ_ATTRIBUTES, 0, None, OPEN_EXISTING, 0, None)) as h:
             if not GetFileTime(h.handle, created, accessed, modified):
                 raise ctypes.WinError()
@@ -280,7 +282,7 @@ def get_file_time(f):
 
 def set_file_time(f, created=None, accessed=None, modified=None):
     """Set the create/access/modify FILETIMEs of a file (Py)HANDLE or path."""
-    if isinstance(f, basestring):
+    if isinstance(f, six.string_types):
         with contextlib.closing(win32file.CreateFileW(f, FILE_WRITE_ATTRIBUTES, 0, None, OPEN_EXISTING, 0, None)) as h:
             if not SetFileTime(h.handle, created, accessed, modified):
                 raise ctypes.WinError()

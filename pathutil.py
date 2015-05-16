@@ -3,6 +3,8 @@
 import os
 import itertools
 
+import six
+
 
 def namegen_winshell(fn, start=2):
     """Generate successive filenames like Windows Explorer.
@@ -26,12 +28,6 @@ def namegen_dotnum(fn, start=1, width=3):
         yield '{0:s}.{1:0{2}d}{3:s}'.format(stem, i, width, ext)
 
 
-try:
-    _STRTYPES = (str, unicode)
-except NameError:
-    _STRTYPES = (str,)
-
-
 def get_unique_file(path, gen=None):
     """Generate a unique, non-existing file path.
 
@@ -43,7 +39,7 @@ def get_unique_file(path, gen=None):
     """
     if gen is None:
         gen = 'winshell' if os.name == 'nt' else 'dotnum'
-    if isinstance(gen, _STRTYPES):
+    if isinstance(gen, six.string_types):
         gen = globals()['namegen_' + gen]
     parent, base = os.path.split(path)
     for s in gen(base):

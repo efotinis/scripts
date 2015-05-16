@@ -6,6 +6,8 @@ import ctypes
 
 from ctypes.wintypes import DWORD, HKEY, LPCWSTR, LPVOID
 
+import six
+
 
 SHDeleteKey = None
 RegCreateKeyEx = None
@@ -62,7 +64,7 @@ def openKeyPath(path, res=0, sam=win32con.KEY_READ):
 
 
 def _getRegHelper(key, subkeyPath, enumFunc):
-    if isinstance(key, basestring):
+    if isinstance(key, six.string_types):
         rk = openKeyPath(os.path.join(key, subkeyPath) if subkeyPath else key)
     else:
         rk = _winreg.OpenKey(key, subkeyPath)
@@ -132,7 +134,7 @@ def nukeKey(key, sub=''):
         SHDeleteKey = ctypes.windll.shlwapi.SHDeleteKeyW  # 4.71+
         SHDeleteKey.restype = DWORD
         SHDeleteKey.argtypes = [HKEY, LPCWSTR]
-    if isinstance(key, basestring):
+    if isinstance(key, six.string_types):
         root, sub = os.path.normpath(os.path.join(key, sub)).split('\\', 1)
         key = get_root(root)
     err = SHDeleteKey(key, sub)
@@ -237,7 +239,7 @@ class Values:
         return _winreg.QueryInfoKey(self.key)[1]
 
     def __getitem__(self, index_or_name):
-        if isinstance(index_or_name, basestring):
+        if isinstance(index_or_name, six.string_types):
             return _winreg.QueryValueEx(self.key, index_or_name)
         else:
             return _winreg.EnumValue(self.key, index_or_name)

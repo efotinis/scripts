@@ -16,6 +16,7 @@ except ImportError:
 import win32gui
 import win32com.client
 from win32com.shell import shell, shellcon
+import six
 
 
 # TODO: maybe provide a KnownFolders (similar to special folders),
@@ -196,7 +197,7 @@ def move_items(paths, dest):
     src = '\0'.join(paths)
     flags = (shellcon.FOF_SILENT | shellcon.FOF_NOCONFIRMATION |
              shellcon.FOF_NOERRORUI | shellcon.FOF_NOCONFIRMMKDIR)
-    if isinstance(dest, basestring):
+    if isinstance(dest, six.string_types):
         dst = dest
     else:
         dst = '\0'.join(dest)

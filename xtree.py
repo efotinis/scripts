@@ -8,6 +8,9 @@ Inspired by:
 import os
 import sys
 import argparse
+
+import six
+
 from CommonTools import scriptname, errln, uprint
 
 
@@ -33,7 +36,7 @@ class BranchSet:
 
 def subdirs(dpath):
     """Generate the names of a directory's subdirs."""
-    for s in os.listdir(unicode(dpath)):  # this may throw if access is denied
+    for s in os.listdir(six.text_type(dpath)):  # this may throw if access is denied
         if os.path.isdir(os.path.join(dpath, s)):
             yield s
 

@@ -3,6 +3,8 @@ import sys
 import shutil
 import re
 
+import six
+
 SCRIPT_NAME = os.path.splitext(os.path.basename(sys.argv[0]))[0].upper()
 
 EXIT_OK = 0
@@ -42,7 +44,7 @@ def main(args):
         return EXIT_BAD_PARAM
     fileSet = set()
     for x in opt.fileFilters:
-        func = processFile if isinstance(x[1], basestring) else processDir
+        func = processFile if isinstance(x[1], six.string_types) else processDir
         if not func(x[0], x[1], fileSet, opt) and opt.abortOnError:
             return EXIT_ERROR
     return EXIT_OK

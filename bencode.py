@@ -7,12 +7,12 @@ Format specs:
 import re
 try:
     from cStringIO import StringIO as DataIO
-    STR_TYPES = (str, unicode)
     str2bytes = lambda s: s
 except ImportError:
     from io import BytesIO as DataIO
-    STR_TYPES = (str,)
     str2bytes = lambda s: s.encode('latin1')
+
+import six
 
 import fileutil
 
@@ -24,7 +24,7 @@ def loads(s):
 
 def load(f):
     """Read an object from a file (or file path)."""
-    if isinstance(f, STR_TYPES):
+    if isinstance(f, six.string_types):
         f = open(f, 'rb')
     return readany(f)
 
@@ -38,7 +38,7 @@ def dumps(obj):
 
 def dump(f, obj):
     """Write an object to a file (or file path)."""
-    if isinstance(f, STR_TYPES):
+    if isinstance(f, six.string_types):
         f = open(f, 'wb')
     writeany(f, obj)
 

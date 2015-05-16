@@ -5,6 +5,7 @@ import win32ui
 import _winreg
 import efRegistry
 import efScriptInfo
+import six
 
 
 def main():
@@ -47,7 +48,7 @@ def testApp(regPath, badKeys):
 def testAppCmd(regPath, badKeys):
     data = tryRegRead(regPath, '');
     # skip invalid (non-string) data
-    if not isinstance(data, basestring):
+    if not isinstance(data, six.string_types):
         return
     data = win32api.ExpandEnvironmentStrings(data)
     if not findExeFromCmd(data):

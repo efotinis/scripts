@@ -6,6 +6,7 @@ import struct
 
 import fileutil
 import CommonTools
+import six
 
 EXIT_OK = 0
 EXIT_ERROR = 1
@@ -70,7 +71,7 @@ class PakFile(object):
     """A PAK (id/Quake) file."""
 
     def __init__(self, file, mode='r'):
-        self.ownhandle = isinstance(name, basestring)
+        self.ownhandle = isinstance(name, six.string_types)
         if self.ownhandle:
             if 'b' not in self.mode:
                 self.mode += 'b'

@@ -8,6 +8,7 @@ import contextlib
 import optparse
 
 import CommonTools
+import six
 
 
 DEFAULT_MINSIZE = 4
@@ -51,7 +52,7 @@ def parse_cmdline():
         help=optparse.SUPPRESS_HELP)
 
     try:
-        opt, args = parser.parse_args(args=map(unicode, sys.argv[1:]))
+        opt, args = parser.parse_args(args=map(six.text_type, sys.argv[1:]))
         parser.destroy()
         if len(args) > 1:
             raise optparse.OptParseError('at most one file is accepted')

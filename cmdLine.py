@@ -1,6 +1,8 @@
 import re
 import types
 
+import six
+
 
 def parseRaw(args):
     """Parse cmdline values and switches (in the form of '/switch[:value]').
@@ -189,7 +191,7 @@ class Options:
     def erase(self, x):
         if isinstance(x, types.IntType):
             del self.options[x]
-        elif isinstance(x, basestring):
+        elif isinstance(x, six.string_types):
             self.erase(self.findAll(x))
         else:
             # erase in reverse to properly handle indexes (if any)

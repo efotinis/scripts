@@ -8,6 +8,7 @@ import glob
 
 import CommonTools
 import pathutil
+import six
 
 
 def splitall(path):
@@ -110,7 +111,7 @@ def parse_cmdline():
 
     #if not args:
     #    ap.error('at least one directory must be specified')
-    args.sources = map(unicode, args.sources)  # necessary for proper dir listings
+    args.sources = map(six.text_type, args.sources)  # necessary for proper dir listings
 
     return args
 

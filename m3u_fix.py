@@ -1,7 +1,12 @@
 # 2007.01.09  EF  created
 # 2007.10.21  EF  added cmdline options, utf-8 support
 
-import os, sys, codecs, DosCmdLine
+import codecs
+import os
+import sys
+
+import DosCmdLine
+import six
 
 
 def readPlaylist(f, forceUtf8=False):
@@ -107,7 +112,7 @@ def main(args):
             raise DosCmdLine.Error('exactly one or two parameters are needed')
         if not opt.lookupDirs:
             opt.lookupDirs = ['.']
-        opt.lookupDirs = map(unicode, opt.lookupDirs)
+        opt.lookupDirs = map(six.text_type, opt.lookupDirs)
         for s in opt.lookupDirs:
             if not os.path.isdir(s):
                 errln('not a directory: "%s"' % s)

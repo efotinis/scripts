@@ -2,6 +2,8 @@ import sys
 import _winreg
 import ctypes
 
+import six
+
 from winerror import ERROR_ACCESS_DENIED, ERROR_NO_MORE_ITEMS
 
 from ctypes.wintypes import BYTE, LONG, DWORD, LPWSTR, LPCWSTR, HKEY
@@ -119,7 +121,7 @@ class RegKey:
 
     def getValueType(self, id):
         type = DWORD()
-        if isinstance(id, basestring):
+        if isinstance(id, six.string_types):
             n = RegQueryValueExW(self.h, id, None, ctypes.byref(type),
                                  None, None)
         else:

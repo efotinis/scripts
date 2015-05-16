@@ -1,4 +1,7 @@
-import os, re
+import os
+import re
+
+import six
 
 
 def iswild(s):
@@ -22,14 +25,14 @@ def build(wildcard, casesens=False):
 
 def test(wildcard, s, casesens=False):
     """Perform a wildcard (str or regexp) test."""
-    if isinstance(wildcard, basestring):
+    if isinstance(wildcard, six.string_types):
         wildcard = build(wildcard, casesens)
     return wildcard.match(s) is not None
 
 
 def listdir(wildcard, dir, casesens=False):
     """Return a dir listing filtered by a wildcard (str or regexp)."""
-    if isinstance(wildcard, basestring):
+    if isinstance(wildcard, six.string_types):
         wildcard = build(wildcard, casesens)
     return [s for s in os.listdir(dir) if test(wildcard, s)]
 
