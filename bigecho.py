@@ -6,7 +6,7 @@ except ImportError:
     Image = None
 
 import iterutil
-import CommonTools
+import efutil
 
 UPPER_HALF = u'\u2580'
 LOWER_HALF = u'\u2584'
@@ -88,7 +88,7 @@ class Font(object):
         return [joiner.join(line) for line in a]
 
     def uprint(self, s):
-        CommonTools.uprint('\n'.join(self.render(s)))
+        efutil.uprint('\n'.join(self.render(s)))
 
 
 if __name__ == '__main__':

@@ -5,7 +5,7 @@ import os
 import argparse
 import math
 import fsutil
-import CommonTools
+import efutil
 
 
 def parse_args():
@@ -48,10 +48,10 @@ if __name__ == '__main__':
                 try:
                     os.mkdir(dest_dir)
                 except OSError as x:
-                    CommonTools.conerr('could not create "%s"; %s' % (dest_dir, x))
+                    efutil.conerr('could not create "%s"; %s' % (dest_dir, x))
                     continue
             for s in a:
                 try:
                     os.rename(s, os.path.join(dest_dir, s))
                 except OSError as x:
-                    CommonTools.conerr('could not move "%s"; %s' % (s, x))
+                    efutil.conerr('could not move "%s"; %s' % (s, x))

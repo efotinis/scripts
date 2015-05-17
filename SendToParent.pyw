@@ -3,7 +3,7 @@
 import os
 import sys
 import argparse
-import CommonTools
+import efutil
 import win32api, win32file, win32con
 import win32com.client
 from win32com.shell import shell, shellcon
@@ -41,7 +41,7 @@ class ConsoleIO:
 class WindowsIO:
     def __init__(self):
         self.msgbox = win32api.MessageBox
-        self.scriptname = CommonTools.scriptname()
+        self.scriptname = efutil.scriptname()
     def prn(self, s):
         self.msgbox(0, s, self.scriptname, 0)
     def err(self, s):

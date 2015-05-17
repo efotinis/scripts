@@ -10,7 +10,7 @@ import os
 import sys
 import zipfile
 import argparse
-import CommonTools
+import efutil
 
 
 def parse_args():
@@ -25,7 +25,7 @@ def parse_args():
 
 def make_cbz_from_dir(zippath, dirpath):
     z = zipfile.ZipFile(zippath, 'w', zipfile.ZIP_STORED)
-    for s in CommonTools.listfiles(dirpath):
+    for s in efutil.listfiles(dirpath):
         z.write(os.path.join(dirpath, s), s)
     z.close()
 
@@ -46,7 +46,7 @@ if __name__ == '__main__':
             print >>sys.stderr, 'parent doesn\'t exist: "%s"' % parent
             continue
         
-        for dirname in CommonTools.listdirs(parent):
+        for dirname in efutil.listdirs(parent):
             dirpath = os.path.join(parent, dirname)
             zippath = os.path.join(args.outdir or parent, dirname) + '.cbz'
             print 'processing "%s" => "%s"' % (dirpath, zippath)

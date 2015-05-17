@@ -26,11 +26,11 @@ import string
 import win32file
 import AutoComplete
 import console_stuff
-import CommonTools
+import efutil
 import winfiles
 import six
 
-uprint = CommonTools.uprint
+uprint = efutil.uprint
 
 
 # string alignment types mapped to functions
@@ -588,7 +588,7 @@ def size_title_and_formatter(unit):
     elif unit == 'e':
         return 'EB', lambda n: '{:,.0f}'.format(n / 2.0**60)
     elif unit == '*':
-        return 'size', lambda n: CommonTools.prettysize(n)
+        return 'size', lambda n: efutil.prettysize(n)
     else:
         raise ValueError('bad unit', unit)
 

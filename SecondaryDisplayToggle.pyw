@@ -3,14 +3,14 @@
 2009.01.01  created
 """
 import windisplay
-import CommonTools
+import efutil
 import win32api
 import win32con
 import pywintypes
 
 
 def errorMsg(s):
-    win32api.MessageBox(0, s, CommonTools.scriptname(), win32con.MB_ICONEXCLAMATION)
+    win32api.MessageBox(0, s, efutil.scriptname(), win32con.MB_ICONEXCLAMATION)
 
 
 def isMirror(dev):

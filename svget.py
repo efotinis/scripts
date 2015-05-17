@@ -12,7 +12,7 @@ import win32console
 import random
 
 import webdir
-import CommonTools
+import efutil
 import mathutil
 import console_stuff
 
@@ -281,7 +281,7 @@ class MovingAverage:
 
 
 def prettysize_compact(n, iec=False):
-    return CommonTools.prettysize(n, iec).replace('bytes', '').rstrip('B').replace(' ', '')
+    return efutil.prettysize(n, iec).replace('bytes', '').rstrip('B').replace(' ', '')
 
 
 def download_resumable_file(src, dst, bufsize, totalsize, totaldone, movavg):
@@ -439,12 +439,12 @@ LAST_CHILD = u'\u2514\u2500\u2500 '
 
 
 def printtree(dirobj, idents):
-    s = '%9s in %-5d  ' % (CommonTools.prettysize(dirobj.size), dirobj.count)
+    s = '%9s in %-5d  ' % (efutil.prettysize(dirobj.size), dirobj.count)
     s += ''.join((EMPTY_IDENT, FULL_IDENT)[i] for i in idents[:-1])
     if idents:
         s += (LAST_CHILD, CHILD)[idents[-1]]
     s += urllib2.unquote(dirobj.name)
-    CommonTools.uprint(s)
+    efutil.uprint(s)
 
     for sub in dirobj.subs:
         printtree(sub, idents + [sub is not dirobj.subs[-1]])
@@ -454,7 +454,7 @@ def squeezeprint(pfx, sfx, conwidth):
     maxsfxlen = conwidth - 1 - len(pfx) - 3  # 3 for '...', 1 to avoid wrapping
     if len(sfx) > maxsfxlen:
         sfx = '...' + sfx[-maxsfxlen:]
-    CommonTools.uprint(pfx + sfx)
+    efutil.uprint(pfx + sfx)
 
 def myreader(cache):
     def reader(url):
@@ -465,7 +465,7 @@ def myhandler(cache, spo, ignore):
     def handler(err, url):
         if not ignore:
             spo.restore(eolclear=True)
-            CommonTools.uprint(url)
+            efutil.uprint(url)
             print ' ', err
             spo.reset()
     return handler
@@ -566,12 +566,12 @@ if __name__ == '__main__':
                 if currelpath != relpath:
                     if currelpath is not None:
                         print
-                    CommonTools.uprint(opt.topurl + relpath)
+                    efutil.uprint(opt.topurl + relpath)
                     currelpath = relpath
                 dst = safename(urllib2.unquote(os.path.join(opt.outdir, relpath + f.name)))
                 exists = os.path.exists(dst)
                 partial = not exists and os.path.exists(dst + PARTIAL_SUFFIX)
-                CommonTools.uprint('  %s %10s %c %s' % (
+                efutil.uprint('  %s %10s %c %s' % (
                     compressdate(f.date),
                     f.size,
                     '*' if exists else '%' if partial else ' ',
@@ -609,12 +609,12 @@ if __name__ == '__main__':
             for item in items:
                 clrout.write(0, extclrs.get(item.name.lstrip('.').lower(), 0), '  ')
                 sys.stdout.write(' ')
-                CommonTools.uprint('%-12s  %4d  %9s (%12d bytes)' % (item.name, item.count, CommonTools.prettysize(item.size), item.size))
+                efutil.uprint('%-12s  %4d  %9s (%12d bytes)' % (item.name, item.count, efutil.prettysize(item.size), item.size))
 
         print
         print '---- Summary ----'
         print 'files: %d' % (totalfiles,)
-        print 'size: %s (%d bytes)' % (CommonTools.prettysize(totalsize), totalsize)
+        print 'size: %s (%d bytes)' % (efutil.prettysize(totalsize), totalsize)
 
         if opt.download:
             print
@@ -630,7 +630,7 @@ if __name__ == '__main__':
                         os.makedirs(curoutdir)
                     src = opt.topurl + relpath + f.name
                     dst = safename(urllib2.unquote(os.path.join(opt.outdir, relpath + f.name)))
-                    CommonTools.uprint(safename(urllib2.unquote(relpath + f.name)))
+                    efutil.uprint(safename(urllib2.unquote(relpath + f.name)))
                     if not os.path.exists(dst):
                         start, done, size = download_resumable_file(src, dst, opt.bufsize, totalsize, totaldone, movavg)
                         if done != size:  # even if size is None
@@ -643,7 +643,7 @@ if __name__ == '__main__':
                 if incomplete:
                     print 'Incomplete files:', len(incomplete)
                     for s in incomplete:
-                        CommonTools.uprint('  ' + s)
+                        efutil.uprint('  ' + s)
                 if opt.beep:
                     win32api.MessageBeep(-1)
                 

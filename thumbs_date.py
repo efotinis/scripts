@@ -3,7 +3,7 @@
 import os
 import sys
 import time
-import CommonTools
+import efutil
 
 
 def get_matching_path(path):
@@ -46,7 +46,7 @@ if __name__ == '__main__':
             video = get_matching_path(image)
             print '*** vid:', video
         except ValueError:
-            CommonTools.conerr('could not find match for "%s"' % image)
+            efutil.conerr('could not find match for "%s"' % image)
             continue
         date = time.strftime('[%Y-%m-%d]',
                              time.gmtime(os.path.getmtime(video)))

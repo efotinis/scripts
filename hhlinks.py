@@ -6,7 +6,7 @@ import _winreg
 import optparse
 
 import efRegistry
-import CommonTools
+import efutil
 
 
 class CheckError(Exception):
@@ -87,4 +87,4 @@ if __name__ == '__main__':
         else:
             check()
     except (CheckError, WindowsError) as x:
-        CommonTools.exiterror(str(x))
+        efutil.exiterror(str(x))

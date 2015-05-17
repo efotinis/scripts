@@ -8,7 +8,7 @@ import urlparse
 import random
 import time
 
-import CommonTools
+import efutil
 
 
 def parse_args():
@@ -92,7 +92,7 @@ if __name__ == '__main__':
     print '    errors:', errcount
     print '     total:', len(args.urls)
     print '      time: %.0f s' % time_sec
-    print '      size: %s' % CommonTools.prettysize(bytes)
-    print '     speed: %s/s' % CommonTools.prettysize(bytes / time_sec if time_sec else 0)
+    print '      size: %s' % efutil.prettysize(bytes)
+    print '     speed: %s/s' % efutil.prettysize(bytes / time_sec if time_sec else 0)
 
     sys.exit(1 if errcount else 0)

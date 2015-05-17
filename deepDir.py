@@ -6,7 +6,7 @@ import locale
 import re
 import argparse
 
-import CommonTools
+import efutil
 import winfixargv
 
 
@@ -160,7 +160,7 @@ if __name__ == '__main__':
     if args.acp:
         print_func = lambda s: sys.stdout.write(s.encode('mbcs') + '\n')
     else:
-        print_func = CommonTools.uprint
+        print_func = efutil.uprint
 
     for mask in args.dirs:
         # can't use glob() because it skips items starting with '.'

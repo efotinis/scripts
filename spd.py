@@ -4,7 +4,7 @@ from __future__ import print_function
 import sys
 import re
 import argparse
-import CommonTools
+import efutil
 import mathutil
 
 
@@ -53,7 +53,7 @@ def parse_time(s):
 
 def fmt_size(n):
     """Convert size to string."""
-    return CommonTools.prettysize(n)
+    return efutil.prettysize(n)
 
 
 def fmt_time(n):

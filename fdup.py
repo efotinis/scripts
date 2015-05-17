@@ -9,7 +9,7 @@ import collections
 import string
 import argparse
 
-import CommonTools
+import efutil
 import console_stuff
 import winfixargv
 
@@ -18,7 +18,7 @@ HASH_BUFLEN = 2**20
 STATUS_UPDATE_SEC = 1
 
 
-iteritems = (lambda d: d.iteritems()) if CommonTools.PY2 else (lambda d: d.items())
+iteritems = (lambda d: d.iteritems()) if efutil.PY2 else (lambda d: d.items())
 
 
 class Status:
@@ -189,7 +189,7 @@ if __name__ == '__main__':
         if len(files) > 1:
             print('---- %s ----' % (sig,))
             for s in files:
-                CommonTools.uprint('  ' + s)
+                efutil.uprint('  ' + s)
 
     # calc and print dirs and their count of dup files
     dirs = collections.defaultdict(int)
@@ -230,5 +230,5 @@ if __name__ == '__main__':
                     os.unlink(s)
                     n += 1
                 except OSError:
-                    CommonTools.uprint('could not delete "%s"' % s)
+                    efutil.uprint('could not delete "%s"' % s)
         print('files deleted:', n)

@@ -1,11 +1,11 @@
-import os, sys, re, subprocess, CommonTools
+import os, sys, re, subprocess, efutil
 
 
 SMARTCTL_PATH = r'C:\\Program Files\\smartmontools\\bin\\smartctl.exe'
 TEMP_FILE = os.path.join(os.environ['TEMP'], '~hdtemp.$$$')
 DEVICE_PARAM_RX = re.compile(r'^(hd[a-z])|(\d+)$')
 SMART_RAWVALUE_OFFSET = 87
-errln = CommonTools.errln
+errln = efutil.errln
 
 
 def checkdevice(dev):
@@ -52,7 +52,7 @@ Display drive temperatures using SMARTCTL.
           - hda ... hdz
           - 0 ... 25
 '''[1:-1]
-    print s % CommonTools.scriptname().upper()
+    print s % efutil.scriptname().upper()
 
 
 def main(args):

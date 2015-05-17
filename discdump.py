@@ -5,7 +5,7 @@ import pickle
 
 import win32api
 
-import CommonTools
+import efutil
 import winfiles
 
 
@@ -27,7 +27,7 @@ def getVolSn(s):
 
 
 def disphelp():
-    script = CommonTools.scriptname().upper()
+    script = efutil.scriptname().upper()
     print 'usage: %s <drive> <outfile> [<name>] [<notes>]' % script
 
 

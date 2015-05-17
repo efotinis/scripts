@@ -9,7 +9,7 @@ import os
 import sys
 import argparse
 
-import CommonTools
+import efutil
 
 
 def parse_args():
@@ -46,8 +46,8 @@ def parse_args():
     if os.path.exists(args.output) and not args.overwrite:
         ap.error('output file exists; use -o to overwrite')
 
-    args.input = CommonTools.FileArg(args.input, 'r')
-    args.output = CommonTools.FileArg(args.output, 'w')
+    args.input = efutil.FileArg(args.input, 'r')
+    args.output = efutil.FileArg(args.output, 'w')
 
     return args
 

@@ -11,7 +11,7 @@ import argparse
 
 import six
 
-from CommonTools import scriptname, errln, uprint
+from efutil import scriptname, errln, uprint
 
 
 ASCII_BRANCH_CHARS = '|   +-\-'

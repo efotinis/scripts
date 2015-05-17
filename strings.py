@@ -7,7 +7,7 @@ import os
 import contextlib
 import optparse
 
-import CommonTools
+import efutil
 import six
 
 
@@ -57,7 +57,7 @@ def parse_cmdline():
         if len(args) > 1:
             raise optparse.OptParseError('at most one file is accepted')
     except optparse.OptParseError as err:
-        CommonTools.exiterror(str(err), 2)
+        efutil.exiterror(str(err), 2)
 
     return opt, args
 
@@ -81,7 +81,7 @@ if __name__ == '__main__':
             with binary_stdin():
                 bytes = sys.stdin.read()
     except IOError as err:
-        CommonTools.exiterror(str(err))
+        efutil.exiterror(str(err))
 
     for m in rx.finditer(bytes):
         if opt.bare:

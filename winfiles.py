@@ -42,7 +42,7 @@ from ctypes.wintypes import (BOOL, LPCWSTR, HANDLE, WIN32_FIND_DATAW, DWORD,
 from winerror import ERROR_NO_MORE_FILES
 from win32con import FILE_ATTRIBUTE_DIRECTORY
 
-import CommonTools
+import efutil
 
 
 __all__ = ['FindData', 'FileInfo', 'find', 'is_dir', 'walk', 'get_info']
@@ -98,7 +98,7 @@ def filetime_to_windows(ft):
     return ft.dwLowDateTime | (ft.dwHighDateTime << 32)
 
 def filetime_to_unix(ft):
-    return CommonTools.wintime_to_pyseconds(filetime_to_windows(ft))
+    return efutil.wintime_to_pyseconds(filetime_to_windows(ft))
 
 def filetime_to_python(ft):
     return datetime.datetime.utcfromtimestamp(filetime_to_unix(ft))

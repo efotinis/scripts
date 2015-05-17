@@ -16,7 +16,7 @@ import time
 import getpass
 import argparse
 import wbr6600
-import CommonTools
+import efutil
 
 
 def parse_args():
@@ -50,7 +50,7 @@ if __name__ == '__main__':
         adsl_uptime = t.getAdslUptime()
 
         if args.logdir:
-            syslog_timestamp = CommonTools.get_timestamp(compact=True, utc=True)
+            syslog_timestamp = efutil.get_timestamp(compact=True, utc=True)
             syslog_text = t.getSysLog()
 
     print '%s - %s, %s, %s, %s, uptime (sys/adsl): %s / %s' % (

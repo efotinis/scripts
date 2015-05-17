@@ -5,7 +5,7 @@ import os
 import argparse
 import win32file
 import fsutil
-import CommonTools
+import efutil
 import six
 
 
@@ -51,7 +51,7 @@ if __name__ == '__main__':
                 win32file.CreateHardLink(newlink, existing)
                 filecount += 1
             except win32file.error as x:
-                CommonTools.conerr('could not hardlink "%s": "%s"' % (
+                efutil.conerr('could not hardlink "%s": "%s"' % (
                     os.path.join(rel, s), x))
                 failcount += 1
 

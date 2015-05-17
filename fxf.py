@@ -22,7 +22,7 @@ import optparseutil
 import win32file
 import dllutil
 import six
-import CommonTools
+import efutil
 import mathutil
 import console_stuff
 import quantizer
@@ -243,7 +243,7 @@ def client_filestream(outdir, reader, buflen):
     n += len(s)
     fpath = s.decode('utf-8')
 
-    CommonTools.uprint('receiving "%s"' % fpath)
+    efutil.uprint('receiving "%s"' % fpath)
 
     s = reader(28)
     n += len(s)
@@ -279,8 +279,8 @@ def client_filestream(outdir, reader, buflen):
                 speed = sum(quant.data) / len(quant.data) if quant.data else 0
                 H, M, S = mathutil.multi_divmod(bytesleft / speed if speed else 0, 60, 60)
                 print '  got: %s,  speed: %s/s,  ETA: %02d:%02d:%02d' % (
-                    CommonTools.prettysize(gotsize),
-                    CommonTools.prettysize(speed),
+                    efutil.prettysize(gotsize),
+                    efutil.prettysize(speed),
                     H, M, S)
                 t = time.time()
             bytesleft -= len(s)
@@ -314,7 +314,7 @@ def run_client(listenport, buflen, server, outdir):
                 pass
             print 'done'
         except socket.timeout as err:
-            CommonTools.exiterror(str(err))
+            efutil.exiterror(str(err))
 
 
 

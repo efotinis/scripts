@@ -7,7 +7,7 @@ import codecs
 import optparse
 from glob import glob
 
-import CommonTools
+import efutil
 
 
 BOMS = (codecs.BOM_BE, codecs.BOM_LE, codecs.BOM_UTF8)
@@ -51,7 +51,7 @@ if __name__ == '__main__':
                     print '  ' + badchars
                     foundsome = True
             except IOError as x:
-                CommonTools.errln('%s: "%s"' % (str(x), fspec))
+                efutil.errln('%s: "%s"' % (str(x), fspec))
                 ioerror = True
     if foundsome or ioerror:
         sys.exit(1)

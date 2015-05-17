@@ -5,7 +5,7 @@ import sys
 import struct
 
 import fileutil
-import CommonTools
+import efutil
 import six
 
 EXIT_OK = 0
@@ -157,14 +157,14 @@ class PakFile(object):
 ##    if len(args) == 2:
 ##        pakFile, destDir = args
 ##    else:
-##        CommonTools.errln('Exactly 2 parameters are required.')
+##        efutil.errln('Exactly 2 parameters are required.')
 ##        return EXIT_BAD_PARAMS
 ##
 ##    try:
 ##        extract(pakFile, destDir)
 ##        return EXIT_OK
 ##    except Error as x:
-##        CommonTools.errln(str(x))
+##        efutil.errln(str(x))
 ##        return EXIT_ERROR
 ##
 ##
@@ -235,7 +235,7 @@ for rec in pak.
 def read_file_struct(fp, s, offset=None):
     if offset is not None:
         fp.seek(offset)
-    return struct.unpack(fmt, CommonTools.readexactly(s.size))
+    return struct.unpack(fmt, efutil.readexactly(s.size))
 
 
 PAK_MODE_TO_ACCESS = {

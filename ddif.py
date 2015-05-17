@@ -5,7 +5,7 @@ import os
 import sys
 import hashlib
 import argparse
-import CommonTools
+import efutil
 
 
 IO_BUFLEN = 2 ** 20
@@ -19,7 +19,7 @@ else:
     CASE_SENSITIVE_PLATFORM_PATHS = None  # will err if user selects it
 
 
-if CommonTools.PY3:
+if efutil.PY3:
     def cmp(a, b):
         if a < b:
             return -1
@@ -120,14 +120,14 @@ def compare_dirs(root1, root2, rel, stats, args):
             if isdir:
                 list_unmatched_dir(root1, os.path.join(rel, name), stats, 'only_in_a', '1 ')
             else:
-                CommonTools.conout('1 ', os.path.join(rel, name))
+                efutil.conout('1 ', os.path.join(rel, name))
                 stats['only_in_a'] += 1
         elif where == '>':
             isdir = os.path.isdir(os.path.join(root2, rel, name))
             if isdir:
                 list_unmatched_dir(root2, os.path.join(rel, name), stats, 'only_in_b', ' 2')
             else:
-                CommonTools.conout(' 2', os.path.join(rel, name))
+                efutil.conout(' 2', os.path.join(rel, name))
                 stats['only_in_b'] += 1
         else:
             isdir1 = os.path.isdir(os.path.join(root1, rel, name))
@@ -139,18 +139,18 @@ def compare_dirs(root1, root2, rel, stats, args):
                 path2 = os.path.join(root2, rel, name)
                 if args.content_matcher(path1, path2):
                     if args.verbose:
-                        CommonTools.conout('==', os.path.join(rel, name))
+                        efutil.conout('==', os.path.join(rel, name))
                     stats['matched_files'] += 1
                 else:
-                    CommonTools.conout('**', os.path.join(rel, name))
+                    efutil.conout('**', os.path.join(rel, name))
                     stats['mismatched_files'] += 1
             else:  # file <-> dir
                 if isdir1:
                     list_unmatched_dir(root1, os.path.join(rel, name), stats, 'only_in_a', '1 ')
-                    CommonTools.conout(' 2', os.path.join(rel, name))
+                    efutil.conout(' 2', os.path.join(rel, name))
                     stats['only_in_b'] += 1
                 else:
-                    CommonTools.conout('1 ', os.path.join(rel, name))
+                    efutil.conout('1 ', os.path.join(rel, name))
                     stats['only_in_a'] += 1
                     list_unmatched_dir(root2, os.path.join(rel, name), stats, 'only_in_b', ' 2')
 
@@ -161,14 +161,14 @@ def list_unmatched_dir(root, rel, stats, stats_key, prefix):
     try:
         items = os.listdir(dpath)
     except OSError as x:
-        CommonTools.conerr('ERROR: could not list dir "%s";' % dpath, str(x))
+        efutil.conerr('ERROR: could not list dir "%s";' % dpath, str(x))
         return
     for name in items:
         isdir = os.path.isdir(os.path.join(root, rel, name))
         if isdir:
             list_unmatched_dir(root, os.path.join(rel, name), stats, stats_key, prefix)
         else:
-            CommonTools.conout(prefix, os.path.join(rel, name))
+            efutil.conout(prefix, os.path.join(rel, name))
             stats[stats_key] += 1
 
 
@@ -198,7 +198,7 @@ def parse_args():
     if not os.path.isdir(args.dir2):
         parser.error('not a directory: "%s"' % args.dir2)
 
-    if CommonTools.PY2:
+    if efutil.PY2:
         args.dir1 = unicode(args.dir1)
         args.dir2 = unicode(args.dir2)
 

@@ -3,7 +3,7 @@ import sys
 import BeautifulSoup as bs
 import urllib2
 import pickle
-from CommonTools import conout
+from efutil import conout
 
 
 def readAsBrowser(url):

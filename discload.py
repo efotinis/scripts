@@ -1,8 +1,8 @@
-import sys, bz2, pickle, CommonTools
+import sys, bz2, pickle, efutil
 
 
 def disphelp():
-    script = CommonTools.scriptname().upper()
+    script = efutil.scriptname().upper()
     print 'usage: %s <infile>' % script
 
 

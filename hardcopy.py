@@ -8,7 +8,7 @@ import errno
 
 import win32file
 
-import CommonTools
+import efutil
 import pathutil
 
 
@@ -41,7 +41,7 @@ def make_hard_link(src, dst, makeunique=False):
         win32file.CreateHardLink(dst, src)
         return True
     except win32file.error as err:
-        CommonTools.errln(str(err))
+        efutil.errln(str(err))
         return False
 
 
@@ -51,7 +51,7 @@ def copy_items(src, dst, args, depth=0):
     try:
         makedirs_exist_ok(dst)
     except OSError as e:
-        CommonTools.errln('could not create destination dir: ' + str(e))
+        efutil.errln('could not create destination dir: ' + str(e))
         return False
 
     if os.path.isdir(src):

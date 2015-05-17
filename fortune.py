@@ -12,8 +12,6 @@ import struct
 import sys
 import time
 
-import CommonTools
-
 
 PY2 = sys.version_info.major == 2
 

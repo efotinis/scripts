@@ -6,7 +6,7 @@ import shutil
 import argparse
 import glob
 
-import CommonTools
+import efutil
 import pathutil
 import six
 
@@ -52,7 +52,7 @@ def splitall(path):
 ##                    dst = pathutil.get_unique_file(dst)
 ##                    actionfunc(src, dst)
 ##                except IOError as x:
-##                    CommonTools.errln(str(x))
+##                    efutil.errln(str(x))
 ##                    allok = False
 ##                    if not opt.errorcontinue:
 ##                        return allok
@@ -62,7 +62,7 @@ def splitall(path):
 ##                try:
 ##                    os.rmdir(os.path.join(path, s))
 ##                except IOError as x:
-##                    CommonTools.errln(str(x))
+##                    efutil.errln(str(x))
 ##                    allok = False
 ##                    if not opt.errorcontinue:
 ##                        return allok

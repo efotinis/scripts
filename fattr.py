@@ -5,7 +5,7 @@ import sys
 import argparse
 import collections
 
-import CommonTools
+import efutil
 import six
 import win32file
 
@@ -73,7 +73,7 @@ if __name__ == '__main__':
 
     for dir_path in args.paths:
         if not os.path.isdir(dir_path):
-            CommonTools.conerr('not a directory: "%s"' % dir_path)
+            efutil.conerr('not a directory: "%s"' % dir_path)
             continue
         for p,d,f in os.walk(dir_path):
             items = []
@@ -85,13 +85,13 @@ if __name__ == '__main__':
                 path = os.path.join(p, s)
                 attr = win32file.GetFileAttributesW(path) & 0xffffffff
                 if attr == INVALID_FILE_ATTRIBUTES:
-                    CommonTools.conerr('could not get attributes of "%s"' % path)
+                    efutil.conerr('could not get attributes of "%s"' % path)
                     continue
                 for n in FLAGS:
                     if attr & n:
                         counter[n] += 1
                 if args.listmask is not None and attr & args.listmask:
-                    CommonTools.conout(path)
+                    efutil.conout(path)
                 item_count += 1
 
     if args.listmask is None:

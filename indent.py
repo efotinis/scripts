@@ -8,7 +8,7 @@ import argparse
 import win32file
 import win32con
 
-import CommonTools
+import efutil
 import wintime
 
 
@@ -275,8 +275,8 @@ if __name__ == '__main__':
         timestamps = wintime.get_file_time(args.input)[1:]
         args.output = args.input + '$'
 
-    infile = CommonTools.InFile(args.input)
-    outfile = CommonTools.OutFile(args.output)
+    infile = efutil.InFile(args.input)
+    outfile = efutil.OutFile(args.output)
     for s in infile:
         s = s.rstrip('\n')
         s = indent.process(s)

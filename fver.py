@@ -11,6 +11,7 @@ import win32api
 
 import binutil
 import VerResUtils
+import efutil
 
 
 INDENT = 4 * ' '
@@ -234,7 +235,7 @@ def main(args):
     try:
         opt, args = parse_cmdline()
     except optparse.OptParseError as err:
-        CommonTools.exiterror(str(err), 2)
+        efutil.exiterror(str(err), 2)
 
     failed = False
     for fname in args:

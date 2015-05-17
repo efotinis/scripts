@@ -11,7 +11,7 @@ import sys
 import getopt
 from glob import glob
 
-import CommonTools
+import efutil
 import shellutil
 
 
@@ -19,7 +19,7 @@ def select_file(mask):
     """Interactive file selection; return path or None."""
     a = glob(mask)
     for i, s in enumerate(a):
-        print '%d. %s  [%s]' % (i + 1, s, CommonTools.prettysize(os.path.getsize(s)))
+        print '%d. %s  [%s]' % (i + 1, s, efutil.prettysize(os.path.getsize(s)))
     while True:
         try:
             s = raw_input('Select file (Enter to exit): ')

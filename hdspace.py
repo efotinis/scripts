@@ -5,7 +5,7 @@ import win32file
 import win32con
 
 import diskutil
-import CommonTools
+import efutil
 
 
 def bar(full, total, scale, width):
@@ -35,14 +35,14 @@ if __name__ == '__main__':
     for drive, size, free in drive_size_free:
         print '{} {:>9} {:>9} {:>4.0%} [{}]'.format(
             drive[:1],
-            CommonTools.prettysize(size),
-            CommonTools.prettysize(free),
+            efutil.prettysize(size),
+            efutil.prettysize(free),
             float(free) / size,
             bar(size - free, size, maxsize, BARSIZE))
 
     total_size = sum(s for d,s,f in drive_size_free)
     total_free = sum(f for d,s,f in drive_size_free)
     print '* {:>9} {:>9} {:>4.0%}'.format(
-        CommonTools.prettysize(total_size),
-        CommonTools.prettysize(total_free),
+        efutil.prettysize(total_size),
+        efutil.prettysize(total_free),
         float(total_free) / total_size)

@@ -1,4 +1,4 @@
-"""Common script utilities."""
+"""Miscellaneous utilities."""
 
 from __future__ import print_function
 import collections
