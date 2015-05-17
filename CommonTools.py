@@ -8,6 +8,7 @@ import itertools
 import os
 import re
 import sys
+import warnings
 
 import win32console
 
@@ -354,3 +355,29 @@ def load_csv_table(f, typename, fieldnames, **converters):
         for i, func in converters.items():
             row[i] = func(row[i])
         yield rec_type(*row)
+
+
+def promote_input_to_unicode(s, wildcard=False, nonpath=False):
+    """Check string for potential encoding errors and promote to Unicode.
+
+    This is useful in Python 2 on Windows where command line arguments are
+    implicitly converted to the system ANSI codepage, producing replacement
+    '?' characters. If such characters are found, an exception is raised.
+    If 'wildcard' or 'nonpath' are true, the string may contain actual '?'
+    characters, making detection impossible. In this case, only a warning
+    is printed.
+
+    Promotion to Unicode ensures that subsequent system calls will use the
+    Unicode WinAPI functions.
+
+    Does nothing on non-Windows or non-Python-2 platforms.
+    """
+    if sys.platform == 'win32' and sys.version_info.major == 2:
+        if '?' in s:
+            msg = 'replacement characters found in input string'
+            if wildcard or nonpath:
+                warnings.warn(msg)
+            else:
+                raise ValueError(msg)
+        s = unicode(s)
+    return s
