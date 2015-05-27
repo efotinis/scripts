@@ -5,17 +5,21 @@ Old services used:
   see http://forum.whatismyip.com/showpost.php?p=9092&postcount=6
 """
 
+from __future__ import print_function
 import os
 import sys
 import time
-import urllib2
 import argparse
+
+from six.moves.urllib.request import urlopen
+from six.moves.urllib_error import URLError
 
 
 def query():
     """Get IP as a string."""
     # http://rackerhacker.com/icanhazip-com-faq/
-    return urllib2.urlopen('http://icanhazip.com/').read().rstrip('\n')
+    s = urlopen('http://icanhazip.com/').read()
+    return s.decode('utf-8').rstrip('\n')
 
 
 def parse_args():
@@ -31,15 +35,15 @@ if __name__ == '__main__':
 
     try:
         ip, error = query(), None
-    except urllib2.URLError as x:
+    except URLError as x:
         ip, error = None, str(x)
 
     if args.logfile:
         result = ip or ('<' + error + '>')
         with open(args.logfile, 'a') as f:
-            print >>f, time.ctime(), '-', result
+            print(time.ctime(), '-', result, file=f)
     else:
         if ip:
-            print ip
+            print(ip)
         else:
             sys.exit(error)
