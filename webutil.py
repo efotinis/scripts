@@ -29,7 +29,12 @@ def _req_headers(user_headers):
 def wget(url, headers={}):
     """Get a Web resource. Useful for the interactive interpreter."""
     req = urllib_req.Request(url, headers=_req_headers(headers))
-    return urllib_req.urlopen(req).read()
+    with urllib_req.urlopen(req) as resp:
+        data = resp.read()
+    enc = resp.info().get_content_charset()
+    if enc:
+        data = data.decode(enc)
+    return data
 
 
 class UrlCache(object):
@@ -97,6 +102,6 @@ class HeadRequest(urllib_req.Request):
 
 def headers(url, headers={}):
     """Get headers of web resource."""
-    res = urllib_req.urlopen(HeadRequest(url, headers=_req_headers(headers)))
-    res.close()
-    return res.info()
+    req = HeadRequest(url, headers=_req_headers(headers))
+    with urllib_req.urlopen(req) as resp:
+        return resp.info()
