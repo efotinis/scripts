@@ -182,8 +182,7 @@ def conout(*a, **kw):
             # PythonWin handles Unicode property, but its sys.stdout/stderr.encoding
             # is 'utf-8'; we prefer to decode 8-bit strings with CP_ACP ('mbcs')
             encoding = 'mbcs'
-            # FIXME: no unicode in Py3
-            a = [s if isinstance(s, unicode) else s.decode(encoding, 'replace')
+            a = [s if PY3 or isinstance(s, unicode) else s.decode(encoding, 'replace')
                  for s in a]
             PY_STREAM.write(sep.join(a) + end)
             return
@@ -191,8 +190,7 @@ def conout(*a, **kw):
             # on Windows, this means the console, which is natively Unicode;
             # 8-bit strings should be decoded with the console output codepage
             encoding = 'cp' + str(win32console.GetConsoleOutputCP())
-            # FIXME: no unicode in Py3
-            a = [s if isinstance(s, unicode) else s.decode(encoding)
+            a = [s if PY3 or isinstance(s, unicode) else s.decode(encoding)
                  for s in a]
             WIN_STREAM.WriteConsole(sep.join(a) + end)  # accepts both str and unicode
         else:
