@@ -324,6 +324,22 @@ def get_timestamp(date=None, utc=False, compact=False, fract=2):
     return s
 
 
+def open_csv(path, mode='r'):
+    """Properly open CSV file for any Python version.
+
+    Automatically uses binary mode and newlines='' when needed.
+
+    NOTE: The csv module in Python 2 does not support Unicode as is. See the
+    Python docs for sample wrappers.
+    """
+    if PY2 and 'b' not in mode:
+        mode += 'b'
+    kwargs = {'mode': mode}
+    if PY3:
+        kwargs['newline'] = ''
+    return open(path, **kwargs)
+
+
 def load_csv_table(f, typename, fieldnames, **converters):
     """Generate the table entries of a CSV file as namedtuple objects.
 
