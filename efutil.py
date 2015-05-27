@@ -367,6 +367,9 @@ def promote_input_to_unicode(s, wildcard=False, nonpath=False):
     characters, making detection impossible. In this case, only a warning
     is printed.
 
+    Note that the 'wildcard' and 'nonpath' params are mainly used for
+    documenting intent.
+
     Promotion to Unicode ensures that subsequent system calls will use the
     Unicode WinAPI functions.
 
@@ -381,3 +384,16 @@ def promote_input_to_unicode(s, wildcard=False, nonpath=False):
                 raise ValueError(msg)
         s = unicode(s)
     return s
+
+
+def pluralize(n, singular, plural=None):
+    """Return singular or plural form based on count.
+
+    If no plural is specified, an 's' is appended to the singular.
+    """
+    if n == 1:
+        return singular
+    elif plural is None:
+        return singular + 's'
+    else:
+        return plural
