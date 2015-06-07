@@ -21,13 +21,6 @@ def get_matching_path(path):
         raise ValueError('no matching path')
 
 
-##def get_input_images():
-##    fnames = os.listdir(u'.')
-##    for s in fnames:
-##        if os.path.splitext(s)[1].lower() in ('.jpg', '.jpeg')]:
-##            yield s
-
-
 def get_input_images(a):
     for s in a:
         if os.path.isdir(s):
@@ -40,11 +33,12 @@ def get_input_images(a):
 
 if __name__ == '__main__':
 
-    for image in get_input_images(sys.argv[1:]):
+    input = [efutil.promote_input_to_unicode(s) for s in sys.argv[1:]]
+    for image in get_input_images(input):
         try:
-            print '*** img:', image
+            efutil.conout('*** img:', image)
             video = get_matching_path(image)
-            print '*** vid:', video
+            efutil.conout('*** vid:', video)
         except ValueError:
             efutil.conerr('could not find match for "%s"' % image)
             continue
