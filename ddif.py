@@ -198,9 +198,8 @@ def parse_args():
     if not os.path.isdir(args.dir2):
         parser.error('not a directory: "%s"' % args.dir2)
 
-    if efutil.PY2:
-        args.dir1 = unicode(args.dir1)
-        args.dir2 = unicode(args.dir2)
+    args.dir1 = efutil.promote_input_to_unicode(args.dir1)
+    args.dir2 = efutil.promote_input_to_unicode(args.dir2)
 
     if args.case_sens == 'm':
         args.case_sens = True

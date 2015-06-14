@@ -1,3 +1,4 @@
+#!python2
 # TODO: store scan errors and add a cmd for showing them
 # TODO: add a filter function (extensions, regexps, size/date ranges, attribs) to restrict operations
 # TODO: allow optional traversal of junctions and soft-linked dirs
