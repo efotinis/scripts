@@ -177,6 +177,21 @@ def python_epoch_utc_to_filetime():
     return ft
 
 
+PY_EPOCH = python_epoch_utc_to_filetime()  # FILETIME of Python/C epoch
+PY_EPOCH = PY_EPOCH.dwLowDateTime | (PY_EPOCH.dwHighDateTime << 32)
+PY_TIME_SCALE = 1 / 10000000.0  # factor to convert FILETIME to seconds
+
+
+def wintime_to_pyseconds(n):
+    """Convert a Windows FILETIME uint64 to Python seconds."""
+    return (n - PY_EPOCH) * PY_TIME_SCALE
+
+
+def pyseconds_to_wintime(n):
+    """Convert Python seconds to a Windows FILETIME uint64."""
+    return int(n / PY_TIME_SCALE + PY_EPOCH)
+
+
 def filetime_to_systemtime(ft):
     """Convert a FILETIME to SYSTEMTIME."""
     st = SYSTEMTIME()

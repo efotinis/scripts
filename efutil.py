@@ -265,23 +265,6 @@ def listdirs(path):
             yield s
 
 
-# FIXME: better names
-# TODO: move to wintime
-PY_EPOCH = wintime.python_epoch_utc_to_filetime()  # FILETIME of Python/C epoch
-PY_EPOCH = PY_EPOCH.dwLowDateTime | (PY_EPOCH.dwHighDateTime << 32)
-PY_TIME_SCALE = 1 / 10000000.0  # factor to convert FILETIME to seconds
-
-
-def wintime_to_pyseconds(n):
-    """Convert a Windows FILETIME uint64 to Python seconds."""
-    return (n - PY_EPOCH) * PY_TIME_SCALE
-
-
-def pyseconds_to_wintime(n):
-    """Convert Python seconds to a Windows FILETIME uint64."""
-    return int(n / PY_TIME_SCALE + PY_EPOCH)
-
-
 def nukeglobals(keep=None):
     """Clean up __main__'s namespace.
 
