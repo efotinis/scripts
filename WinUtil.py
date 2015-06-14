@@ -3,7 +3,7 @@
 import ctypes
 import win32gui, win32process, win32process, win32con
 import dllutil
-from ctypes.wintypes import BOOL, UINT, LONG, LPVOID
+from ctypes.wintypes import BOOL, UINT, LONG, LPVOID, DWORD
 
 
 class RECT(ctypes.Structure):
@@ -47,7 +47,7 @@ LPRECT = ctypes.POINTER(RECT)
 
 
 user32 = dllutil.WinDLL('user32')
-SystemParametersInfoW = user32('SystemParametersInfoW', BOOL, [UINT,UINT,PVOID,UINT])
+SystemParametersInfoW = user32('SystemParametersInfoW', BOOL, [UINT,UINT,LPVOID,UINT])
 AdjustWindowRectEx = user32('AdjustWindowRectEx', BOOL, [LPRECT,DWORD,BOOL,DWORD])
 
 
@@ -68,6 +68,17 @@ def genChildWnds(wnd):
     while cur:
         yield cur
         cur = win32gui.GetWindow(cur, win32con.GW_HWNDNEXT)
+
+
+def genClassChildren(wnd, cls, recurse=False):
+    """Generate HWND of all children with specified class."""
+    cls = cls.lower()
+    for child in genChildWnds(wnd):
+        if win32gui.GetClassName(child).lower() == cls:
+            yield child
+        elif recurse:
+            for x in genClassChildren(child, cls):
+                yield x
 
 
 def getTopOwnerWnd(wnd):
