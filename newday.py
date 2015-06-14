@@ -9,6 +9,7 @@ Useful for scripts that shouldn't run more than once a day.
 
 import argparse
 import datetime
+import os
 import sys
 
 
@@ -21,6 +22,10 @@ def parse_args():
         'threshold to something other than 00:00; useful for night owls; '
         'for example, 4 means that the day changes at 04:00; default is 0; '
         'range: -23 to 23')
+    add('-d', dest='debug', action='store_true',
+        help='use debug log to collect invocation times; uses same path as '
+        'log, with a ".debug" before the extension; logged fields are: '
+        'invocation datetime, perceived date, change flag')
     add('logfile', help='log file path')
     args = ap.parse_args()
     if not -23 <= args.midnight_shift <= 23:
@@ -54,6 +59,16 @@ if __name__ == '__main__':
     log = Log(args.logfile)
     lastdate = log.get()
     changed = lastdate is None or curdate != lastdate
+
+    if args.debug:
+        stem, ext = os.path.splitext(args.logfile)
+        dbgpath = stem + '.debug' + ext
+        with open(dbgpath, 'a') as f:
+            f.write('{}Z {} {}\n'.format(
+                now.isoformat(),
+                str(curdate),
+                changed))
+
     if changed:
         log.set(curdate)
     else:
