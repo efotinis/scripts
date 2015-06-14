@@ -10,24 +10,28 @@ import re
 import sys
 import warnings
 
-import win32console
-
-import shellutil
-import wintime
+if os.name == 'nt':
+    import shellutil
+    import win32console
+else:
+    shellutil = None
+    win32console = None
 
 
 PY2 = sys.version_info.major == 2
 PY3 = sys.version_info.major == 3
 
 
-def winconout():
-    """Windows standard output (PyConsoleScreenBuffer) or None."""
-    return win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
-
-
-def winconerr():
-    """Windows standard error (PyConsoleScreenBuffer) or None."""
-    return win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
+if os.name == 'nt':
+    def winconout():
+        """Windows standard output (PyConsoleScreenBuffer) or None."""
+        return win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
+    def winconerr():
+        """Windows standard error (PyConsoleScreenBuffer) or None."""
+        return win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
+else:
+    winconout = None
+    winconerr = None
 
 
 class InFile:
@@ -137,7 +141,7 @@ def uprint(s):
 
     Useful for printing Unicode strings in the Windows console.
     """
-    h = winconout()
+    h = winconout and winconout()
     if h:
         h.WriteConsole(s + '\n')
         h.Close()
@@ -170,10 +174,10 @@ def conout(*a, **kw):
         raise TypeError('unexpected keyword arguments: ' + str(kw.keys()))
     if error:
         PY_STREAM = sys.stderr
-        WIN_STREAM = winconerr()
+        WIN_STREAM = winconerr and winconerr()
     else:
         PY_STREAM = sys.stdout
-        WIN_STREAM = winconout()
+        WIN_STREAM = winconout and winconout()
     try:
         try:
             isatty = PY_STREAM.isatty()
@@ -186,7 +190,7 @@ def conout(*a, **kw):
                  for s in a]
             PY_STREAM.write(sep.join(a) + end)
             return
-        if isatty:
+        if isatty and WIN_STREAM:
             # on Windows, this means the console, which is natively Unicode;
             # 8-bit strings should be decoded with the console output codepage
             encoding = 'cp' + str(win32console.GetConsoleOutputCP())
@@ -202,7 +206,11 @@ def conout(*a, **kw):
     finally:
         if WIN_STREAM:
             WIN_STREAM.Close()
-    
+
+
+if os.name != 'nt':
+    conout = print
+
 
 def conerr(*a, **kw):
     """Similar to conout(), but with error=True."""
@@ -212,7 +220,11 @@ def conerr(*a, **kw):
 
 def gotoDesktop():
     """Change working directory to current user's desktop."""
-    os.chdir(shellutil.SpecialFolders.desktop)
+    if os.name == 'nt':
+        path = shellutil.SpecialFolders.desktop
+    else:
+        path = os.path.expanduser('~/Desktop')
+    os.chdir(path)
 
 
 def prettysize(n, iec=False):
