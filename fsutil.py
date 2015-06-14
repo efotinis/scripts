@@ -4,6 +4,7 @@ import os
 import contextlib
 
 import binutil
+import wildcard
 
 
 @contextlib.contextmanager
@@ -53,3 +54,67 @@ def os_walk_rel(top, topdown=True, onerror=None, followlinks=False):
     for parent, dirs, files in os.walk(top, topdown, onerror, followlinks):
         rel = parent[len(top):].lstrip(os.path.sep)
         yield rel, dirs, files
+
+
+def _getall(topdir, files=True, dirs=False, recurse=True):
+    """Get all item paths under 'topdir'.
+
+    'files'/'dirs' denote whether to return the respective items.
+    'recurse' causes subdirs to be scanned as well.
+    """
+    if recurse:
+        for parent, dirnames, filenames in os.walk(topdir):
+            if dirs:
+                for s in dirnames:
+                    yield os.path.join(parent, s)
+            if files:
+                for s in filenames:
+                    yield os.path.join(parent, s)
+    else:
+        for s in os.listdir(topdir):
+            path = os.path.join(topdir, s)
+            if os.path.isdir(path):
+                if dirs:
+                    yield path
+            else:
+                if files:
+                    yield path
+
+
+def _mask_test(mask):
+    """Create a function to test a path against a wildcard mask.
+
+    If mask is None, everything matches.
+    """
+    if mask is not None:
+        mask = wildcard.Wildcard(mask)
+    def tester(path):
+        return mask is None or \
+               mask.test(os.path.basename(path))
+    return tester
+
+
+def _ext_test(ext):
+    """Create a function to test a path against an extension.
+
+    ext can be a single extension or a sequence of them.
+    If it is None, everything matches.
+    """
+    if ext is not None:
+        if isinstance(ext, str):
+            ext = set([os.path.normcase(ext)])
+        else:
+            ext = set(os.path.normcase(s) for s in ext)
+    def tester(path):
+        return ext is None or \
+               os.path.normcase(os.path.splitext(path)[1]) in ext
+    return tester
+
+
+def find(topdir, files=True, dirs=False, recurse=True, ext=None, mask=None):
+    """Get all item paths under 'topdir' matching the specified parameters."""
+    ext = _ext_test(ext)
+    mask = _mask_test(mask)
+    for path in _getall(topdir, files, dirs, recurse):
+        if ext(path) and mask(path):
+            yield path
