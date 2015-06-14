@@ -47,15 +47,26 @@ def sec_to_timestr(sec):
     return sign + ('%02d:%02d:%06.3f' % h_m_s)
 
 
+def sec_to_str(sec):
+    """Convert seconds to a string."""
+    sign = ' '
+    if sec < 0:
+        sec = -sec
+        sign = '-'
+    return sign + ('%9.3f' % sec)
+
+
 def parse_args():
     ap = argparse.ArgumentParser(
         description='calculate lap/total times from timestamp differences',
         epilog='input time format: [-][[hr:]min:]sec[.fract]; '
                'note that the first timestamp specified is used as the start '
-               '(use 0 if needed)')
+               '(to use it as a lap, prepend a 0 time)')
     add = ap.add_argument
     add('times', metavar='TIME', nargs='*', type=timestr_to_sec,
         help='time')
+    add('-s', dest='outsec', action='store_true',
+        help='output seconds instead of hh:mm:ss.sss')
     return ap.parse_args()
 
 
@@ -74,5 +85,7 @@ if __name__ == '__main__':
 
     args = parse_args()
 
+    outfmt = sec_to_str if args.outsec else sec_to_timestr
+
     for i, (lap, total) in enumerate(calc(args.times), 1):
-        print(i, sec_to_timestr(lap), sec_to_timestr(total))
+        print(i, outfmt(lap), outfmt(total))
