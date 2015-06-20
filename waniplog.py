@@ -1,30 +1,32 @@
 #!python3
-"""Update file containing WAN IP.
+"""Update file containing WAN IP from ADSL connection log.
 
 Can be used to update a Dropbox file with my home IP.
 """
 
+import re
 import sys
 
-import myip
-import tdw8970
+
+def last_line(path):
+    """Get last line of a text file, including EOL if it exists."""
+    with open(path) as f:
+        for s in f:
+            pass
+        return s
 
 
-def get_ip(psw):
-    """Get current external WAN IP.
+def is_ip(s):
+    """Test whether string is IP in 'n.n.n.n' format."""
+    return re.match(r'^\d+\.\d+\.\d+\.\d+$', s) is not None
 
-    Try the router's telnet interface and fallback to a web service.
-    """
-    try:
-        psw = psw.encode('ascii')
-        with tdw8970.Telnet(password=psw, timeout=5) as t:
-            for d in t.wan_services():
-                if d['Proto'] == 'PPPoE':
-                    return d['IP']
-        print('IP not found using telnet', file=sys.stderr)
-    except Exception as x:
-        print('telnet session failed:', x, file=sys.stderr)
-    return myip.query()
+
+def get_ip():
+    """Get IP (or None) from ADSL log."""
+    line = last_line('d:/logs/adsl.log').rstrip('\n')
+    time, sep, info = line.partition(' ')
+    ip = info.split(',', 1)[0]
+    return ip if is_ip(ip) else None
 
 
 def update(path, ip):
@@ -40,5 +42,7 @@ def update(path, ip):
 
 
 if __name__ == '__main__':
-    psw, path = sys.argv[1:]
-    update(path, get_ip(psw))
+    path, = sys.argv[1:]
+    ip = get_ip()
+    if ip:
+        update(path, ip)
