@@ -63,9 +63,44 @@ class Telnet(object):
                 continue
             if s == 'cmd:SUCC':
                 break
-            yield s
+            if s:
+                yield s
         else:
             raise ValueError('no success code in response')
+
+    @staticmethod
+    def _grouped_info(a):
+        """"""
+        while True:
+            try:
+                header = next(a)
+            except StopIteration:
+                return
+            s = next(a)
+            if s != '{':
+                raise ValueError('missing open brace', s)
+            items = {}
+            for s in a:
+                if s == '}':
+                    yield header, items
+                    break
+                key, sep, value = s.partition('=')
+                if not sep:
+                    raise ValueError('missing key/value separator')
+                if key in items:
+                    raise ValueError('duplicate key')
+                items[key] = value
+            else:
+                raise ValueError('missing close brace')
+
+    def _get_objects(self, cmd):
+        lines = self._response_lines(self.communicate(cmd))
+        info = {}
+        for header, items in self._grouped_info(lines):
+            if header in info:
+                raise ValueError('duplicate key')
+            info[header] = items
+        return info
 
     def wan_services(self):
         lines = list(self._response_lines(self.communicate(b'wan show service')))
@@ -76,3 +111,12 @@ class Telnet(object):
         fields, lines = lines[0].split(), lines[1:]
         for s in lines:
             yield dict(zip(fields, s.split()))
+
+    def wan_conn_info(self):
+        return self._get_objects(b'wan show connection info')
+
+    def adsl_info(self):
+        return self._get_objects(b'adsl show info')
+
+    def adsl_status(self):
+        return self._get_objects(b'adsl show status')
