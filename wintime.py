@@ -13,7 +13,7 @@ import win32file
 from ctypes.wintypes import BOOL, WORD, DWORD, LONG, WCHAR, HANDLE
 LPWORD = ctypes.POINTER(WORD)
 ULONGLONG = ctypes.c_uint64
-from win32con import OPEN_EXISTING
+from win32con import OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS
 # constants missing from win32con
 FILE_READ_ATTRIBUTES = 0x0080
 FILE_WRITE_ATTRIBUTES = 0x0100
@@ -287,7 +287,10 @@ def get_file_time(f):
     """Get the create/access/modify FILETIMEs of a file (Py)HANDLE or path."""
     created, accessed, modified = FILETIME(), FILETIME(), FILETIME()
     if isinstance(f, six.string_types):
-        with contextlib.closing(win32file.CreateFileW(f, FILE_READ_ATTRIBUTES, 0, None, OPEN_EXISTING, 0, None)) as h:
+        h = win32file.CreateFileW(
+            f, FILE_READ_ATTRIBUTES, 0, None, OPEN_EXISTING,
+            FILE_FLAG_BACKUP_SEMANTICS, None)
+        with contextlib.closing(h):
             if not GetFileTime(h.handle, created, accessed, modified):
                 raise ctypes.WinError()
     elif not GetFileTime(int(f), created, accessed, modified):
@@ -298,7 +301,10 @@ def get_file_time(f):
 def set_file_time(f, created=None, accessed=None, modified=None):
     """Set the create/access/modify FILETIMEs of a file (Py)HANDLE or path."""
     if isinstance(f, six.string_types):
-        with contextlib.closing(win32file.CreateFileW(f, FILE_WRITE_ATTRIBUTES, 0, None, OPEN_EXISTING, 0, None)) as h:
+        h = win32file.CreateFileW(
+            f, FILE_WRITE_ATTRIBUTES, 0, None, OPEN_EXISTING,
+            FILE_FLAG_BACKUP_SEMANTICS, None)
+        with contextlib.closing(h):
             if not SetFileTime(h.handle, created, accessed, modified):
                 raise ctypes.WinError()
     elif not SetFileTime(int(f), created, accessed, modified):
