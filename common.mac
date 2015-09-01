@@ -42,7 +42,6 @@ clrs=clrprint "{,0}  {r}0 {,1}  {r}1 {,2}  {r}2 {,3}  {r}3 {,4}  {r}4 {,5}  {r}5
 ;= * %ProgramFiles%         OS bitness
 ;=
 7z="%ProgramFiles%\7-Zip\7z.exe" $*
-av="C:\prg\libav-x86_64-w64-mingw32-11.1\usr\bin\avconv.exe" $*
 br="C:\prg\bright.exe" $*
 cs="%WinDir%\System32\cscript.exe" //nologo $*
 ed="%ProgramFiles%\notepad2\Notepad2.exe" $*
@@ -61,6 +60,8 @@ upx="C:\prg\upx304w\upx.exe" $*
 web="%ProgramFiles(x86)%\Mozilla Firefox\firefox.exe" -new-tab $*
 wget="%ProgramFiles(x86)%\GnuWin32\bin\wget.exe" $*
 yd="C:\prg\youtube-dl.exe" $*
+ydo="C:\prg\youtube-dl.exe" -o "[%(upload_date)s] %(title)s [%(id)s].%(ext)s" $*
+ydp="C:\prg\youtube-dl.exe" -o "%(playlist_index)s. %(title)s (%(upload_date)s) [%(id)s].%(ext)s" $*
 
 ;= Remove dummy macro used for above comments.
 ;=

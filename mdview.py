@@ -2,7 +2,6 @@
 
 Can be used as an Explorer context menu handler.
 """
-
 from __future__ import print_function
 import argparse
 import io
@@ -15,6 +14,10 @@ import webbrowser
 import win32api
 from win32con import MB_ICONEXCLAMATION
 import markdown
+
+
+# TODO: change tmp dir to sub-with-timestamp & try to pull image-refs
+#       
 
 
 # HTML output template

@@ -1,3 +1,4 @@
+#!python2
 # File hash calculator.
 
 import os
