@@ -155,14 +155,16 @@ if __name__ == '__main__':
         else:
             countdown(args.seconds, step, args.decimals)
         timer_completed = True
-
-        if args.beeploop:
-            while True:
-                win32api.MessageBeep(win32con.MB_ICONINFORMATION)
-                time.sleep(1)
-        elif args.beeponce:
-            win32api.MessageBeep(win32con.MB_ICONINFORMATION)
-
     except KeyboardInterrupt:
         if not timer_completed:
             sys.exit('timer canceled by user')
+
+    if args.beeploop:
+        try:
+            while True:
+                win32api.MessageBeep(win32con.MB_ICONINFORMATION)
+                time.sleep(1)
+        except KeyboardInterrupt:
+            pass
+    elif args.beeponce:
+        win32api.MessageBeep(win32con.MB_ICONINFORMATION)
