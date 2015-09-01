@@ -12,8 +12,8 @@ LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE = 0x00000040
 class Module(object):
     """Resource module."""
     def __init__(self, path, exclusive=False):
-        flags = LOAD_LIBRARY_AS_IMAGE_RESOURCE | \
-                LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE if exclusive else LOAD_LIBRARY_AS_DATAFILE
+        flags = LOAD_LIBRARY_AS_IMAGE_RESOURCE
+        flags |= LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE if exclusive else LOAD_LIBRARY_AS_DATAFILE
         self.handle = win32api.LoadLibraryEx(path, 0, flags)
     def close(self):
         if self.handle:
@@ -25,7 +25,7 @@ class Module(object):
         self.close()
     def read(self, type_, name, lang):
         """Get raw resource bytes."""
-        return win32api.LoadResource(type_, name, lang)
+        return win32api.LoadResource(self.handle, type_, name, lang)
     def __iter__(self):
         """Generate (type,name,lang) of resources."""
         for type_ in win32api.EnumResourceTypes(self.handle):
@@ -38,7 +38,7 @@ class Update(object):
     """Resource update operation."""
     def __init__(self, path, clear=False):
         self.handle = win32api.BeginUpdateResource(path, clear)
-    def close():
+    def close(self):
         if self.handle:
             win32api.EndUpdateResource(self.handle, True)
             self.handle = 0
