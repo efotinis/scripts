@@ -1,7 +1,24 @@
+#!python2
 import os, sys, re, subprocess, efutil
+import _winreg as winreg
 
 
-SMARTCTL_PATH = r'C:\\Program Files\\smartmontools\\bin\\smartctl.exe'
+def getRegStr(key, path, value):
+    k = winreg.OpenKey(key, path)
+    try:
+        data, type_ = winreg.QueryValueEx(k, value)
+    finally:
+        k.Close()
+    if type_ != winreg.REG_SZ:
+        raise TypeError('non-string value')
+    return data
+
+
+SMARTCTL_INSTDIR = getRegStr(
+    winreg.HKEY_LOCAL_MACHINE,
+    r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\smartmontools',
+    'InstallLocation')
+SMARTCTL_PATH = os.path.join(SMARTCTL_INSTDIR, r'bin\smartctl.exe')
 TEMP_FILE = os.path.join(os.environ['TEMP'], '~hdtemp.$$$')
 DEVICE_PARAM_RX = re.compile(r'^(hd[a-z])|(\d+)$')
 SMART_RAWVALUE_OFFSET = 87
