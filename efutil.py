@@ -17,6 +17,8 @@ else:
     shellutil = None
     win32console = None
 
+import mathutil
+
 
 PY2 = sys.version_info.major == 2
 PY3 = sys.version_info.major == 3
@@ -406,3 +408,29 @@ def pluralize(n, singular, plural=None):
         return singular + 's'
     else:
         return plural
+
+
+TIMEFMT_PARTS = {
+    'ms': (1, (60,)),
+    'hm': (60, (60,)),
+    'hms': (1, (60,60)),
+    'dh': (3600, (24,)),
+    'dhm': (60, (24, 60)),
+    'dhms': (1, (24, 60, 60)),
+}
+
+
+def timefmt(seconds, parts='hms', sep=':', labels=None):
+    """Format seconds to string of various formats.
+
+    Labels can be a string sequence or True to use the part chars.
+    """
+    div0, divs = TIMEFMT_PARTS[parts]
+    n = round(seconds / div0)
+    a = mathutil.multi_divmod(n, *divs)
+    if labels is None:
+        labels = [''] * len(parts)
+    elif labels is True:
+        labels = parts
+    return sep.join(format(n, '02') + s for n, s in zip(a, labels))
+    
