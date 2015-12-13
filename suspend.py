@@ -1,3 +1,4 @@
+#!python2
 """Suspend/hibernate the system after a specified amount of time."""
 
 import argparse

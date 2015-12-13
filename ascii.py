@@ -4,6 +4,8 @@ from __future__ import print_function
 import sys
 import argparse
 
+import efutil
+
 
 def parse_args():
     ap = argparse.ArgumentParser(
@@ -36,3 +38,7 @@ if __name__ == '__main__':
         # FIXME: fails in Python 3
         print(''.join(chr(c) for c in range(i, i+args.rowsize)))
         #print(bytes(range(i, i+args.rowsize)).decode('cp1253', errors='replace'))
+
+#    for i in range(32, 256, args.rowsize):
+#        pfx = '' if args.bareoutput else '%02x|' % i
+#        efutil.conout(pfx + ''.join(chr(c) for c in range(i, i+args.rowsize)))

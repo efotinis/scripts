@@ -66,8 +66,9 @@ Display drive temperatures using SMARTCTL.
 %s [drives]
 
   drives  The list of drives to check. Valid formats:
-          - hda ... hdz
-          - 0 ... 25
+          - hd[a-z]
+          - sd[a-z]
+          - 0..25 (maps to sd[a-z])
 '''[1:-1]
     print s % efutil.scriptname().upper()
 

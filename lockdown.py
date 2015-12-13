@@ -1,3 +1,4 @@
+#!python2
 """Lock the desktop and power down the monitor."""
 
 import time

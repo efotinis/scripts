@@ -232,3 +232,11 @@ if __name__ == '__main__':
                 except OSError:
                     efutil.uprint('could not delete "%s"' % s)
         print('files deleted:', n)
+
+
+'''
+---------|---------|---------|---------|---------|---------|---------|---------|
+hashing: 999,999 files 99% 999,999/s; 999 bytes 99% 999 bytes/s; ETA 99h:99m:99s
+99.9 XB
+999 bytes
+'''
