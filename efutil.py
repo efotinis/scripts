@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 import collections
+import contextlib
 import csv
 import datetime
 import itertools
@@ -433,4 +434,71 @@ def timefmt(seconds, parts='hms', sep=':', labels=None):
     elif labels is True:
         labels = parts
     return sep.join(format(n, '02') + s for n, s in zip(a, labels))
-    
+
+
+def _strip_label(s, label):
+    if not label:
+        return s
+    if s.endswith(label):
+        return s[:-len(label)]
+    raise ValueError('"{}" is missing label "{}"'.format(s, label))
+
+
+def timeparse(s, parts='hms', sep=':', labels=None):
+    """Parse a string of various formats to seconds.
+
+    Labels can be a string sequence or True to use the part chars.
+    """
+    a = s.split(sep)
+    if len(a) != len(parts):
+        raise ValueError('parts count mismatch')
+    if labels is True:
+        labels = parts
+    if labels is not None:
+        a = [_strip_label(s, l) for s, l in zip(a, labels)]
+    a = [int(s) for s in a]
+    mul0, muls = TIMEFMT_PARTS[parts]
+    n = a[0]
+    for m, mul in zip(a[1:], muls):
+        n = n * mul + m
+    return n * mul0
+
+
+def size_arg(s):
+    """Size argument type for argparse."""
+    s = s.strip()
+    SUFFIXES = 'kmgtpe'
+    i = SUFFIXES.find(s[-1:]) + 1
+    if i:
+        s = s[:-1]
+    multiplier = 1024 ** i
+    return int(float(s) * multiplier)
+
+
+def frame_count(path):
+    """Count GIF frames."""
+    from PIL import Image
+    with Image.open(path) as im:
+        with contextlib.suppress(EOFError):
+            for i in itertools.count():
+                im.seek(i)
+        return im.tell()
+
+
+def redact(obj, shallow=False, keys=None, replace='(...)'):
+    """Remove dict values from JSON object.
+
+    obj:        source object
+    shallow:    do not recurse into dict values
+    keys:       sequence of dict keys whose values are redacted
+    replace:    replacement object
+    """
+    if isinstance(obj, dict):
+        for k in obj:
+            if keys is not None and k in keys:
+                obj[k] = replace
+            elif isinstance(obj[k], (dict, list)):
+                redact(obj[k], shallow, keys, replace)
+    elif isinstance(obj, list):
+        for x in obj:
+            redact(x, shallow, keys, replace)
