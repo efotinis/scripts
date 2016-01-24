@@ -24,16 +24,22 @@ import mathutil
 PY2 = sys.version_info.major == 2
 
 
-if os.name == 'nt':
-    def winconout():
-        """Windows standard output (PyConsoleScreenBuffer) or None."""
-        return win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
-    def winconerr():
-        """Windows standard error (PyConsoleScreenBuffer) or None."""
-        return win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
-else:
-    winconout = None
-    winconerr = None
+def winconout():
+    """Windows standard output (PyConsoleScreenBuffer) or None.
+
+    Note than this may return None even on Windows.
+    """
+    return win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE) \
+           if os.name == 'nt' else None
+
+
+def winconerr():
+    """Windows standard error (PyConsoleScreenBuffer) or None.
+
+    Note than this may return None even on Windows.
+    """
+    return win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE) \
+           if os.name == 'nt' else None
 
 
 class InFile:
@@ -176,10 +182,10 @@ def conout(*a, **kw):
         raise TypeError('unexpected keyword arguments: ' + str(kw.keys()))
     if error:
         PY_STREAM = sys.stderr
-        WIN_STREAM = winconerr and winconerr()
+        WIN_STREAM = winconerr()
     else:
         PY_STREAM = sys.stdout
-        WIN_STREAM = winconout and winconout()
+        WIN_STREAM = winconout()
     try:
         try:
             isatty = PY_STREAM.isatty()
