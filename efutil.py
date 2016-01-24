@@ -166,9 +166,18 @@ def conout(*a, **kw):
     - decoding with errors='replace' to avoid UnicodeError exceptions
 
     Cases handled (in order):
-    1. PythonWin interactive window (strings decoded via 'mbcs')
-    2. Windows console (strings decoded via console output codepage)
-    3. other; assumes file or pipe (Unicode encoded via console output codepage)
+        PythonWin interactive window:
+            wide -> as-is
+            narrow -> decoded as MBCS
+        Windows console:
+            wide -> as-is
+            narrow -> decoded with console output codepage
+        redirection (file/pipe)
+            wide -> encoded with console output codepage
+            narrow -> as-is
+            Note that on Python 3 (and since std handles are text file object)
+            the above are again decoded with console output codepage to
+            produce wide strings containing characters from just the output codepage
     
     Keyword args:
     - sep: string to output between multiple arguments; default: ' '
@@ -180,37 +189,49 @@ def conout(*a, **kw):
     error = kw.pop('error', False)
     if kw:
         raise TypeError('unexpected keyword arguments: ' + str(kw.keys()))
-    if error:
-        PY_STREAM = sys.stderr
-        WIN_STREAM = winconerr()
-    else:
-        PY_STREAM = sys.stdout
-        WIN_STREAM = winconout()
+
+    PY_STREAM = sys.stderr if error else sys.stdout
+    WIN_STREAM = None
     try:
+        # determine output context and optionally assign WIN_STREAM
         try:
             isatty = PY_STREAM.isatty()
         except AttributeError:
-            # probably PythonWin's interactive window;
-            # PythonWin handles Unicode property, but its sys.stdout/stderr.encoding
-            # is 'utf-8'; we prefer to decode 8-bit strings with CP_ACP ('mbcs')
-            encoding = 'mbcs'
-            a = [s if not PY2 or isinstance(s, unicode) else s.decode(encoding, 'replace')
-                 for s in a]
-            PY_STREAM.write(sep.join(a) + end)
-            return
-        if isatty and WIN_STREAM:
-            # on Windows, this means the console, which is natively Unicode;
-            # 8-bit strings should be decoded with the console output codepage
-            encoding = 'cp' + str(win32console.GetConsoleOutputCP())
-            a = [s if not PY2 or isinstance(s, unicode) else s.decode(encoding)
-                 for s in a]
-            WIN_STREAM.WriteConsole(sep.join(a) + end)  # accepts both str and unicode
+            # stdout/stderr objects in PythonWin have no isatty()
+            context = 'pywin'
         else:
-            # file or pipe; encode Unicode strings with the console output codepage
+            if isatty:
+                WIN_STREAM = winconerr() if error else winconout()
+            # direct console output or file/pipe redirection
+            context = 'console' if isatty and WIN_STREAM else 'redirect'
+
+        is_wide = lambda s: isinstance(s, unicode if PY2 else str)
+
+        if context == 'pywin':
+            # PythonWin's interactive window supports both wide and 
+            # narrow strings, but assumes the latter are UTF-8;
+            # since console outputting scripts don't make that assumption,
+            # we treat narrow strings as MBCS
+            encoding = 'mbcs'
+            convert = lambda s: s if is_wide(s) else s.decode(encoding, 'replace')
+            PY_STREAM.write(sep.join(convert(s) for s in a) + end)
+        elif context == 'console':
+            # the Windows console uses Unicode natively and
+            # decodes narrow strings with the output codepage
             encoding = 'cp' + str(win32console.GetConsoleOutputCP())
-            a = [s.encode(encoding, 'replace') if isinstance(s, unicode) else s
-                 for s in a]
-            PY_STREAM.write(sep.join(a) + end)
+            convert = lambda s: s if is_wide(s) else s.decode(encoding, 'replace')
+            WIN_STREAM.WriteConsole(sep.join(convert(s) for s in a) + end)
+        else:  # 'redirect'
+            # files/pipes are inherently narrow,
+            # so we convert wide strings using the output codepage;
+            encoding = 'cp' + str(win32console.GetConsoleOutputCP())
+            if PY2:
+                convert = lambda s: s.encode(encoding, 'replace') if is_wide(s) else s
+            else:
+                # convert back to wide strings, since on Python 3 the stream is a text file
+                convert = lambda s: (s.encode(encoding, 'replace') if is_wide(s) else s).decode(encoding, 'replace')
+            PY_STREAM.write(sep.join(convert(s) for s in a) + end)
+
     finally:
         if WIN_STREAM:
             WIN_STREAM.Close()
