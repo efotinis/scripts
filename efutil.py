@@ -22,7 +22,6 @@ import mathutil
 
 
 PY2 = sys.version_info.major == 2
-PY3 = sys.version_info.major == 3
 
 
 if os.name == 'nt':
@@ -189,7 +188,7 @@ def conout(*a, **kw):
             # PythonWin handles Unicode property, but its sys.stdout/stderr.encoding
             # is 'utf-8'; we prefer to decode 8-bit strings with CP_ACP ('mbcs')
             encoding = 'mbcs'
-            a = [s if PY3 or isinstance(s, unicode) else s.decode(encoding, 'replace')
+            a = [s if not PY2 or isinstance(s, unicode) else s.decode(encoding, 'replace')
                  for s in a]
             PY_STREAM.write(sep.join(a) + end)
             return
@@ -197,7 +196,7 @@ def conout(*a, **kw):
             # on Windows, this means the console, which is natively Unicode;
             # 8-bit strings should be decoded with the console output codepage
             encoding = 'cp' + str(win32console.GetConsoleOutputCP())
-            a = [s if PY3 or isinstance(s, unicode) else s.decode(encoding)
+            a = [s if not PY2 or isinstance(s, unicode) else s.decode(encoding)
                  for s in a]
             WIN_STREAM.WriteConsole(sep.join(a) + end)  # accepts both str and unicode
         else:
@@ -333,7 +332,7 @@ def open_csv(path, mode='r'):
     if PY2 and 'b' not in mode:
         mode += 'b'
     kwargs = {'mode': mode}
-    if PY3:
+    if not PY2:
         kwargs['newline'] = ''
     return open(path, **kwargs)
 
