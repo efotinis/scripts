@@ -5,13 +5,16 @@ compat: 2.7+, 3.3+
 platform: any
 """
 
+import six
+
+import contextlib
 import pickle
 import re
-
-try:
-    import urllib2 as urllib_req
-except ImportError:
-    import urllib.request as urllib_req
+if six.PY2:
+    from urllib2 import urlopen as urlopen_, Request
+    urlopen = lambda req: contextlib.closing(urlopen_(req))
+else:
+    from urllib.request import urlopen, Request
 
 try:
     import chardet
@@ -31,45 +34,54 @@ def _req_headers(user_headers):
     return headers
 
 
-def deduce_encoding(content, type_, charset):
-    """Guess missing encoding of textual responses.
+# based on requests.utils.get_encodings_from_content()
+# (note that requests 3 will stop using tag detection)
+HTML5_RX = re.compile(six.b(r'<meta.*?charset=["\']*(.+?)["\'>]'), re.IGNORECASE)
+HTML_RX = re.compile(six.b(r'<meta.*?content=["\']*;?charset=(.+?)["\'>]'), re.IGNORECASE)
+XML_RX = re.compile(six.b(r'^<\?xml.*?encoding=["\']*(.+?)["\'>]'))
 
-    Checks HTML/XML tags and uses the chardet module.
+
+def deduce_encoding(content, info):
+    """Guess missing encoding (mainly for textual responses).
+
+    Steps:
+        1. If specified in HTTP headers, return that
+        2. If non-text, return None
+        3. If HTML/XML, look in tags
+        4. use chardet (if available) or fallback to 'latin1'
     """
-    # FIXME: Python 2 compat
+    # Content-Type HTTP header
+    cset = info.getparam('charset') if six.PY2 else info.get_content_charset()
+    if cset:
+        return cset
 
-    # if specified in HTTP headers, don't second-guess
-    if charset:
-        return charset
+    # return nothing if non-text
+    maintype = info.getmaintype() if six.PY2 else info.get_content_maintype()
+    if maintype != 'text':
+        return None
 
-    # for HTML/XML, check tags
-    # based on requests.utils.get_encodings_from_content()
-    m = None
-    if 'html' in type_:
-        m = re.search(rb'<meta.*?charset=["\']*(.+?)["\'>]', content, re.IGNORECASE) or \
-            re.search(rb'<meta.*?content=["\']*;?charset=(.+?)["\'>]', content, re.IGNORECASE)
-    elif 'xml' in type_:
-        m = re.search(rb'^<\?xml.*?encoding=["\']*(.+?)["\'>]', content)
+    # snif HTML/XML tags (top 1K of content only)
+    subtype = info.getsubtype() if six.PY2 else info.get_content_subtype()
+    top_content = content[:1024]
+    if subtype == 'html':
+        m = HTML5_RX.search(top_content) or HTML_RX.search(top_content)
+    elif subtype == 'xml':
+        m = XML_RX.search(top_content)
+    else:
+        m = None
     if m:
-        return str(m.group(1), 'ascii')
+        return m.group(1).decode('ascii')
 
-    # for text, detect if chardet is available
-    if 'text' in type_ and chardet:
-        return chardet.detect(content)['encoding']
-
-    return None
+    # other text; detect or fallback to ISO-8859-1
+    return chardet.detect(content)['encoding'] if chardet else 'latin1'
 
 
 def wget(url, headers={}):
     """Get a Web resource. Useful for the interactive interpreter."""
-    # FIXME: Python 2 compat
-
-    req = urllib_req.Request(url, headers=_req_headers(headers))
-    with urllib_req.urlopen(req) as resp:
+    req = Request(url, headers=_req_headers(headers))
+    with urlopen(req) as resp:
         content = resp.read()
-        type_ = resp.info().get_content_type()
-        charset = resp.info().get_content_charset()
-    enc = deduce_encoding(content, type_, charset)
+        enc = deduce_encoding(content, resp.info())
     return content.decode(enc) if enc else content
 
 
@@ -109,7 +121,7 @@ class UrlCache(object):
         return data
 
 
-class HeadRequest(urllib_req.Request):
+class HeadRequest(Request):
     """HEAD request.
 
     Source: http://stackoverflow.com/questions/107405/how-do-you-send-a-head-http-request-in-python/2070916#2070916
@@ -139,5 +151,5 @@ class HeadRequest(urllib_req.Request):
 def headers(url, headers={}):
     """Get headers of web resource."""
     req = HeadRequest(url, headers=_req_headers(headers))
-    with urllib_req.urlopen(req) as resp:
+    with urlopen(req) as resp:
         return resp.info()
