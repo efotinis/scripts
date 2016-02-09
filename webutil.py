@@ -6,12 +6,17 @@ platform: any
 """
 
 import pickle
-
+import re
 
 try:
     import urllib2 as urllib_req
 except ImportError:
     import urllib.request as urllib_req
+
+try:
+    import chardet
+except ImportError:
+    chardet = None
 
 
 def _req_headers(user_headers):
@@ -26,15 +31,46 @@ def _req_headers(user_headers):
     return headers
 
 
+def deduce_encoding(content, type_, charset):
+    """Guess missing encoding of textual responses.
+
+    Checks HTML/XML tags and uses the chardet module.
+    """
+    # FIXME: Python 2 compat
+
+    # if specified in HTTP headers, don't second-guess
+    if charset:
+        return charset
+
+    # for HTML/XML, check tags
+    # based on requests.utils.get_encodings_from_content()
+    m = None
+    if 'html' in type_:
+        m = re.search(rb'<meta.*?charset=["\']*(.+?)["\'>]', content, re.IGNORECASE) or \
+            re.search(rb'<meta.*?content=["\']*;?charset=(.+?)["\'>]', content, re.IGNORECASE)
+    elif 'xml' in type_:
+        m = re.search(rb'^<\?xml.*?encoding=["\']*(.+?)["\'>]', content)
+    if m:
+        return str(m.group(1), 'ascii')
+
+    # for text, detect if chardet is available
+    if 'text' in type_ and chardet:
+        return chardet.detect(content)['encoding']
+
+    return None
+
+
 def wget(url, headers={}):
     """Get a Web resource. Useful for the interactive interpreter."""
+    # FIXME: Python 2 compat
+
     req = urllib_req.Request(url, headers=_req_headers(headers))
     with urllib_req.urlopen(req) as resp:
-        data = resp.read()
-    enc = resp.info().get_content_charset()
-    if enc:
-        data = data.decode(enc)
-    return data
+        content = resp.read()
+        type_ = resp.info().get_content_type()
+        charset = resp.info().get_content_charset()
+    enc = deduce_encoding(content, type_, charset)
+    return content.decode(enc) if enc else content
 
 
 class UrlCache(object):
