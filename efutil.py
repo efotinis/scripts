@@ -319,7 +319,7 @@ def nukeglobals(keep=None):
             break
     # remove items
     keep = keep or []
-    for item in main_globals.keys():
+    for item in list(main_globals.keys()):
         if not re.match(r'__.+__', item) and item not in keep:
             del main_globals[item]
 
