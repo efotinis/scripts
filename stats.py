@@ -1,6 +1,8 @@
 """Statistical functions.
 
 Source: <http://en.wikibooks.org/wiki/Statistics>
+
+Note that this was written before the stdlib's statistics module.
 """
 
 from __future__ import division

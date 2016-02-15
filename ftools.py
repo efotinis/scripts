@@ -4,13 +4,13 @@ import argparse
 import json
 from pathlib import Path
 import re
-import statistics
 import subprocess
 import sys
 
 import efutil
 import fsutil
 from PIL import Image
+import stats
 
 from status import Status
 
@@ -150,8 +150,8 @@ def do_videos(args):
     print('total videos:', len(durations))
     print('duration:')
     print('  total:', efutil.timefmt(sum(durations)))
-    print('  average:', efutil.timefmt(statistics.amean(durations)))
-    print('  stddev:', efutil.timefmt(statistics.stddev(durations)))
+    print('  average:', efutil.timefmt(stats.amean(durations)))
+    print('  stddev:', efutil.timefmt(stats.stddev(durations)))
     
 
 
