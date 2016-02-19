@@ -1,12 +1,11 @@
-# 2008.07.17  created
-# 2008.07.24  simplified getTokenForCompletion by using CmdLineUtils.tokenize
-
-import win32console
-import win32con
-import win32api
 import msvcrt
 import re
-import CmdLineUtils
+
+import win32api
+import win32con
+import win32console
+
+import strutil
 
 
 ##cin = win32console.GetStdHandle(win32console.STD_INPUT_HANDLE)
@@ -272,7 +271,7 @@ class _Input:
 
     def getTokenForCompletion(self):
         s = self.line[:self.pos]  # ignore anything past the cursor
-        for beg, end, token in CmdLineUtils.tokenize(s):
+        for beg, end, token in strutil.tokenize_quoted(s):
             if beg <= self.pos <= end:
                 return beg, token
         else:
