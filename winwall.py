@@ -1,16 +1,14 @@
 #!python3
 """Windows wallpaper functions."""
 
-import winreg
-
-import reg_util
 import win32api
-import win32con
+from win32con import REG_SZ, SPI_GETDESKWALLPAPER, SPI_SETDESKWALLPAPER, SPIF_SENDCHANGE, SPIF_UPDATEINIFILE
 import win32gui
 
+import winregx
 
-REG_ROOT = winreg.HKEY_CURRENT_USER
-REG_PATH = 'Control Panel\\Desktop'
+
+REGPATH = r'HKCU\Control Panel\Desktop'
 STYLE_VALUES = {  # WallpaperStyle/TileWallpaper values
     'tile': ('0', '1'),
     'center': ('0', '0'),
@@ -22,20 +20,20 @@ WIN7_ONLY_STYLES = ('fit', 'fill')
 IS_WIN7_OR_NEWER = win32api.GetVersionEx()[:2] >= (6, 1)
 
 
-def _getval(key, name, typ):
+def _getval(key, name, reqtype):
     """Get a Registry value of a specific type."""
-    val, typ = winreg.QueryValueEx(key, name)
-    if typ != typ:
+    val, type_ = key.getvalue(name)
+    if type_ != reqtype:
         raise TypeError('unexpected value type')
     return val
 
 
 def get():
     """Get path and style of wallpaper."""
-    with reg_util.open_key(REG_ROOT, REG_PATH) as k:
-        s = _getval(k, 'WallpaperStyle', winreg.REG_SZ)
+    with winregx.open(None, REGPATH) as k:
+        s = _getval(k, 'WallpaperStyle', REG_SZ)
         if s == '0':
-            s = _getval(k, 'TileWallpaper', winreg.REG_SZ)
+            s = _getval(k, 'TileWallpaper', REG_SZ)
             style = 'tile' if s == '1' else 'center'
         elif s == '2':
             style = 'stretch'
@@ -46,7 +44,7 @@ def get():
         else:
             msg = 'unexpected WallpaperStyle value data: {}'.format(s)
             raise ValueError(msg)
-    return win32gui.SystemParametersInfo(win32con.SPI_GETDESKWALLPAPER), style
+    return win32gui.SystemParametersInfo(SPI_GETDESKWALLPAPER), style
 
 
 def set(path=None, style=None):
@@ -59,13 +57,11 @@ def set(path=None, style=None):
         if style in WIN7_ONLY_STYLES and not IS_WIN7_OR_NEWER:
             raise ValueError('fit/fill styles require Windows 7 or later')
         style, tile = STYLE_VALUES[style]
-        with reg_util.create_key(REG_ROOT, REG_PATH) as k:
-            winreg.SetValueEx(k, 'WallpaperStyle', 0, winreg.REG_SZ, style)
-            winreg.SetValueEx(k, 'TileWallpaper', 0, winreg.REG_SZ, tile)
+        with winregx.create(None, REGPATH) as k:
+            k.setvalue('WallpaperStyle', (style, REG_SZ))
+            k.setvalue('TileWallpaper', (tile, REG_SZ))
     win32gui.SystemParametersInfo(
-        win32con.SPI_SETDESKWALLPAPER,
-        path,
-        win32con.SPIF_SENDCHANGE | win32con.SPIF_UPDATEINIFILE)
+        SPI_SETDESKWALLPAPER, path, SPIF_SENDCHANGE | SPIF_UPDATEINIFILE)
 
 
 def remove():
