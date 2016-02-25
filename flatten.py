@@ -81,18 +81,19 @@ def flatten(patt, opt):
 
 def parse_cmdline():
     ap = argparse.ArgumentParser(
-        description='move/copy/hardlink multiple files to a single directory',
-        add_help=False)
+        description='collect multiple files to a single directory')
 
     add = ap.add_argument
     add('sources', metavar='GLOB', nargs='+',
         help='the source glob patterns')
     add('-o', dest='outdir', default='.',
         help='output directory; will be created if needed; default: "%(default)s"')
-
-    add('-a', dest='action', choices='mch', default='m',
+    add('-a', dest='action', choices='mch', default='c',
         help='the action to perform on each file; one of: m=move, c=copy, h=hardlink; '
              'default: "%(default)s"')
+
+    #add('-J', dest='nodirjoin', action='store_true',
+    #   help='do not include parent dir names')
 
 ##    add('-k', dest='keeporiginals', action='store_true', 
 ##        help='Keep original files and empty directories. If omitted, files are '
@@ -104,8 +105,6 @@ def parse_cmdline():
 ##        help='Uses the specified string to join the name of the parent dirs '
 ##             'in front of each filename. Useful to avoid collisions or to '
 ##             'keep the dir names as part of the output.')
-    add('-?', action='help',
-        help='this help')
 
     args = ap.parse_args()
 

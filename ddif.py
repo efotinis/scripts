@@ -19,7 +19,7 @@ else:
     CASE_SENSITIVE_PLATFORM_PATHS = None  # will err if user selects it
 
 
-if efutil.PY3:
+if not efutil.PY2:
     def cmp(a, b):
         if a < b:
             return -1

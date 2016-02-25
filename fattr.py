@@ -1,3 +1,4 @@
+#! python3
 """File attribute statistics."""
 
 import os
@@ -98,5 +99,5 @@ if __name__ == '__main__':
         max_flag_name_len = max(len(s) for s in FLAG_NAMES.values())
         for n in FLAGS:
             if counter[n]:
-                print '%*s (0x%08x) %6d' % (max_flag_name_len, FLAG_NAMES[n], n, counter[n])
-        print 'total items: %d' % item_count
+                print('%*s (0x%08x) %6d' % (max_flag_name_len, FLAG_NAMES[n], n, counter[n]))
+        print('total items: %d' % item_count)
