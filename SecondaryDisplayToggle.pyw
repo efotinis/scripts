@@ -28,6 +28,13 @@ def toggleAdapter(dev):
     # this isn't needed, because ChangeDisplaySettingsEx gets it as a param
     #dm.DeviceName = dev.DeviceName
     if isAttached(dev):
+
+##        cur = wd.getMode(dev.DeviceName)
+##        print('*** current mode: {}x{} at {}x{} {}-bit {}Hz'.format(
+##            cur.PelsWidth, cur.PelsHeight,
+##            cur.Position_x, cur.Position_y, 
+##            cur.BitsPerPel, cur.DisplayFrequency))
+
         dm.Fields = (win32con.DM_POSITION |  # DM_POSITION is required
                      win32con.DM_PELSWIDTH | win32con.DM_PELSHEIGHT)
         dm.PelsWidth, dm.PelsHeight = 0, 0
@@ -37,12 +44,27 @@ def toggleAdapter(dev):
                       win32con.DM_BITSPERPEL | win32con.DM_DISPLAYFREQUENCY)
         # set arbitrary mode (here the display is placed left of the primary
         # with their top sides aligned)
-        dm.Position_x, dm.Position_y = -1024, 0
-        dm.PelsWidth, dm.PelsHeight = 1024, 768
-        dm.BitsPerPel, dm.DisplayFrequency = 32, 75
-    res = win32api.ChangeDisplaySettingsEx(dev.DeviceName, dm, win32con.CDS_UPDATEREGISTRY)
+        dm.Position_x, dm.Position_y = -1440, 90
+        dm.PelsWidth, dm.PelsHeight = 1440, 900
+        dm.BitsPerPel, dm.DisplayFrequency = 32, 60
+
+    # NOTE: Using a single ChangeDisplaySettingsEx() call doesn't work (it
+    # used to before Windows 7, but not anymore). The required steps are:
+    #   1. ChangeDisplaySettingsEx(dev, mode, CDS_UPDATEREGISTRY | CDS_NORESET)
+    #      for each change. This also has the added benefit of allowing multiple
+    #      changes to be performed simultaneously.
+    #   2. ChangeDisplaySettingsEx(None, None, 0)
+    #      to actually apply the changes.
+    # Using just CDS_UPDATEREGISTRY makes ChangeDisplaySettingsEx succeeded,
+    # but the screen just flickers and no changes are actually performed.
+
+    res = win32api.ChangeDisplaySettingsEx(dev.DeviceName, dm, win32con.CDS_UPDATEREGISTRY | win32con.CDS_NORESET)
     if (res != win32con.DISP_CHANGE_SUCCESSFUL):
         errorMsg('Could not change display settings: ' + windisplay.SET_MODE_RET_STR[res])
+
+    res = win32api.ChangeDisplaySettingsEx(None, None, 0)
+    if (res != win32con.DISP_CHANGE_SUCCESSFUL):
+        errorMsg('Could not finalize display settings: ' + windisplay.SET_MODE_RET_STR[res])
 
 
 # get the real, non-primary adapters
