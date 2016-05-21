@@ -12,10 +12,8 @@ import sys
 import warnings
 
 if os.name == 'nt':
-    import shellutil
     import win32console
 else:
-    shellutil = None
     win32console = None
 
 import mathutil
@@ -245,15 +243,6 @@ def conerr(*a, **kw):
     """Similar to conout(), but with error=True."""
     kw['error'] = True
     conout(*a, **kw)
-
-
-def gotoDesktop():
-    """Change working directory to current user's desktop."""
-    if os.name == 'nt':
-        path = shellutil.SpecialFolders.desktop
-    else:
-        path = os.path.expanduser('~/Desktop')
-    os.chdir(path)
 
 
 def prettysize(n, iec=False):
