@@ -1,23 +1,26 @@
-#!python2
-# File hash calculator.
+#!python
+"""File hash calculator."""
 
-import os
-import sys
-import hashlib
-import binascii
-import struct
-import re
-import glob
-import itertools
+from __future__ import print_function
 import argparse
-import copy
+import binascii
+import glob
+import hashlib
+import itertools
+import os
+import struct
+import sys
+
+try:
+    from itertools import izip
+except ImportError:
+    izip = zip
 
 import console_stuff
 import fileutil
-import winfixargv
 
 
-HASH_TYPES = set(hashlib.algorithms + ('crc32',))
+HASH_TYPES = hashlib.algorithms_available | set(['crc32'])
 DEFAULT_HASH_TYPE = 'md5'
 DEFAULT_BUFFER_SIZE = 64 * 1024
 
@@ -71,8 +74,7 @@ class Crc32:
 def parse_args():
     parser = argparse.ArgumentParser(
         description='calculate file hashes',
-        epilog='size and offset values can be a float with an SI unit suffix',
-        add_help=False)
+        epilog='size and offset values can be a float with an SI unit suffix')
 
     add = parser.add_argument
 
@@ -100,7 +102,6 @@ def parse_args():
               'set automatically when STDOUT is not a console')
     add('-G', dest='glob', action='store_false', default=True,
          help='disable globbing of input paths')
-    add('-?', action='help', help='this help')
 
     args = parser.parse_args()
 
@@ -157,13 +158,13 @@ class ProgressIndicator(object):
         self.total = total
         self.spinner = itertools.cycle('/-\\|')
         # NOTE: if name is too long, SamePosOutput will only erase the last row
-        print name, '... ',
+        print(name, '... ', end='')
         self.spo = console_stuff.SamePosOutput()
     def update(self, n):
         self.current += n
         self.spo.restore()
         percent = (100.0 * self.current / self.total if self.total else 0)
-        print '%.0f%% %s' % (percent, self.spinner.next())
+        print('%.0f%% %s' % (percent, next(self.spinner)))
     def clear(self):
         self.spo.pos.X = 0  # include the name
         self.spo.restore(True)
@@ -193,7 +194,7 @@ class EmptyGlobHandler(object):
     def __init__(self):
         self.occured = False
     def __call__(self, patt):
-        print >>sys.stderr, 'no matches for "%s"' % patt
+        print('no matches for "%s"' % patt, file=sys.stderr)
         self.occured = True
         
 
@@ -237,7 +238,7 @@ if __name__ == '__main__':
     error_occured = False
     expected_hashes = args.verify or itertools.repeat(None)
 
-    for (path, expected_hash) in itertools.izip(filepaths, expected_hashes):
+    for (path, expected_hash) in izip(filepaths, expected_hashes):
         try:
             fp = open(path, 'rb')
             hashobj = args.hash_type()
@@ -248,18 +249,19 @@ if __name__ == '__main__':
                 if args.uppercase:
                     hash = hash.upper()
                 if args.invert:
-                    print path, hash
+                    print(path, hash)
                 else:
-                    print hash, path
+                    print(hash, path)
             else:
                 if hash != expected_hash:
-                    print 'FAIL ', path
-                    print >>sys.stderr, 'hash mismatch for "%s": expected %s, got %s' % (path, expected_hash, hash)
+                    print('FAIL ', path)
+                    print('hash mismatch for "%s": expected %s, got %s' % (path, expected_hash, hash),
+                          file=sys.stderr)
                     error_occured = True
                 else:
-                    print 'OK   ', path
+                    print('OK   ', path)
         except (IOError, EOFError) as x:
-            print >>sys.stderr, 'error while hashing "%s": %s' % (path, x)
+            print('error while hashing "%s": %s' % (path, x), file=sys.stderr)
 
     if empty_globs.occured:
         error_occured = True
