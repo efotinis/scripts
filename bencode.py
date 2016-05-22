@@ -12,8 +12,6 @@ except ImportError:
     from io import BytesIO as DataIO
     str2bytes = lambda s: s.encode('latin1')
 
-import six
-
 import fileutil
 
 
@@ -24,7 +22,7 @@ def loads(s):
 
 def load(f):
     """Read an object from a file (or file path)."""
-    if isinstance(f, six.string_types):
+    if not hasattr(f, 'read'):
         f = open(f, 'rb')
     return readany(f)
 
@@ -38,7 +36,7 @@ def dumps(obj):
 
 def dump(f, obj):
     """Write an object to a file (or file path)."""
-    if isinstance(f, six.string_types):
+    if not hasattr(f, 'write'):
         f = open(f, 'wb')
     writeany(f, obj)
 
