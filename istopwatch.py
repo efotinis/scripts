@@ -1,5 +1,7 @@
+#!python
 """Interactive stopwatch."""
 
+from __future__ import print_function
 import os
 import stopwatch
 import mathutil
@@ -9,7 +11,7 @@ if os.name == 'nt':
     import msvcrt
     def getch():
         ch = msvcrt.getch()
-        if ch in '\0\xe0':
+        if ch in b'\0\xe0':
             ch += getch()
         return ch
 else:
@@ -24,7 +26,7 @@ def time_str(sec):
 
 
 def showhelp():
-    print '''Interactive stopwatch.
+    print('''Interactive stopwatch.
 Keys:
     Space   start/stop
     Tab     status
@@ -34,25 +36,25 @@ Keys:
     Del     reset & stop
     ^Del    reset & start
     F1      this help
-    Esc     quit'''
+    Esc     quit''')
 
 
-KEY_STARTSTOP   = ' '           # Space
-KEY_STATUS      = '\t'          # Tab
-KEY_RESET       = '\xe0S'       # Del
-KEY_RESETSTART  = '\xe0\x93'    # ^Del
-KEY_ADDLAP      = '\r'          # Enter
-KEY_SHOWLAPS    = 'l'
-KEY_CLEARLAPS   = 'L'
-KEY_HELP        = '\0;'         # F1
-KEY_EXIT        = '\x1b'        # Esc
+KEY_STARTSTOP   = b' '           # Space
+KEY_STATUS      = b'\t'          # Tab
+KEY_RESET       = b'\xe0S'       # Del
+KEY_RESETSTART  = b'\xe0\x93'    # ^Del
+KEY_ADDLAP      = b'\r'          # Enter
+KEY_SHOWLAPS    = b'l'
+KEY_CLEARLAPS   = b'L'
+KEY_HELP        = b'\0;'         # F1
+KEY_EXIT        = b'\x1b'        # Esc
 
 
 def print_status(sw):
-    print '%s  %s  laps:%d' % (
+    print('%s  %s  laps:%d' % (
         time_str(sw.get()),
         'running' if sw.isrunning() else 'stopped',
-        len(laps))
+        len(laps)))
 
 
 if __name__ == '__main__':
@@ -76,38 +78,38 @@ if __name__ == '__main__':
         elif cmd == KEY_RESET:
             laps = []
             sw.reset()
-            print 'reset'
+            print('reset')
             print_status(sw)
 
         elif cmd == KEY_RESETSTART:
             laps = []
             sw.reset(autostart=True)
-            print 'reset'
+            print('reset')
             print_status(sw)
 
         elif cmd == KEY_ADDLAP:
             if not sw.isrunning():
-                print 'not running'
+                print('not running')
             else:
                 last_lap = laps[-1] if laps else 0
                 i = len(laps)
                 t = sw.get()
                 laps += [t]
-                print '  %3d: +%s  %s' % (i + 1, time_str(t - last_lap), time_str(t))
+                print('  %3d: +%s  %s' % (i + 1, time_str(t - last_lap), time_str(t)))
 
         elif cmd == KEY_SHOWLAPS:
             if not laps:
-                print 'no laps recorded'
+                print('no laps recorded')
             else:
-                print 'laps:'
+                print('laps:')
                 last_lap = 0
                 for i, t in enumerate(laps):
-                    print '  %3d: +%s  %s' % (i + 1, time_str(t - last_lap), time_str(t))
+                    print('  %3d: +%s  %s' % (i + 1, time_str(t - last_lap), time_str(t)))
                     last_lap = t
 
         elif cmd == KEY_CLEARLAPS:
             laps = []
-            print 'laps cleared'
+            print('laps cleared')
 
         elif cmd == KEY_HELP:
             showhelp()
@@ -116,5 +118,5 @@ if __name__ == '__main__':
             break
 
         else:
-            #print repr(cmd)
+            #print(repr(cmd))
             pass

@@ -1,5 +1,7 @@
+#!python
 """Stop watch class."""
 
+from __future__ import print_function
 import time
 
 
@@ -46,13 +48,13 @@ if __name__ == '__main__':
 
     intervals = (10, 50, 200)
     for msec in intervals:
-        print 'sleeping for %d msec...' % msec,
+        print('sleeping for %d msec...' % msec, end=' ')
         t.reset(autostart=True)
         time.sleep(msec / 1000.0)
         t.stop()
-        print '%.2f msec measured' % (t.get() * 1000.0)
+        print('%.2f msec measured' % (t.get() * 1000.0))
 
-    print 'resolution in sec:'
+    print('resolution in sec:')
     for i in range(5):
         t.start()
         prev = t.get()
@@ -60,4 +62,4 @@ if __name__ == '__main__':
             cur = t.get()
             if cur > prev:
                 break
-        print '  %.6e' % (cur - prev)
+        print('  %.6e' % (cur - prev))
