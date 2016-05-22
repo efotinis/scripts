@@ -17,7 +17,7 @@ REDDIT_REQUEST_DELAY_SEC = 2
 SFW_URL = 'http://random.reddit.com/'
 NSFW_URL = 'http://randnsfw.reddit.com/'
 DEFAULT_HISTORY_PATH = '%AppData%\\randit-seen.log'
-NAME_RX = re.compile(r'^http://www.reddit.com/r/(.*)/$')
+NAME_RX = re.compile(r'^https?://www.reddit.com/r/(.*)/$')
 
 
 def get_destination(url):
@@ -66,7 +66,10 @@ def parse_args():
 
 def get_name(url):
     """Extract the subreddit name from its URL."""
-    return NAME_RX.match(url).group(1)
+    m = NAME_RX.match(url)
+    if not m:
+        raise ValueError('could not find sub name in "{}"'.format(url))
+    return m.group(1)
 
 
 def url_generator(nsfw, count, history):
