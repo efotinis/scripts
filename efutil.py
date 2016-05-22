@@ -1,9 +1,11 @@
+#encoding: utf-8
 """Miscellaneous utilities."""
 
 from __future__ import print_function
 import collections
 import contextlib
 import csv
+import ctypes
 import datetime
 import itertools
 import os
@@ -11,12 +13,36 @@ import re
 import sys
 import warnings
 
-if os.name == 'nt':
-    import win32console
-else:
-    win32console = None
-
 import mathutil
+
+from ctypes.wintypes import HANDLE, DWORD, UINT, BOOL
+
+
+GetStdHandle = ctypes.windll.kernel32.GetStdHandle
+GetStdHandle.restype = HANDLE
+GetStdHandle.argtypes = [DWORD]
+
+STD_OUTPUT_HANDLE = DWORD(-11)
+STD_ERROR_HANDLE = DWORD(-12)
+
+GetConsoleOutputCP = ctypes.windll.kernel32.GetConsoleOutputCP
+GetConsoleOutputCP.restype = UINT
+GetConsoleOutputCP.argtypes = []
+
+WriteConsoleW = ctypes.windll.kernel32.WriteConsoleW
+WriteConsoleW.restype = BOOL
+WriteConsoleW.argtypes = [HANDLE, ctypes.c_void_p, DWORD, ctypes.POINTER(ctypes.c_ulong), ctypes.c_void_p]
+
+CloseHandle = ctypes.windll.kernel32.CloseHandle
+CloseHandle.restype = BOOL
+CloseHandle.argtypes = [HANDLE]
+
+
+def WriteConsole(h, s):
+    written = DWORD()
+    if not WriteConsoleW(h, s, len(s), ctypes.byref(written), None):
+        raise Exception('WriteConsoleW failed')
+    return written.value
 
 
 PY2 = sys.version_info.major == 2
@@ -27,8 +53,7 @@ def winconout():
 
     Note than this may return None even on Windows.
     """
-    return win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE) \
-           if os.name == 'nt' else None
+    return GetStdHandle(STD_OUTPUT_HANDLE) if os.name == 'nt' else None
 
 
 def winconerr():
@@ -36,8 +61,7 @@ def winconerr():
 
     Note than this may return None even on Windows.
     """
-    return win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE) \
-           if os.name == 'nt' else None
+    return GetStdHandle(STD_ERROR_HANDLE) if os.name == 'nt' else None
 
 
 class InFile:
@@ -149,7 +173,7 @@ def uprint(s):
     """
     h = winconout and winconout()
     if h:
-        h.WriteConsole(s + '\n')
+        WriteConsole(h, s + '\n')
         h.Close()
     else:
         print(s)
@@ -216,13 +240,13 @@ def conout(*a, **kw):
         elif context == 'console':
             # the Windows console uses Unicode natively and
             # decodes narrow strings with the output codepage
-            encoding = 'cp' + str(win32console.GetConsoleOutputCP())
+            encoding = 'cp' + str(GetConsoleOutputCP())
             convert = lambda s: s if is_wide(s) else s.decode(encoding, 'replace')
-            WIN_STREAM.WriteConsole(sep.join(convert(s) for s in a) + end)
+            WriteConsole(WIN_STREAM, sep.join(convert(s) for s in a) + end)
         else:  # 'redirect'
             # files/pipes are inherently narrow,
             # so we convert wide strings using the output codepage;
-            encoding = 'cp' + str(win32console.GetConsoleOutputCP())
+            encoding = 'cp' + str(GetConsoleOutputCP())
             if PY2:
                 convert = lambda s: s.encode(encoding, 'replace') if is_wide(s) else s
             else:
@@ -232,7 +256,8 @@ def conout(*a, **kw):
 
     finally:
         if WIN_STREAM:
-            WIN_STREAM.Close()
+            # should not close std handle
+            pass#CloseHandle(WIN_STREAM)
 
 
 if os.name != 'nt':
