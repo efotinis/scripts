@@ -1,17 +1,21 @@
 #! python3
 """File attribute statistics."""
 
-import os
-import sys
 import argparse
 import collections
+import ctypes
+from ctypes.wintypes import DWORD, LPCWSTR
+import os
+import sys
 
 import efutil
-import six
-import win32file
 
 
 INVALID_FILE_ATTRIBUTES = 0xffffffff
+
+GetFileAttributesW = ctypes.windll.kernel32.GetFileAttributesW
+GetFileAttributesW.restype = DWORD
+GetFileAttributesW.argtypes = [LPCWSTR]
 
 
 FLAG_NAMES = collections.defaultdict(
@@ -52,7 +56,7 @@ def parse_args():
     group.add_argument('-D', dest='dirs_only', action='store_true', help='process directories only')
 
     args = ap.parse_args()
-    args.paths = map(six.text_type, args.paths)
+    args.paths = [efutil.promote_input_to_unicode(s) for s in args.paths]
     return args
 
 
@@ -84,7 +88,7 @@ if __name__ == '__main__':
                 items += f
             for s in items:
                 path = os.path.join(p, s)
-                attr = win32file.GetFileAttributesW(path) & 0xffffffff
+                attr = GetFileAttributesW(path) & 0xffffffff
                 if attr == INVALID_FILE_ATTRIBUTES:
                     efutil.conerr('could not get attributes of "%s"' % path)
                     continue
