@@ -1,7 +1,5 @@
-"""Toggle the secondary monitor adapter to the desktop.
+"""Toggle the secondary monitor adapter to the desktop."""
 
-2009.01.01  created
-"""
 import windisplay
 import efutil
 import win32api
@@ -25,25 +23,21 @@ def isAttached(dev):
 
 def toggleAdapter(dev):
     dm = pywintypes.DEVMODEType()
-    # this isn't needed, because ChangeDisplaySettingsEx gets it as a param
-    #dm.DeviceName = dev.DeviceName
     if isAttached(dev):
-
 ##        cur = wd.getMode(dev.DeviceName)
 ##        print('*** current mode: {}x{} at {}x{} {}-bit {}Hz'.format(
 ##            cur.PelsWidth, cur.PelsHeight,
 ##            cur.Position_x, cur.Position_y, 
 ##            cur.BitsPerPel, cur.DisplayFrequency))
-
-        dm.Fields = (win32con.DM_POSITION |  # DM_POSITION is required
-                     win32con.DM_PELSWIDTH | win32con.DM_PELSHEIGHT)
+        # NOTE: all these field flags are required, despite the MSDN doc
+        dm.Fields = win32con.DM_POSITION | win32con.DM_PELSWIDTH | win32con.DM_PELSHEIGHT
+        dm.Position_x, dm.Position_y = 0, 0
         dm.PelsWidth, dm.PelsHeight = 0, 0
     else:
         dm.Fields |= (win32con.DM_POSITION |
                       win32con.DM_PELSWIDTH | win32con.DM_PELSHEIGHT |
                       win32con.DM_BITSPERPEL | win32con.DM_DISPLAYFREQUENCY)
-        # set arbitrary mode (here the display is placed left of the primary
-        # with their top sides aligned)
+        # these values should be configurable
         dm.Position_x, dm.Position_y = -1440, 90
         dm.PelsWidth, dm.PelsHeight = 1440, 900
         dm.BitsPerPel, dm.DisplayFrequency = 32, 60
@@ -57,6 +51,10 @@ def toggleAdapter(dev):
     #      to actually apply the changes.
     # Using just CDS_UPDATEREGISTRY makes ChangeDisplaySettingsEx succeeded,
     # but the screen just flickers and no changes are actually performed.
+    #
+    # See:
+    # - http://stackoverflow.com/questions/3934730/c-application-to-detach-secondary-monitor
+    # - http://stackoverflow.com/questions/19643985/how-to-disable-a-secondary-monitor-with-changedisplaysettingsex
 
     res = win32api.ChangeDisplaySettingsEx(dev.DeviceName, dm, win32con.CDS_UPDATEREGISTRY | win32con.CDS_NORESET)
     if (res != win32con.DISP_CHANGE_SUCCESSFUL):
@@ -68,7 +66,8 @@ def toggleAdapter(dev):
 
 
 # get the real, non-primary adapters
-devs = [d for d in windisplay.adapters() if not (isMirror(d) or isPrimary(d))]
+devs = [d for d in windisplay.adapters()
+        if not isMirror(d) and not isPrimary(d)]
 
 devcount = len(devs)
 if devcount == 0:
