@@ -1,3 +1,4 @@
+#!python
 """Bencode utilities.
 
 Format specs:
@@ -124,11 +125,5 @@ def writeany(f, obj):
         f.write(b'e')
     elif isinstance(obj, bytes):
         f.write(str2bytes(str(len(obj))) + b':' + obj)
-    else:
-        f.write(b'i' + str2bytes(str(obj)) + b'e')
-
-
-##fp = 'c:/users/elias/desktop/1.dat'
-##fp2 = 'c:/users/elias/desktop/2.dat'
-##dump(fp2, load(fp))
-##assert open(fp, 'rb').read() == open(fp2, 'rb').read()
+    else:  # expect int-convertible
+        f.write(b'i' + str2bytes(str(int(obj))) + b'e')
