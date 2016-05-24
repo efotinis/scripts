@@ -1,20 +1,15 @@
+#!python3
 """MPC-HC utilities."""
 
-from __future__ import print_function, division
 import collections
 import itertools
 import os
 import re
+from winreg import HKEY_CURRENT_USER, REG_SZ, REG_DWORD, KEY_WRITE
 
 import winregx
 
-try:
-    from _winreg import HKEY_CURRENT_USER, REG_SZ, REG_DWORD, KEY_WRITE
-except ImportError:
-    from winreg import HKEY_CURRENT_USER, REG_SZ, REG_DWORD, KEY_WRITE
 
-
-#ROOT = 'Software\\Gabest\\Media Player Classic\\'  # used before ~v1.7.2
 ROOT = 'Software\\MPC-HC\\MPC-HC\\'
 
 REG_FAVORITES = ROOT + 'Favorites\\Files'
