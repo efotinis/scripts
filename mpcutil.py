@@ -65,7 +65,7 @@ def get_list(key, basename, type_=REG_SZ, start=0, end=None):
         if end is not None and i >= end:
             break
         name = basename + str(i)
-        data, curtype = key.getvalue(name)
+        data, curtype = key.getvalue(name, (None, None))
         if data is None:
             if end is None:
                 break
