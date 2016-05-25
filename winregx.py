@@ -5,7 +5,7 @@ import datetime
 import itertools
 import winreg
 
-from winerror import ERROR_NO_MORE_ITEMS
+from errno import EINVAL
 
 
 ROOTNAMES = {
@@ -32,7 +32,7 @@ def subkeys(key):
         try:
             yield winreg.EnumKey(key, i)
         except OSError as x:
-            if x.winerror == ERROR_NO_MORE_ITEMS:
+            if x.errno == EINVAL:
                 return
             raise
 
@@ -43,7 +43,7 @@ def values(key):
         try:
             yield winreg.EnumValue(key, i)
         except OSError as x:
-            if x.winerror == ERROR_NO_MORE_ITEMS:
+            if x.errno == EINVAL:
                 return
             raise
 
