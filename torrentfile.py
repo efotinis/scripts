@@ -1,8 +1,10 @@
+#!python
 """Torrent file utilities.
 
 When run as a script, it displays various types of information.
 """
 
+from __future__ import print_function
 import os
 import re
 import hashlib
@@ -13,6 +15,12 @@ import argparse
 import glob
 
 
+try:
+    BSEP = bytes(os.path.sep, 'ascii')
+except TypeError:
+    BSEP = bytes(os.path.sep)
+
+
 def calchash(obj):
     """String hash of a torrent bencode object.
 
@@ -21,17 +29,17 @@ def calchash(obj):
         Index >> Protocol Design Discussion >> How to get Hash out of .torrent file ?
         http://forum.utorrent.com/viewtopic.php?id=47411
     """
-    data = bencode.dumps(obj['info'])
+    data = bencode.dumps(obj[b'info'])
     return hashlib.sha1(data).hexdigest()
 
 
 def filesinfo(obj):
     """Generate the full path and size of each file in a torrent bencode object."""
-    if 'files' in obj['info']:
-        for entry in obj['info']['files']:
-            yield os.path.sep.join(entry['path']), entry['length']
+    if b'files' in obj[b'info']:
+        for entry in obj[b'info'][b'files']:
+            yield BSEP.join(entry[b'path']), entry[b'length']
     else:
-        yield obj['info']['name'], obj['info']['length']
+        yield obj[b'info'][b'name'], obj[b'info'][b'length']
 
 
 def parse_args():
@@ -54,7 +62,7 @@ def gen_file_paths(patterns):
     for patt in patterns:
         paths = glob.glob(patt)
         if not paths:
-            print >>sys.stderr, 'nothing matched "%d"' % patt
+            print('nothing matched "%s"' % patt, file=sys.stderr)
             continue
         for path in paths:
             yield path
@@ -68,26 +76,26 @@ if __name__ == '__main__':
         try:
             obj = bencode.load(open(path, 'rb'))
         except Exception as x:
-            print >>sys.stderr, 'could not load "%s"; %s' % (path, x)
+            print('could not load "%s"; %s' % (path, x), file=sys.stderr)
             continue
 
         if args.hashes:
             try:
                 hash = calchash(obj)
             except Exception as x:
-                print >>sys.stderr, 'could not get hash of "%s"; %s' % (path, x)
+                print('could not get hash of "%s"; %s' % (path, x), file=sys.stderr)
             else:
-                print hash, path
+                print(hash, path)
 
         elif args.listing:            
-            print path
+            print(path)
             for item_path, size in filesinfo(obj):
-                print '  %15d  %s' % (size, item_path)
+                print('  %15d  %s' % (size, item_path))
 
         else:
-            print '----', path
+            print('----', path)
             try:
-                obj['info']['pieces'] = '<expunged>'
+                obj[b'info'][b'pieces'] = '<expunged>'
             except KeyError:
                 pass
             pprint.pprint(obj)
