@@ -9,8 +9,11 @@
 :: the console contents of nested CMD instances
 eatlines 2
 
+if %computername% == EFCORE set scriptsdir=d:\scripts
+if %computername% == LAP7 set scriptsdir=c:\scripts
+
 :: common shorthands
-doskey /macrofile=d:\scripts\common.mac
+doskey /macrofile=%scriptsdir%\common.mac
 
 :: switch to ANSI codepage
 chcp 1253 >nul
