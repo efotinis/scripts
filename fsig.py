@@ -16,6 +16,7 @@ try:
 except ImportError:
     izip = zip
 
+import efutil
 import console_stuff
 import fileutil
 
@@ -23,27 +24,6 @@ import fileutil
 HASH_TYPES = hashlib.algorithms_available | set(['crc32'])
 DEFAULT_HASH_TYPE = 'md5'
 DEFAULT_BUFFER_SIZE = 64 * 1024
-
-
-def size_param(s):
-    """Custom 'size' type checker for argparse.
-
-    Parses a string of a float with an optional size prefix and returns a truncated int.
-    """
-    UNITS = 'kmgtpezy'
-    if not s:
-        raise argparse.ArgumentTypeError('empty size value')
-
-    unit = UNITS.find(s[-1].lower())
-    if unit == -1:
-        number, factor = s, 1
-    else:
-        number, factor = s[:-1], 1024 ** (unit + 1)
-
-    try:
-        return int(float(number) * factor)
-    except ValueError:
-        raise argparse.ArgumentTypeError('bad size value: "%s"' % number)
 
 
 class Crc32:
@@ -84,11 +64,11 @@ def parse_args():
         default=DEFAULT_HASH_TYPE, metavar='TYPE',
         help='hash type; one of ' + ','.join(sorted(HASH_TYPES)) + '; '
              'default: %(default)s')
-    add('-o', dest='offset', type=size_param, default=0,
+    add('-o', dest='offset', type=efutil.size_arg, default=0,
          help='starting file offset; default: %(default)s')
-    add('-l', dest='length', type=size_param, default=-1,
+    add('-l', dest='length', type=efutil.size_arg, default=-1,
          help='number of bytes to process (or -1 for all); default: %(default)s')
-    add('-b', dest='buflen', type=size_param, default=DEFAULT_BUFFER_SIZE,
+    add('-b', dest='buflen', type=efutil.size_arg, default=DEFAULT_BUFFER_SIZE,
          help='read buffer size; default: %(default)s')
     add('-u', dest='uppercase', action='store_true',
          help='output hashes in uppercase')
