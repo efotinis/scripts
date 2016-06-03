@@ -214,10 +214,7 @@ def files_gen(patterns, empty_handler=None):
             empty_handler(patt)
 
 
-if __name__ == '__main__':
-    args = parse_args()
-
-
+def main(args):
     # FIXME: iscon() still returns True if running on console with stdout redirected.
     # It only returns False on PythonWin.
 ##    if console_stuff.iscon(sys.stdout.fileno()):
@@ -267,3 +264,10 @@ if __name__ == '__main__':
         error_occured = True
 
     sys.exit(1 if error_occured else 0)
+
+
+if __name__ == '__main__':
+    try:
+        main(parse_args())
+    except KeyboardInterrupt:
+        sys.exit('cancelled')
