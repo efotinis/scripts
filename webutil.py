@@ -77,12 +77,24 @@ def deduce_encoding(content, info):
 
 
 def wget(url, headers={}):
-    """Get a Web resource. Useful for the interactive interpreter."""
+    """Get a Web resource. Text is automatically decoded.
+
+    Useful for the interactive interpreter.
+    """
+    data, enc = wget_raw_and_encoding(url, headers)
+    return data.decode(enc) if enc else data
+
+
+def wget_raw_and_encoding(url, headers={}):
+    """Get a raw Web resource and its encoding (if text).
+
+    Useful when the original data is needed (e.g. for hashing).
+    """
     req = Request(url, headers=_req_headers(headers))
     with urlopen(req) as resp:
         content = resp.read()
         enc = deduce_encoding(content, resp.info())
-    return content.decode(enc) if enc else content
+    return content, enc
 
 
 class UrlCache(object):
