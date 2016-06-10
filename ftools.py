@@ -89,7 +89,7 @@ def parse_args():
     return parser.parse_args()
 
 
-VIDEO_EXTS = set('.' + s for s in 'avi wmv mp4 m4v mov mpeg mpg rm flv ogm mkv ram asf'.split())
+VIDEO_EXTS = set('.' + s for s in 'avi wmv mp4 m4v mov mpeg mpg rm flv ogm mkv ram asf webm'.split())
 
 
 def is_video(fp):
