@@ -174,7 +174,8 @@ def uprint(s):
     h = winconout and winconout()
     if h:
         WriteConsole(h, s + '\n')
-        h.Close()
+        # should not close std handle
+        pass  #CloseHandle(h)
     else:
         print(s)
 
@@ -257,7 +258,7 @@ def conout(*a, **kw):
     finally:
         if WIN_STREAM:
             # should not close std handle
-            pass#CloseHandle(WIN_STREAM)
+            pass  #CloseHandle(WIN_STREAM)
 
 
 if os.name != 'nt':
