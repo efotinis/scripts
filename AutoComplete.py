@@ -1,3 +1,5 @@
+#!python
+from __future__ import print_function
 import msvcrt
 import re
 
@@ -45,9 +47,9 @@ def wasPressed(vk):
 
 
 def inkey():
-    s = msvcrt.getch()
+    s = msvcrt.getwch()
     if s in '\x00\xe0':
-            s += msvcrt.getch()
+            s += msvcrt.getwch()
     return s
 
 
@@ -56,7 +58,7 @@ def keyloop():
         s = inkey()
         if s == ESC:
             break
-        print repr(s)
+        print(repr(s))
 
 
 class ConsoleBuffer:
@@ -211,7 +213,7 @@ class _Input:
             elif s == ENTER:
                 self.pos = len(self.line)
                 self.updateCursor()
-                print
+                print()
                 self.history.add(self.line)
                 return self.line
             elif s == BASKSPACE:

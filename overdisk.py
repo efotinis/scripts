@@ -1,4 +1,4 @@
-#!python2
+#!python3
 # TODO: store scan errors and add a cmd for showing them
 # TODO: add a filter function (extensions, regexps, size/date ranges, attribs) to restrict operations
 # TODO: allow optional traversal of junctions and soft-linked dirs
@@ -22,7 +22,6 @@ import collections
 import argparse
 import fnmatch
 import itertools
-import string
 
 import win32file
 import AutoComplete
@@ -35,7 +34,7 @@ uprint = efutil.uprint
 
 
 # string alignment types mapped to functions
-STR_ALIGN = {'l': string.ljust, 'r': string.rjust, 'c': string.center, '': lambda s, n: s}
+STR_ALIGN = {'l': str.ljust, 'r': str.rjust, 'c': str.center, '': lambda s, n: s}
 
 
 class PathError(Exception):
@@ -154,7 +153,7 @@ class Dir(Item):
 def cmd_help(state, params):
     if params:
         raise CmdError('no params required')
-    print '''
+    print('''
 Commands:
   ROOT [dir]    Set (or show) root directory.
   CHDIR [dir]   Set (or show) current directory. As a shortcut, "\\" and ".."
@@ -201,7 +200,7 @@ Dir display extra attribute flags (hex):
   02 sparse file    20 not content indexed
   04 reparse point  40 encrypted
   08 compressed
-'''[1:-1]
+'''[1:-1])
 
 
 def split_cmd(s):
@@ -459,7 +458,7 @@ class ScanStatus(object):
     def static_print(self, s):
         """Print a static line and continue updates to the next line."""
         self.spo.restore(True)
-        print s
+        print(s)
         self.spo.reset()
 
     def __enter__(self):
@@ -556,7 +555,7 @@ def cmd_root(state, params):
     if not os.path.isdir(new_root_path):
         raise PathError('not a dir: "%s"' % new_root_path)
     with ScanStatus(new_root_path) as status:
-        data = winfiles.find(new_root_path).next()
+        data = next(winfiles.find(new_root_path))
         state.root = Dir(new_root_path, data, status)
     state.root_path = new_root_path
     state.rel_path = ''
@@ -738,7 +737,7 @@ def cmd_go(state, params):
 
 def cmd_filter(state, params):
     if not params:
-        print str(state.filter)
+        print(str(state.filter))
         return
     state.filter = Filter(params)
 
@@ -747,7 +746,7 @@ def cmd_tail(state, params):
     if len(params) > 1:
         raise CmdError('at most one param required')
     if not params:
-        print state.tail_count
+        print(state.tail_count)
         return
     try:
         state.tail_count = int(params[0], 10)
@@ -858,7 +857,7 @@ if __name__ == '__main__':
 
     uprint('scanning "%s" ...' % state.root_path)
     with ScanStatus(state.root_path) as status:
-        data = winfiles.find(state.root_path).next()
+        data = next(winfiles.find(state.root_path))
         state.root = Dir(state.root_path, data, status)
 
     acmgr = AutoComplete.Manager()
