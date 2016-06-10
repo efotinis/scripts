@@ -32,6 +32,8 @@ devmgr=(set devmgr_show_nonpresent_devices=1)$t(start devmgmt.msc)
 ...=cd..\.. $*
 ....=cd..\..\.. $*
 
+y=if %computername% == EFCORE cd /d D:\downloads\youtube
+
 ;= color palette
 clrs=clrprint "{,0}  {r}0 {,1}  {r}1 {,2}  {r}2 {,3}  {r}3 {,4}  {r}4 {,5}  {r}5 {,6}  {r}6 {,7}  {r}7 {,8}  {r}8 {,9}  {r}9 {,10}  {r}a {,11}  {r}b {,12}  {r}c {,13}  {r}d {,14}  {r}e {,15}  {r}f "
 
