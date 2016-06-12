@@ -1,3 +1,4 @@
+#!python
 """Write clipboard text to STDOUT.
 
 usage: paste [-?]
@@ -5,10 +6,13 @@ usage: paste [-?]
 Will fail if there's no text in the clipboard.
 """
 
-import sys
 import getopt
+import sys
+
 import win32console
+
 import clipboard
+import efutil
 
 try:
     opts, args = getopt.gnu_getopt(sys.argv[1:], '?')
@@ -29,11 +33,11 @@ if text is None:
 # This module uses win32clipboard, which only strips a NUL at the end of the text.
 # However, copying from a console will routinely store text with an embedded NUL and junk after it.
 # Since this module is primarily used on the console, we discard the part after the first NUL.
-(text, _, _) = text.partition(u'\0')
+(text, _, _) = text.partition('\0')
 
 encoding = 'cp' + str(win32console.GetConsoleOutputCP())
 text = text.encode(encoding, 'replace')
 # split lines manually to avoid CRLF->CRCRLF problems
 # TODO: can be optimized by splitting iteratively
 for s in text.splitlines():
-    print s
+    efutil.conout(s)
