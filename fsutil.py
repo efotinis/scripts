@@ -1,10 +1,25 @@
 """File system (and path) utilities."""
 
-import os
+import collections
 import contextlib
+import ctypes
+import os
 
 import binutil
 import wildcard
+
+from ctypes.wintypes import BOOL, LPCWSTR, ULARGE_INTEGER, PULARGE_INTEGER
+
+
+if os.name == 'nt':
+    GetDiskFreeSpaceExW = ctypes.windll.kernel32.GetDiskFreeSpaceExW
+    GetDiskFreeSpaceExW.restype = BOOL
+    GetDiskFreeSpaceExW.argtypes = [LPCWSTR, PULARGE_INTEGER, PULARGE_INTEGER, PULARGE_INTEGER]
+else:
+    GetDiskFreeSpaceExW = None
+
+
+DiskSpace = collections.namedtuple('DiskSpace', 'total free available')
 
 
 @contextlib.contextmanager
@@ -118,3 +133,20 @@ def find(topdir, files=True, dirs=False, recurse=True, ext=None, mask=None):
     for path in _getall(topdir, files, dirs, recurse):
         if ext(path) and mask(path):
             yield path
+
+
+def disk_space(path):
+    """Disk space statistics for the device of the specified path.
+
+    Returns a named tuple with total, free and available bytes. Available
+    bytes is the free space alloted to the current user. If disk quotas are
+    in place, available is <= free, otherwise available == free.
+    
+    Slightly more useful than shutil.disk_usage().
+    """
+    if not GetDiskFreeSpaceExW:
+        raise NotImplementedError
+    available, total, free = ULARGE_INTEGER(), ULARGE_INTEGER(), ULARGE_INTEGER()
+    if not GetDiskFreeSpaceExW(path, available, total, free):
+        raise ctypes.WinError()
+    return DiskSpace(available=available.value, total=total.value, free=free.value)
