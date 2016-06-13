@@ -81,19 +81,26 @@ class VideoInfo:
         self.info = avprobe(path)
 
     def resolution(self):
-        """Get (width,height) of first (and only) video stream."""
-        # check container info
+        """Get (width,height) of video.
+
+        If the container data does not contain resolution info, the video
+        streams are checked. Multiple video streams with different sizes
+        (or no video streams at all) raise an error.
+        """
+        # check container first
         try:
             fmt = self.info['format']
             return int(fmt['width']), int(fmt['height'])
         except KeyError:
             pass
-        # check video stream info
-        vidstr = self._get_single_video_stream()
-        try:
-            return int(vidstr['width']), int(vidstr['height'])
-        except KeyError:
-            raise Error('could not determine resolution')
+        # check video streams
+        resolutions = set((int(s['width']), int(s['height']))
+                          for s in self._vid_streams())
+        if not resolutions:
+            raise Error('no video streams')
+        if len(resolutions) > 1:
+            raise Error('multiple video stream resolutions')
+        return resolutions.pop()
 
     def duration(self):
         """Get duration in seconds."""
@@ -103,7 +110,7 @@ class VideoInfo:
             raise Error('could not determine duration')
 
     def bitrate(self):
-        """Get rate in bits per second."""
+        """Get total rate in bits per second."""
         try:
             return float(self.info['format']['bit_rate'])
         except KeyError:
@@ -111,17 +118,19 @@ class VideoInfo:
 
     def framerate(self):
         """Get rate in frames per second."""
-        vidstr = self._get_single_video_stream()
-        return int_ratio(vidstr['avg_frame_rate'])
-
-    def _get_single_video_stream(self):
-        vidstrs = [s for s in self.info['streams']
-                   if s['codec_type'] == 'video']
-        if not vidstrs:
+        framerates = set(int_ratio(s['avg_frame_rate'])
+                         for s in self._vid_streams())
+        if not framerates:
             raise Error('no video streams')
-        if len(vidstrs) > 1:
-            raise Error('more than 1 video streams')
-        return vidstrs[0]
+        if len(framerates) > 1:
+            raise Error('multiple video stream framerates')
+        return framerates.pop()
+
+    def _vid_streams(self):
+        """Generate video streams (excluding apparent thumbnails)."""
+        for s in self.info['streams']:
+            if s['codec_type'] == 'video' and s['avg_frame_rate'] != '0/0':
+                yield s
 
 
 VIDEO_EXTS = set('.' + s for s in 'avi wmv mp4 m4v mov mpeg mpg rm flv ogm mkv ram asf webm'.split())
@@ -146,7 +155,7 @@ def do_videos(args):
                 try:
                     info = VideoInfo(str(f))
                     width, height = info.resolution()
-                    print('{} {:4d}x{:<4d} {:5.2f} {:4.0f}k {}'.format(
+                    print('{} {:4d}x{:<4d} {:5.2f} {:5.0f}k {}'.format(
                         efutil.timefmt(info.duration()),
                         width, height,
                         info.framerate(),
