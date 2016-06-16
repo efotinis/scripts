@@ -688,7 +688,7 @@ def cmd_extcnt(state, params):
         item.add_ext_stats(stats_dict, state.filter)
     data_rows = []
     total_files, total_size = 0, 0
-    for ext, stats in stats_dict.iteritems():
+    for ext, stats in stats_dict.items():
         data_rows += [(stats.files, stats.bytes, ext)]
         total_files += stats.files
         total_size += stats.bytes
