@@ -66,6 +66,7 @@ def parse_args():
     ap = subs.add_parser('v', help='list video durations')
     add = ap.add_argument
     add('dirs', metavar='DIR', type=Path, nargs='+', help='dir containing videos')
+    add('-b', dest='bare', action='store_true', help='omit footer totals')
 
     ap = subs.add_parser('i', help='list corrupt images')
     add = ap.add_argument
@@ -164,11 +165,12 @@ def do_videos(args):
                     durations += [info.duration()]
                 except subprocess.CalledProcessError:
                     print('could not get media info: "{}"'.format(str(f)), file=sys.stderr)
-    print('total videos:', len(durations))
-    print('duration:')
-    print('  total:', efutil.timefmt(sum(durations)))
-    print('    avg:', efutil.timefmt(stats.amean(durations)))
-    print('     sd:', efutil.timefmt(stats.stddev(durations)))
+    if not args.bare:
+        print('total videos:', len(durations))
+        print('duration:')
+        print('  total:', efutil.timefmt(sum(durations)))
+        print('    avg:', efutil.timefmt(stats.amean(durations)))
+        print('     sd:', efutil.timefmt(stats.stddev(durations)))
     
 
 def do_images(args):
