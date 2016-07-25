@@ -1,7 +1,7 @@
 if ($host.name -eq 'ConsoleHost') {
 
     # invert prompt text color intensities; helps tell each command apart
-    function prompt {
+    function global:prompt {
         $s = "$($executionContext.SessionState.Path.CurrentLocation)$('>' * ($nestedPromptLevel + 1))"
         Write-Host  $s -NoNewline `
             -ForegroundColor ($host.UI.RawUI.ForegroundColor -bxor 8) `
@@ -18,4 +18,5 @@ if ($host.name -eq 'ConsoleHost') {
     ConClr Warning yellow
     ConClr Debug   cyan
     ConClr Verbose green
+
 }
