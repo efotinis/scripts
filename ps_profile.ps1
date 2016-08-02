@@ -1,5 +1,15 @@
 if ($host.name -eq 'ConsoleHost') {
 
+    function IsAdmin {
+        ([Security.Principal.WindowsPrincipal] `
+          [Security.Principal.WindowsIdentity]::GetCurrent()
+        ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    }
+    if (IsAdmin) {
+        $host.UI.RawUI.BackgroundColor = 'darkred'
+        Clear-Host
+    }
+
     # invert prompt text color intensities; helps tell each command apart
     function global:prompt {
         $s = "$($executionContext.SessionState.Path.CurrentLocation)$('>' * ($nestedPromptLevel + 1))"
