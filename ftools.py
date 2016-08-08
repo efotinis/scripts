@@ -25,9 +25,14 @@ class Error(Exception):
     pass
 
 
-def files(dp):
-    """Get Path file objects of specified dir."""
-    return (x for x in dp.iterdir() if x.is_file())
+def files(dp, recurse=False):
+    """Get Path file objects of specified dir (optionally recursively)."""
+    #return (x for x in dp.iterdir() if x.is_file())
+    for x in dp.iterdir():
+        if x.is_file():
+            yield x
+        elif recurse:
+            yield from files(x, recurse)
 
 def dirs(dp):
     """Get Path dir objects of specified dir."""
@@ -66,6 +71,7 @@ def parse_args():
     ap = subs.add_parser('v', help='list video durations')
     add = ap.add_argument
     add('dirs', metavar='DIR', type=Path, nargs='+', help='dir containing videos')
+    add('-r', dest='recurse', action='store_true', help='recurse subdirs')
     add('-b', dest='bare', action='store_true', help='omit footer totals')
 
     ap = subs.add_parser('i', help='list corrupt images')
@@ -151,26 +157,29 @@ def int_ratio(s):
 def do_videos(args):
     durations = []
     for d in args.dirs:
-        for f in files(d):
+        for f in files(d, args.recurse):
             if is_video(f):
                 try:
                     info = VideoInfo(str(f))
                     width, height = info.resolution()
+                    duration = info.duration()
                     print('{} {:4d}x{:<4d} {:5.2f} {:5.0f}k {}'.format(
-                        efutil.timefmt(info.duration()),
+                        efutil.timefmt(duration),
                         width, height,
                         info.framerate(),
                         info.bitrate() / 1000,
                         f))
-                    durations += [info.duration()]
+                    durations += [duration]
                 except subprocess.CalledProcessError:
-                    print('could not get media info: "{}"'.format(str(f)), file=sys.stderr)
+                    print('could not get info for "{}"'.format(str(f)), file=sys.stderr)
+                except Error as x:
+                    print('could not get info for "{}" ({})'.format(str(f), x), file=sys.stderr)
     if not args.bare:
         print('total videos:', len(durations))
         print('duration:')
         print('  total:', efutil.timefmt(sum(durations)))
-        print('    avg:', efutil.timefmt(stats.amean(durations)))
-        print('     sd:', efutil.timefmt(stats.stddev(durations)))
+        print('    avg:', efutil.timefmt(stats.amean(durations) if durations else 0))
+        print('     sd:', efutil.timefmt(stats.stddev(durations) if durations else 0))
     
 
 def do_images(args):
