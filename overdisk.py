@@ -848,9 +848,26 @@ def parse_args():
     return args
 
 
-if __name__ == '__main__':
-    args = parse_args()
+def get_prompt(state):
+    """Build prompt string."""
 
+    flags = []
+    if str(state.filter) != '*':
+        flags.append('f')
+    if state.tail_count:
+        flags.append(str(state.tail_count))
+
+    ALWAYS_SHOW = True
+    if ALWAYS_SHOW or flags:
+        prefix = '[' + ','.join(flags) + '] '
+    else:
+        prefix = ''
+
+    return prefix + os.path.join(
+        state.root_path, state.rel_path).rstrip(os.path.sep) + '> '
+
+
+def main(args):
     state = State()
     state.root_path = args.root
     cmd_dispatcher = CmdDispatcher(state)
@@ -864,24 +881,12 @@ if __name__ == '__main__':
 
     while True:
         try:
-            prompt_flags = []
-            if str(state.filter) != '*':
-                prompt_flags += ['f']
-            if state.tail_count:
-                prompt_flags += [str(state.tail_count)]
-            if 1 or prompt_flags:
-                prompt_flags = '[' + ','.join(prompt_flags) + '] '
-            else:
-                prompt_flags = ''
-
-            prompt = prompt_flags + os.path.join(
-                state.root_path, state.rel_path).rstrip(os.path.sep) + '> '
-
-            if 0:
-                s = raw_input(prompt).strip()
-            else:
+            USE_AUTOCOMPLETE = True
+            if USE_AUTOCOMPLETE:
                 acmgr.completer = lambda s: get_candidate_paths(state, s)
-                s = acmgr.input(prompt)
+                s = acmgr.input(get_prompt(state))
+            else:
+                s = raw_input(get_prompt(state)).strip()
 
             params = split_cmd(s)
             if not params:
@@ -894,3 +899,7 @@ if __name__ == '__main__':
             uprint('ERROR: ' + str(x))
         finally:
             uprint('')
+
+
+if __name__ == '__main__':
+    main(parse_args())
