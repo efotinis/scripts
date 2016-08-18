@@ -10,7 +10,7 @@ import collections
 def parse_args():
     ap = argparse.ArgumentParser(
         description='print PATH directories',
-        epilog='flags shown: "*" non-existing, "!" douplicate')
+        epilog='flags shown: "?" non-existing, "!" douplicate')
     add = ap.add_argument
     add('-b', dest='bare', action='store_true',
         help='print only paths')
@@ -28,6 +28,6 @@ if __name__ == '__main__':
     else:
         for s in items:
             flags = ''
-            flags += '*' if not os.path.isdir(s) else ' '
+            flags += '?' if not os.path.isdir(s) else ' '
             flags += '!' if dup_counts[os.path.normcase(s)] > 1 else ' '
             print(flags, s)
