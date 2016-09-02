@@ -14,8 +14,8 @@ import contextlib
 
 USER_AGENT = 'randit.py'
 REDDIT_REQUEST_DELAY_SEC = 2
-SFW_URL = 'http://random.reddit.com/'
-NSFW_URL = 'http://randnsfw.reddit.com/'
+SFW_URL = 'https://www.reddit.com/r/random/'
+NSFW_URL = 'https://www.reddit.com/r/randnsfw/'
 DEFAULT_HISTORY_PATH = '%AppData%\\randit-seen.log'
 NAME_RX = re.compile(r'^https?://www.reddit.com/r/(.*)/$')
 
