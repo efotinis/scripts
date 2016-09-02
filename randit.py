@@ -1,11 +1,12 @@
+#!python3
 """Go to random subreddits."""
 
 import os
 import re
 import sys
 import time
-import urllib2
-import urlparse
+import urllib.request
+import urllib.parse
 import webbrowser
 import argparse
 import webutil
@@ -22,8 +23,10 @@ NAME_RX = re.compile(r'^https?://www.reddit.com/r/(.*)/$')
 
 def get_destination(url):
     """Get destination URL (possibly redirected)."""
+    # NOTE: 'urllib' automatically follows redirects
+    # ('requests' OTOH would need the 'allow_redirects' flag)
     req = webutil.HeadRequest(url, headers={'User-Agent': USER_AGENT})
-    resp = urllib2.urlopen(req)
+    resp = urllib.request.urlopen(req)
     resp.close()
     return resp.url
 
@@ -36,8 +39,8 @@ def strip_age_check(url):
     becomes:
         'http://www.reddit.com/r/foobar/'
     """
-    s = urlparse.urlsplit(url).query
-    return urlparse.parse_qs(s)['dest'][0]
+    s = urllib.parse.urlsplit(url).query
+    return urllib.parse.parse_qs(s)['dest'][0]
 
 
 def parse_args():
@@ -86,7 +89,7 @@ def url_generator(nsfw, count, history):
             s = strip_age_check(s)
         name = get_name(s)
         if name in history:
-            print >>sys.stderr, 'skipping already seen:', name
+            print('skipping already seen:', name, file=sys.stderr)
             continue
         yield s
         history.add(name)
@@ -115,7 +118,7 @@ class History(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         with open(self.path, 'w') as f:
             for s in self.data:
-                print >>f, s
+                print(s, file=f)
         self.data = None
 
     def add(self, s):
@@ -155,6 +158,6 @@ if __name__ == '__main__':
             urls = list(urls)
         for url in urls:
             if args.print_:
-                print url
+                print(url)
             else:
                 webbrowser.open(url, new=OPEN_NEW_TAB, autoraise=False)
