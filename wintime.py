@@ -84,6 +84,19 @@ SetFileTime = kernel32('SetFileTime', BOOL, [HANDLE, LPFILETIME, LPFILETIME, LPF
 GetSystemTimes = kernel32('GetSystemTimes', BOOL, [LPFILETIME, LPFILETIME, LPFILETIME])
 
 
+def _ft_param(x):
+    """Create FILETIME object from various representations.
+
+    Accepts a single 64-bit int, a 2-tuple of 32-bit ints (low, high),
+    or an existing FILETIME.
+    """
+    if isinstance(x, int):
+        return FILETIME(x & 0xffffffff, (x & 0xffffffff00000000) >> 32)
+    elif isinstance(x, tuple):
+        return FILETIME(x[0] & 0xffffffff, y[1] & 0xffffffff)
+    else:
+        return x
+
 
 def filetime_utc_to_local(ft, tzinfo=True):
     """Convert a Windows FILETIME from UTC to local.
@@ -92,6 +105,7 @@ def filetime_utc_to_local(ft, tzinfo=True):
     The default value of True represents the current time zone settings.
     If set to False the conversion is done faster but less accurately.
     """
+    ft = _ft_param(ft)
     ret = FILETIME()
     if not tzinfo:
         if not FileTimeToLocalFileTime(ft, ret):
@@ -114,6 +128,7 @@ def filetime_local_to_utc(ft, tzinfo=True):
     The default value of True represents the current time zone settings.
     If set to False the conversion is done faster but less accurately.
     """
+    ft = _ft_param(ft)
     ret = FILETIME()
     if not tzinfo:
         if not LocalFileTimeToFileTime(ft, ret):
@@ -136,6 +151,7 @@ def filetime_to_datetime(ft):
     From Julian Rath's "Recipe 511425: FILETIME to datetime (Python)"
     http://code.activestate.com/recipes/511425-filetime-to-datetime/
     """
+    ft = _ft_param(ft)
     microseconds = (ft.dwLowDateTime | (ft.dwHighDateTime << 32)) // 10
     return _FILETIME_null_date + datetime.timedelta(microseconds=microseconds)
 
@@ -174,6 +190,7 @@ def pyseconds_to_wintime(n):
 
 def filetime_to_systemtime(ft):
     """Convert a FILETIME to SYSTEMTIME."""
+    ft = _ft_param(ft)
     st = SYSTEMTIME()
     if not FileTimeToSystemTime(ft, st):
         raise ctypes.WinError()
@@ -222,6 +239,7 @@ def dosdatetime_to_filetime(date, time):
 
 def filetime_to_dosdatetime(ft):
     """Convert a FILETIME to a DOS datetime (WORD pair)."""
+    ft = _ft_param(ft)
     date, time = DWORD(), DWORD()
     if not FileTimeToDosDateTime(ft, date, time):
         raise ctypes.WinError()
