@@ -10,7 +10,7 @@ import time
 import six
 
 import win32file
-from ctypes.wintypes import BOOL, WORD, DWORD, LONG, WCHAR, HANDLE
+from ctypes.wintypes import BOOL, WORD, DWORD, LONG, WCHAR, HANDLE, FILETIME
 LPWORD = ctypes.POINTER(WORD)
 ULONGLONG = ctypes.c_uint64
 from win32con import OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS
@@ -19,26 +19,6 @@ FILE_READ_ATTRIBUTES = 0x0080
 FILE_WRITE_ATTRIBUTES = 0x0100
 
 import dllutil
-
-
-class FILETIME(ctypes.Structure):
-    _fields_ = [
-        ('dwLowDateTime', DWORD),
-        ('dwHighDateTime', DWORD)]
-
-    def __repr__(self):
-        return 'FILETIME({0!r},{1!r})'.format(self.dwLowDateTime, self.dwHighDateTime)
-    
-##    def getvalue(self):
-##        """Get the underline uint64."""
-##        return self.dwLowDateTime + (self.dwHighDateTime << 32)
-##
-##    def setvalue(self, n):
-##        """Set the underline uint64."""
-##        self.dwLowDateTime = n & 0xffffffff
-##        self.dwHighDateTime = (n >> 32) & 0xffffffff
-##
-##    value = property(getvalue, setvalue, None, '64-bit value')        
 
 
 class SYSTEMTIME(ctypes.Structure):
