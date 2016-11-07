@@ -8,6 +8,12 @@ from ctypes.wintypes import BOOL
 
 LockWorkStation = dllutil.winfunc('user32', 'LockWorkStation', BOOL, ())
 
-time.sleep(1)
-monitorutil.turnoffmonitor()
-LockWorkStation()
+
+def lockdown():
+    monitorutil.turnoffmonitor()
+    LockWorkStation()
+
+
+if __name__ == '__main__':
+    time.sleep(1)
+    lockdown()

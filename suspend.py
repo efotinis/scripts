@@ -8,6 +8,7 @@ import sys
 import win32api
 import win32security
 
+from lockdown import lockdown
 import secutil
 import timer
 
@@ -46,9 +47,13 @@ def get_args():
                     help='hibernate instead of suspending')
     ap.add_argument('-f', dest='force', action='store_true', 
                     help='force suspend (Windows Server 2003 and Windows XP only)')
+    ap.add_argument('-l', dest='lockdown', action='store_true', 
+                    help='lock workstation and turn off monitor before counter begins')
     return ap.parse_args()
 
 
 if __name__ == '__main__':
     args = get_args()
+    if args.lockdown:
+        lockdown()
     wait_and_suspend(args.seconds, args.hibernate, args.force)
