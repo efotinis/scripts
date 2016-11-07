@@ -4,8 +4,12 @@
 Can be used to update a Dropbox file with my home IP.
 """
 
+import os
 import re
 import sys
+
+
+LOGFILE = os.path.expandvars('%LOGS%\\adsl.log')
 
 
 def last_line(path):
@@ -23,7 +27,7 @@ def is_ip(s):
 
 def get_ip():
     """Get IP (or None) from ADSL log."""
-    line = last_line('d:/logs/adsl.log').rstrip('\n')
+    line = last_line(LOGFILE).rstrip('\n')
     time, sep, info = line.partition(' ')
     ip = info.split(',', 1)[0]
     return ip if is_ip(ip) else None
