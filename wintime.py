@@ -93,7 +93,7 @@ def _ft_param(x):
     if isinstance(x, int):
         return FILETIME(x & 0xffffffff, (x & 0xffffffff00000000) >> 32)
     elif isinstance(x, tuple):
-        return FILETIME(x[0] & 0xffffffff, y[1] & 0xffffffff)
+        return FILETIME(x[0] & 0xffffffff, x[1] & 0xffffffff)
     else:
         return x
 
