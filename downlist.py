@@ -1,14 +1,15 @@
 #!python3
 """Download a list of URLs."""
 
-import os
-import sys
 import argparse
-import urllib.request
-import urllib.parse
+import contextlib
+import os
 import random
+import sys
 import time
+import urllib.parse
 
+import dlmgr
 import efutil
 
 
@@ -52,24 +53,6 @@ def parse_args():
     return args
 
 
-class DownloadMeter:
-    def __init__(self, total=-1):
-        self.totalbytes = total
-        self.donebytes = 0
-        self.starttime = time.monotonic()
-    def add(self, n):
-        self.donebytes += n
-    def __str__(self):
-        if self.totalbytes >= 0:
-            ratio = self.donebytes / self.totalbytes if self.totalbytes else 0
-            dt = time.monotonic() - self.starttime
-            speed = self.donebytes / dt if dt else 0
-            eta = (self.totalbytes - self.donebytes) / speed if speed else 0
-            return '{}, {:.0%}, ETA: {}'.format(efutil.prettysize(self.donebytes), ratio, efutil.timefmt(eta))
-        else:
-            return '{}'.format(efutil.prettysize(self.donebytes))
-
-
 if __name__ == '__main__':
     args = parse_args()
 
@@ -78,41 +61,20 @@ if __name__ == '__main__':
     bytes = 0
 
     try:
-        for i, url in enumerate(args.urls):
-            print('(%d/%d) %s ...' % (i + 1, len(args.urls), url), end=' ', flush=True)
+        for i, url in enumerate(args.urls, 1):
+            print('[%d/%d] %s' % (i, len(args.urls), url))
             local = os.path.basename(urllib.parse.urlsplit(url).path)
             local = os.path.join(args.outdir, local)
-            if os.path.exists(local):
-                print('SKIP')
-                skipcount += 1
-            else:
-                try:
-##                    data = urllib.request.urlopen(url).read()
-##                    open(local, 'wb').write(data)
-##                    bytes += len(data)
-                    BLOCKSIZE = 65536
-                    status = ''
-                    with urllib.request.urlopen(url) as resp, open(local, 'wb') as f:
-                        total = int(resp.headers['Content-Length'])
-                        dm = DownloadMeter(int(resp.headers.get('Content-Length', '-1')))
-                        while True:
-                            block = resp.read(BLOCKSIZE)
-                            if not block:
-                                break
-                            f.write(block)
-                            bytes += len(block)
-                            #status = '{} ({:.0%})'.format(efutil.prettysize(bytes), bytes / total)
-                            #print(status + '\b'*len(status), end='', flush=True)
-                            dm.add(len(block))
-                            print(dm, end='\r', flush=True)
-                    print(' '*len(status)+'\b'*len(status), end='')
-                except (urllib.request.URLError, IOError) as err:
-                    print('ERROR')
-                    print('could not get "%s"; dest: "%s"; reason: "%s"' % (url, local, err), file=sys.stderr)
-                    errcount += 1
-                else:
-                    print('OK')
+            #FIXME: update skipcount
+            try:
+                if dlmgr.download_with_resume(url, local, dlmgr.Status()):
                     okcount += 1
+                else:
+                    errcount += 1
+            except OSError as err:
+                print('ERROR')
+                print('could not get "%s"; dest: "%s"; reason: "%s"' % (url, local, err), file=sys.stderr)
+                errcount += 1
     except KeyboardInterrupt:
         print('canceled by user')
 
