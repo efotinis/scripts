@@ -1,10 +1,11 @@
+#!python3
 """Download a list of URLs."""
 
 import os
 import sys
 import argparse
-import urllib2
-import urlparse
+import urllib.request
+import urllib.parse
 import random
 import time
 
@@ -14,22 +15,19 @@ import efutil
 def parse_args():
     ap = argparse.ArgumentParser(
         description='Download a list of URLs.',
-        epilog='Multiple URL parameters, list files, and input from STDIN are allowed and will be added in that order.',
-        add_help=False)
-    _add = ap.add_argument
-
-    _add('urls', nargs='*', metavar='URL',
-         help='input URLs')
-    _add('-l', dest='listfiles', action='append',
-         help='text file with input URLs (one per line)')
-    _add('-L', dest='stdinfiles', action='store_true',
-         help='read input URLs from STDIN (one per line)')
-    _add('-o', dest='outdir', default='.',
-         help='output dir; default is "%(default)s"')
-    _add('-s', dest='shuffle', action='store_true',
-         help='shuffle input URLs order before downloading')
-    _add('-?', action='help',
-        help='this help')
+        epilog='Multiple URL parameters, list files, and input from STDIN '
+        'are allowed and will be added in that order.')
+    add = ap.add_argument
+    add('urls', nargs='*', metavar='URL',
+        help='input URLs')
+    add('-l', dest='listfiles', action='append',
+        help='text file with input URLs (one per line)')
+    add('-L', dest='stdinfiles', action='store_true',
+        help='read input URLs from STDIN (one per line)')
+    add('-o', dest='outdir', default='.',
+        help='output dir; default is "%(default)s"')
+    add('-s', dest='shuffle', action='store_true',
+        help='shuffle input URLs order before downloading')
 
     args = ap.parse_args()
 
@@ -63,36 +61,49 @@ if __name__ == '__main__':
 
     try:
         for i, url in enumerate(args.urls):
-            print '(%d/%d) %s ...' % (i + 1, len(args.urls), url),
-            local = os.path.basename(urlparse.urlsplit(url).path)
+            print('(%d/%d) %s ...' % (i + 1, len(args.urls), url), end=' ', flush=True)
+            local = os.path.basename(urllib.parse.urlsplit(url).path)
             local = os.path.join(args.outdir, local)
             if os.path.exists(local):
-                print 'SKIP'
+                print('SKIP')
                 skipcount += 1
             else:
                 try:
-                    data = urllib2.urlopen(url).read()
-                    open(local, 'wb').write(data)
-                    bytes += len(data)
-                except (urllib2.URLError, IOError) as err:
-                    print 'ERROR'
-                    print >>sys.stderr, 'could not get "%s"; dest: "%s"; reason: "%s"' % (url, local, err)
+##                    data = urllib.request.urlopen(url).read()
+##                    open(local, 'wb').write(data)
+##                    bytes += len(data)
+                    BLOCKSIZE = 65536
+                    status = ''
+                    with urllib.request.urlopen(url) as resp, open(local, 'wb') as f:
+                        total = int(resp.headers['Content-Length'])
+                        while True:
+                            block = resp.read(BLOCKSIZE)
+                            if not block:
+                                break
+                            f.write(block)
+                            bytes += len(block)
+                            status = '{} ({:.0%})'.format(efutil.prettysize(bytes), bytes / total)
+                            print(status + '\b'*len(status), end='', flush=True)
+                    print(' '*len(status)+'\b'*len(status), end='')
+                except (urllib.request.URLError, IOError) as err:
+                    print('ERROR')
+                    print('could not get "%s"; dest: "%s"; reason: "%s"' % (url, local, err), file=sys.stderr)
                     errcount += 1
                 else:
-                    print 'OK'
+                    print('OK')
                     okcount += 1
     except KeyboardInterrupt:
-        print 'canceled by user'
+        print('canceled by user')
 
     time_sec = time.time() - time_sec
 
-    print
-    print 'downloaded:', okcount
-    print '   skipped:', skipcount
-    print '    errors:', errcount
-    print '     total:', len(args.urls)
-    print '      time: %.0f s' % time_sec
-    print '      size: %s' % efutil.prettysize(bytes)
-    print '     speed: %s/s' % efutil.prettysize(bytes / time_sec if time_sec else 0)
+    print()
+    print('downloaded:', okcount)
+    print('   skipped:', skipcount)
+    print('    errors:', errcount)
+    print('     total:', len(args.urls))
+    print('      time: %.0f s' % time_sec)
+    print('      size: %s' % efutil.prettysize(bytes))
+    print('     speed: %s/s' % efutil.prettysize(bytes / time_sec if time_sec else 0))
 
     sys.exit(1 if errcount else 0)
