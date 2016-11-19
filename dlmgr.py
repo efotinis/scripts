@@ -82,7 +82,9 @@ def download_with_resume(remote, local, status, blocksize=65536, allow_restart=F
         status.end('already downloaded')
         return True
 
-    with contextlib.closing(requests.head(remote, stream=True)) as r:
+    TIMEOUT = None
+
+    with contextlib.closing(requests.head(remote, stream=True, timeout=TIMEOUT)) as r:
         canresume = 'bytes' in r.headers.get('Accept-Ranges', '')
         remotesize = int(r.headers['Content-Length']) if 'Content-Length' in r.headers else None
 
@@ -122,7 +124,7 @@ def download_with_resume(remote, local, status, blocksize=65536, allow_restart=F
             h = {}
         localsize = localsize or 0
 
-        with contextlib.closing(requests.get(remote, headers=h, stream=True)) as r:
+        with contextlib.closing(requests.get(remote, headers=h, stream=True, timeout=TIMEOUT)) as r:
             f.seek(0, os.SEEK_END)
             startpos = localsize
             starttime = time.monotonic()
