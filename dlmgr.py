@@ -78,40 +78,47 @@ class Status:
 def download_with_resume(remote, local, status, blocksize=65536, allow_restart=False, allow_truncate=False):
     """Download web resource with resume support."""
 
+    if os.path.exists(local):
+        status.end('already downloaded')
+        return True
+
     with contextlib.closing(requests.head(remote, stream=True)) as r:
         canresume = 'bytes' in r.headers.get('Accept-Ranges', '')
         remotesize = int(r.headers['Content-Length']) if 'Content-Length' in r.headers else None
 
-    localsize = os.path.getsize(local) if os.path.exists(local) else None
+    local_partial = local + '.part'
+    localsize = os.path.getsize(local_partial) if os.path.exists(local_partial) else None
 
     status.begin(canresume, remotesize, localsize)
 
     if localsize is not None and remotesize is not None:
         if localsize == remotesize:
             status.end('already downloaded')
+            os.rename(local_partial, local)
             return True
         if localsize > remotesize:
             if not allow_truncate:
                 status.end('local file is larger than remote')
                 return False
-            with open(local, 'r+b') as f:
+            with open(local_partial, 'r+b') as f:
                 f.truncate(remotesize)
             status.end('truncated existing')
+            os.rename(local_partial, local)
             return True
 
     f = None
     try:
         if canresume and remotesize is not None:
             #print('resuming range {} ... {}'.format(localsize or 0, remotesize))
-            f = open(local, 'w+b' if localsize is None else 'r+b')
+            f = open(local_partial, 'w+b' if localsize is None else 'r+b')
             h = {'Range': 'bytes={}-{}'.format(localsize or 0, remotesize)}
         elif canresume and remotesize is None and localsize is not None:
             #print('resuming range {} ... ?'.format(localsize))
-            f = open(local, 'r+b')
+            f = open(local_partial, 'r+b')
             h = {'Range': 'bytes={}-'.format(localsize)}
         else:
             #print('starting download')
-            f = open(local, 'w+b')
+            f = open(local_partial, 'w+b')
             h = {}
         localsize = localsize or 0
 
@@ -132,6 +139,7 @@ def download_with_resume(remote, local, status, blocksize=65536, allow_restart=F
             f.close()
 
     status.end('done')
+    os.rename(local_partial, local)
     return True
 
 
