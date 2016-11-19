@@ -40,18 +40,23 @@ class Status:
 
     def __init__(self):
         self.lastdisplen = 0
+        self.lastupdate = time.monotonic()
 
     def begin(self, canresume, remotesize, localsize):
 ##        print('size (remote/local): ', remotesize, localsize)
 ##        print('resumable:', canresume)
         pass
 
-    def update(self, start, cur, total, time):
+    def update(self, start, cur, total, elapsed):
+        t = time.monotonic()
+        if t - self.lastupdate < 1.0:
+            return
+        self.lastupdate = t
         if total is not None:
             ratio = cur / total if total else 0
             downloaded = cur - start
             pending = total - cur
-            speed = downloaded / time if time else 0
+            speed = downloaded / elapsed if elapsed else 0
             eta = pending / speed if speed else 0
             msg = '{} ({:.0%}) of {} at {}/s; ETA {}'.format(
                 efutil.prettysize(cur),
