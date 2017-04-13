@@ -93,3 +93,12 @@ def multi_divmod(numerator, *denominators):
         numerator, remainder = divmod(numerator, denominator)
         ret = (remainder,) + ret
     return (numerator,) + ret
+
+
+def round_to_sgnf(x, digits):
+    """Round float to significant digits.
+
+    Source: Roy Hyunjin Han's comment to:
+        http://stackoverflow.com/questions/3410976/how-to-round-a-number-to-significant-figures-in-python#3411435
+    """
+    return round(x, -int(math.floor(math.log10(x))) + (digits - 1))
