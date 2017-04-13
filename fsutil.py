@@ -8,7 +8,12 @@ import os
 import binutil
 import wildcard
 
-from ctypes.wintypes import BOOL, LPCWSTR, ULARGE_INTEGER, PULARGE_INTEGER
+from ctypes.wintypes import BOOL, LPCWSTR, ULARGE_INTEGER
+try:
+    from ctypes.wintypes import PULARGE_INTEGER  # Py3.x only
+except ImportError:
+    PULARGE_INTEGER = ctypes.POINTER(ULARGE_INTEGER)
+
 
 
 if os.name == 'nt':
