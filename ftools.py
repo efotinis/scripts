@@ -56,7 +56,11 @@ def avprobe(fp):
         [AVPROBE, '-show_format', '-show_streams', '-of', 'json', str(fp)],
         stderr=subprocess.DEVNULL,
         shell=True)
-    return json.loads(str(s, 'mbcs'))
+    try:
+        return json.loads(str(s, 'utf-8'))  # avprobe outputs UTF-8, apparently
+    except UnicodeError:
+        efutil.conerr('could not decode result of "{}"'.format(str(fp)))
+        return json.loads(str(s, 'utf-8', 'replace'))
 
 def move(items, target):
     """Move items to target dir."""
@@ -73,6 +77,8 @@ def parse_args():
     add('dirs', metavar='DIR', type=Path, nargs='+', help='dir containing videos')
     add('-r', dest='recurse', action='store_true', help='recurse subdirs')
     add('-b', dest='bare', action='store_true', help='omit footer totals')
+    add('-t', dest='totals', action='store_true',
+        help='output totals only: count, time, avg, sd')
 
     ap = subs.add_parser('i', help='list corrupt images')
     add = ap.add_argument
@@ -136,6 +142,7 @@ class VideoInfo:
     def _vid_streams(self):
         """Generate video streams (excluding apparent thumbnails)."""
         for s in self.info['streams']:
+            # FIXME: some videos streams (WMV) do have avg_frame_rate == 0/0
             if s['codec_type'] == 'video' and s['avg_frame_rate'] != '0/0':
                 yield s
 
@@ -163,18 +170,29 @@ def do_videos(args):
                     info = VideoInfo(str(f))
                     width, height = info.resolution()
                     duration = info.duration()
-                    print('{} {:4d}x{:<4d} {:5.2f} {:5.0f}k {}'.format(
-                        efutil.timefmt(duration),
-                        width, height,
-                        info.framerate(),
-                        info.bitrate() / 1000,
-                        f))
                     durations += [duration]
+                    if not args.totals:
+                        efutil.conout('{} {:4d}x{:<4d} {:5.2f} {:5.0f}k {}'.format(
+                            efutil.timefmt(duration),
+                            width, height,
+                            info.framerate(),
+                            info.bitrate() / 1000,
+                            f))
+                    else:
+                        print(len(durations), end='\r', flush=True)
                 except subprocess.CalledProcessError:
-                    print('could not get info for "{}"'.format(str(f)), file=sys.stderr)
+                    efutil.conout('could not get info for "{}"'.format(str(f)), file=sys.stderr)
                 except Error as x:
-                    print('could not get info for "{}" ({})'.format(str(f), x), file=sys.stderr)
-    if not args.bare:
+                    efutil.conout('could not get info for "{}" ({})'.format(str(f), x), file=sys.stderr)
+    if args.totals:
+        print('{:4} {} {} {} {}'.format(
+            len(durations),
+            efutil.timefmt(sum(durations)),
+            efutil.timefmt(stats.amean(durations) if durations else 0),
+            efutil.timefmt(stats.stddev(durations) if durations else 0),
+            ', '.join('"{}"'.format(d) for d in args.dirs)
+        ))
+    elif not args.bare:
         print('total videos:', len(durations))
         print('duration:')
         print('  total:', efutil.timefmt(sum(durations)))
