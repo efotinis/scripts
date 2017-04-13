@@ -9,7 +9,7 @@ import re
 import sys
 
 
-LOGFILE = os.path.expandvars('%LOGS%\\adsl.log')
+LOGFILE = os.path.expandvars('%LOCALAPPDATA%\\adsl.log')
 
 
 def last_line(path):
