@@ -6,7 +6,6 @@ import contextlib
 import os
 import random
 import sys
-import time
 import urllib.parse
 
 import dlmgr
@@ -57,36 +56,38 @@ if __name__ == '__main__':
     args = parse_args()
 
     okcount = skipcount = errcount = 0
-    time_sec = time.time()
-    bytes = 0
+    counters = dlmgr.Counters()
 
     try:
         for i, url in enumerate(args.urls, 1):
             print('[%d/%d] %s' % (i, len(args.urls), url))
             local = os.path.basename(urllib.parse.urlsplit(url).path)
             local = os.path.join(args.outdir, local)
-            #FIXME: update skipcount
             try:
-                if dlmgr.download_with_resume(url, local, dlmgr.Status()):
+                if dlmgr.download_with_resume(url, local, dlmgr.Status(), counters=counters):
+                    print('done')
                     okcount += 1
                 else:
-                    errcount += 1
-            except OSError as err:
-                print('ERROR')
+                    print('skipped')
+                    skipcount += 1
+            except Exception as err:
+                print('failed')
                 print('could not get "%s"; dest: "%s"; reason: "%s"' % (url, local, err), file=sys.stderr)
                 errcount += 1
     except KeyboardInterrupt:
-        print('canceled by user')
-
-    time_sec = time.time() - time_sec
+        print('cancelled')
 
     print()
-    print('downloaded:', okcount)
+    print('      done:', okcount)
     print('   skipped:', skipcount)
-    print('    errors:', errcount)
+    print('    failed:', errcount)
+    print(' cancelled:', len(args.urls) - (okcount + skipcount + errcount))
     print('     total:', len(args.urls))
-    print('      time: %.0f s' % time_sec)
-    print('      size: %s' % efutil.prettysize(bytes))
-    print('     speed: %s/s' % efutil.prettysize(bytes / time_sec if time_sec else 0))
+
+    speed = counters.bytes / counters.seconds if counters.seconds else 0
+    print('downloaded: {} in {} ({}/s)'.format(
+        efutil.prettysize(counters.bytes),
+        efutil.timefmt(counters.seconds),
+        efutil.prettysize(speed)))
 
     sys.exit(1 if errcount else 0)
