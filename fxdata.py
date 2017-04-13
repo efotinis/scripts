@@ -1,5 +1,9 @@
 #!python3
-"""Firefox data utilities."""
+"""Firefox data utilities.
+
+Related:
+- http://stackoverflow.com/questions/464516/firefox-bookmarks-sqlite-structure
+"""
 
 import collections
 import configparser
@@ -128,6 +132,32 @@ class Bookmarks:
             guid=bm['guid']
         )
 
+    # -----------
+
+##    def find_nameguid(self, s):
+##        return self.find_guid(nameguid(s))
+##
+##    def walk(self, top):
+##        parents = [top]
+##        while parents:
+##            parent = parents[-1]
+##            a = [x for x in self.bookmarks if x['parent'] == parent['id']]
+##            yield parents, a
+
+    def children(self, parent):
+        for x in self.bookmarks:
+            if x['parent'] == parent['id']:
+                yield x
+
+    def get_child_by_ititle(self, parent, title):
+        title = title.lower()
+        for x in self.children(parent):
+            s = x['title']
+            if s is not None and s.lower() == title:
+                return x
+        raise ValueError()
+            
+
 
 def profile_path(name_or_id):
     """Get profile path, given its name or ID."""
@@ -143,8 +173,9 @@ def open_profile(name_or_id, database):
     return sqlite3.connect(os.path.join(profpath, database))
 
 
-##import contextlib
-##with contextlib.closing(open_profile('default', 'places.sqlite')) as db:
+from contextlib import closing
+
+##with closing(open_profile('default', 'places.sqlite')) as db:
 ##    bm = Bookmarks(db)
 
 ##    a = [bm.get_info(x) for x in bm.unfiled()]
@@ -157,3 +188,29 @@ def open_profile(name_or_id, database):
 ##        if 'hedonic' in (x['title'] or '').lower():
 ##            break
             
+
+### dump Wallpapers menu
+### ---------------------
+##cls()
+##
+##SITE_BLURBS = {
+##    'A wallpaper scraper for the popular 4chan and 7chan image boards',
+##    'Your source for the best high quality wallpapers on the Net!',
+##    'Finding wallpapers for every taste'
+##}
+##
+##PLAIN_TITLE_RX = re.compile(r'^4walled - Image \d+$')
+##
+##with closing(open_profile('default', 'places.sqlite')) as db:
+##    bm = Bookmarks(db)
+##    menu = bm.find_guid(nameguid('menu'))
+##    walls = bm.get_child_by_ititle(menu, 'Wallpapers')
+##    for x in bm._all_under(walls):
+##        info = bm.get_info(x)
+##        print('url:', info.url)
+##        if info.title and not PLAIN_TITLE_RX.match(info.title):
+##            print('title:', info.title)
+####        if info.notes and info.notes not in SITE_BLURBS:
+####            print('notes:', info.notes)
+##        print('added:', info.added)
+##        print()
