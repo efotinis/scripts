@@ -379,35 +379,77 @@ def open_csv(path, mode='r'):
     return open(path, **kwargs)
 
 
-def load_csv_table(f, typename, fieldnames, **converters):
+def _make_namedtuple_fields(a):
+    """Convert a string sequence to valid namedtuple field names."""
+    ids = []
+    for s in a:
+        s = re.sub(r'[\W]', '_', s)
+        if not re.match(r'[a-z]', s, re.IGNORECASE):
+            s = 'x' + s
+        for i in itertools.count():
+            candidate = s if i == 0 else s + str(i)
+            if candidate not in ids:
+                ids.append(candidate)
+                break
+    return ids
+
+
+def load_csv_table(f, obj, fields=None, **converters):
     """Generate the table entries of a CSV file as namedtuple objects.
 
-    A new namedtuple object ('typename') is created, using the
-    specified field names (or the first data row, if None).
+    obj:str             name of namedtuple to create
+    obj:namedtuple      existing namedtuple to use
+    fields              valid only when 'obj' is a string
+        ==None          convert first row to valid identifiers
+        ==True          use first row as-is
+        ==False         ignore first row and use 'fN', where N>=1
+        str/seq         use sequence (split first if string)
+        callable        convert first row strings using callable
+    skipheader=False    skip first row; used only when 'obj' is a namedtuple
+                        or fields is a str/seq
 
     The remaining named args are used to convert the field values, by passing
     the original string value. Not all fields need to be converted, but the
-    specified ones are checked for existance.
+    specified ones are always checked for existence.
     """
     reader = csv.reader(f)
-    if fieldnames is None:
-        fieldnames = next(reader)
-    rec_type = collections.namedtuple(typename, fieldnames)
-    fieldnames = rec_type._fields
+
+    if not isinstance(obj, str):
+        if fields is not None:
+            raise TypeError('cannot specify fields with existing namedtuple')
+        fields = obj._fields
+        if skipheader:
+            next(reader)
+    else:
+        if fields is None:
+            fields = _make_namedtuple_fields(next(reader))
+        elif fields is True:
+            fields = next(reader)
+        elif fields is False:
+            fields = ['f'+str(i+1) for i in range(len(next(reader)))]
+        elif callable(fields):
+            fields = [fields(s) for s in next(reader)]
+        else:
+            if isinstance(fields, str):
+                fields = fields.split()
+            if skipheader:
+                next(reader)
+        obj = collections.namedtuple(obj, fields)
 
     # replace converter keys with field name indices
     for name in list(converters.keys()):  # need copy of keys
         try:
-            i = fieldnames.index(name)
+            i = fields.index(name)
         except ValueError:
-            raise ValueError('converter name not in fields', name, fieldnames)
+            raise ValueError('converter name "{}" not in fields: {}'.format(
+                name, ', '.join('"'+s+'"' for s in fields)))
         converters[i] = converters[name]
         del converters[name]
 
     for row in reader:
         for i, func in converters.items():
             row[i] = func(row[i])
-        yield rec_type(*row)
+        yield obj(*row)
 
 
 def promote_input_to_unicode(s, wildcard=False, nonpath=False):
