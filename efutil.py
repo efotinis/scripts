@@ -391,7 +391,7 @@ def load_csv_table(f, typename, fieldnames, **converters):
     """
     reader = csv.reader(f)
     if fieldnames is None:
-        fieldnames = reader.next()
+        fieldnames = next(reader)
     rec_type = collections.namedtuple(typename, fieldnames)
     fieldnames = rec_type._fields
 
