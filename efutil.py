@@ -380,7 +380,7 @@ def open_csv(path, mode='r'):
 
 
 def _make_namedtuple_fields(a):
-    """Convert a string sequence to valid namedtuple field names."""
+    """Convert a sequence of strings to valid namedtuple field names."""
     ids = []
     for s in a:
         s = re.sub(r'[\W]', '_', s)
@@ -394,19 +394,19 @@ def _make_namedtuple_fields(a):
     return ids
 
 
-def load_csv_table(f, obj, fields=None, **converters):
+def load_csv_table(f, obj, fields=None, skipheader=False, **converters):
     """Generate the table entries of a CSV file as namedtuple objects.
 
-    obj:str             name of namedtuple to create
-    obj:namedtuple      existing namedtuple to use
-    fields              valid only when 'obj' is a string
-        ==None          convert first row to valid identifiers
-        ==True          use first row as-is
-        ==False         ignore first row and use 'fN', where N>=1
-        str/seq         use sequence (split first if string)
-        callable        convert first row strings using callable
-    skipheader=False    skip first row; used only when 'obj' is a namedtuple
-                        or fields is a str/seq
+    obj:str         name of namedtuple to create
+    obj:namedtuple  existing namedtuple to use
+    fields          valid only when 'obj' is a string
+        ==None      convert first row to valid identifiers
+        ==True      use first row as-is
+        ==False     ignore first row and use 'fN', where N>=1
+        str/seq     use sequence (split first if string)
+        callable    convert first row strings using callable
+    skipheader      skip first row; used only when 'obj' is a namedtuple
+                    or fields is a str/seq
 
     The remaining named args are used to convert the field values, by passing
     the original string value. Not all fields need to be converted, but the
