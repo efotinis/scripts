@@ -95,7 +95,7 @@ if __name__ == '__main__':
         else:
             print('----', path)
             try:
-                obj[b'info'][b'pieces'] = '<expunged>'
+                obj[b'info'][b'pieces'] = None  # omitted for brevity
             except KeyError:
                 pass
             pprint.pprint(obj)

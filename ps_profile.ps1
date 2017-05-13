@@ -6,6 +6,7 @@ Function global:.. { Set-Location .. }
 Set-Alias -Scope global yd C:\prg\youtube-dl.exe
 Set-Alias -Scope global minf C:\prg\MediaInfo\MediaInfo.exe
 Set-Alias -Scope global 7z "$Env:ProgramFiles\7-Zip\7z.exe"
+Set-Alias -Scope global j "$Env:DROPBOX\jo.py"
 
 
 # get/set console title
