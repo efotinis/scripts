@@ -3,6 +3,7 @@ Function global:x { exit }
 Function global:y { Set-Location D:\youtube }
 function global:z ($time) { c:\scripts\suspend.py -l $time }
 Function global:.. { Set-Location .. }
+Function global:?? ($Cmd) { help $Cmd -Full }
 Set-Alias -Scope global yd C:\prg\youtube-dl.exe
 Set-Alias -Scope global minf C:\prg\MediaInfo\MediaInfo.exe
 Set-Alias -Scope global 7z "$Env:ProgramFiles\7-Zip\7z.exe"
