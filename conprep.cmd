@@ -13,7 +13,7 @@ if %computername% == EFCORE set scriptsdir=c:\scripts
 if %computername% == LAP7 set scriptsdir=c:\scripts
 
 :: common shorthands
-doskey /macrofile=%scriptsdir%\common.mac
+doskey /macrofile=C:\scripts\common.mac
 
 :: switch to ANSI codepage
 chcp 1253 >nul
