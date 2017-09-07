@@ -23,7 +23,20 @@ function global:WndTitle ($s) {
 
 # play audio file
 function global:PlaySound ($path) {
-    (New-Object Media.SoundPlayer $Path).Play();
+    (New-Object Media.SoundPlayer $Path).Play()
+}
+
+
+# output speech
+function global:Speak (
+    [string]$Text, 
+    [int]$Volume = 100, 
+    [int]$Rate = 0
+) {
+    $Voice = New-Object -ComObject SAPI.SpVoice
+    $Voice.Volume = $Volume
+    $Voice.Rate = $Rate
+    $Voice.Speak($Text) > $Null
 }
 
 
