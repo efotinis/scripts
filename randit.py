@@ -18,7 +18,7 @@ REDDIT_REQUEST_DELAY_SEC = 2
 SFW_URL = 'https://www.reddit.com/r/random/'
 NSFW_URL = 'https://www.reddit.com/r/randnsfw/'
 DEFAULT_HISTORY_PATH = '%AppData%\\randit-seen.log'
-NAME_RX = re.compile(r'^https?://www.reddit.com/r/(.*)/$')
+NAME_RX = re.compile(r'^https?://www.reddit.com/r/(.*)/(?:\?.*)?$')
 
 
 def get_destination(url):
@@ -87,6 +87,7 @@ def url_generator(nsfw, count, history):
         s = get_destination(url)
         if nsfw:
             s = strip_age_check(s)
+        s = s.partition('?')[0]  # strip query
         name = get_name(s)
         if name in history:
             print('skipping already seen:', name, file=sys.stderr)
