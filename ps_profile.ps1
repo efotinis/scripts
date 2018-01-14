@@ -1,6 +1,21 @@
 # shorthands and aliases
+function global:m ($i, $b, $c) {
+    if ($i -eq $null) {
+        monctl
+    } elseif ($b -eq $null) {
+        monctl -m $i
+    } elseif ($c -eq $null) {
+        monctl -m $i -b ($b*10-as[int]) -c ($b*10-as[int])
+    } else {
+        monctl -m $i -b ($b*10-as[int]) -c ($c*10-as[int])
+    }
+}
 Function global:x { exit }
-Function global:y { Set-Location D:\youtube }
+Function global:y {
+    Set-Location C:\docs\youtube
+    Remove-Item Function:y
+    Set-Alias -Scope Global y C:\docs\scripts\youtube-playlist-table\ypt.py
+}
 function global:z ($time) { c:\scripts\suspend.py -l $time }
 Function global:.. { Set-Location .. }
 Function global:?? ($Cmd) { help $Cmd -Full }
