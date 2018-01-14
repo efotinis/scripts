@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import os
 
 import efutil
 import fsutil
@@ -15,7 +16,9 @@ import stats
 from status import Status
 
 
-AVPROBE = 'c:/prg/libav/usr/bin/avprobe.exe'
+AVPROBE = 'c:/tools/libav/usr/bin/avprobe.exe'
+if not os.path.isfile(AVPROBE):
+    sys.exit('missing dependency: {}'.format(AVPROBE))
 
 
 Image.init()  # maybe preinit() instead?
@@ -181,9 +184,9 @@ def do_videos(args):
                     else:
                         print(len(durations), end='\r', flush=True)
                 except subprocess.CalledProcessError:
-                    efutil.conout('could not get info for "{}"'.format(str(f)), file=sys.stderr)
+                    efutil.conerr('could not get info for "{}"'.format(str(f)))
                 except Error as x:
-                    efutil.conout('could not get info for "{}" ({})'.format(str(f), x), file=sys.stderr)
+                    efutil.conerr('could not get info for "{}" ({})'.format(str(f), x))
     if args.totals:
         print('{:4} {} {} {} {}'.format(
             len(durations),
