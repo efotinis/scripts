@@ -115,4 +115,33 @@ if ($host.name -eq 'ConsoleHost') {
         }
     }
 
+    $Colors = @{
+        'n'='black';
+        'b'='darkblue';
+        'g'='darkgreen';
+        'c'='darkcyan';
+        'r'='darkred';
+        'm'='darkmagenta';
+        'y'='darkyellow';
+        'w'='gray';
+        'n+'='darkgray';
+        'b+'='blue';
+        'g+'='green';
+        'c+'='cyan';
+        'r+'='red';
+        'm+'='magenta';
+        'y+'='yellow';
+        'w+'='white'
+    }
+
+    function global:Color ([string]$Spec) {
+        $fore, $back = (($spec + '/') -split '/')[0..1]
+        if ($fore -in $Colors.Keys) {
+            $Host.UI.RawUI.ForegroundColor = $Colors[$fore]
+        }
+        if ($back -in $Colors.Keys) {
+            $Host.UI.RawUI.BackgroundColor = $Colors[$back]
+        }
+    }
+
 }
