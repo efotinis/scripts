@@ -73,6 +73,27 @@ function global:IsAdmin {
 }
 
 
+# media file duration in seconds using AVPROBE
+function Duration ($path) {
+    $j = (avprobe.exe -v 0 -of json -show_format $path | ConvertFrom-Json)
+    $j.format.duration
+}
+
+
+# Convert seconds to "[-]hh:mm:ss.lll".
+function PrettySec ($Seconds) {
+    if ($Seconds -lt 0) {
+        $Seconds = -$Seconds
+        $Sign = '-'
+    } else {
+        $Sign = ''
+    }
+    $Minutes = [System.Math]::DivRem($Seconds, 60, [ref]$Seconds)
+    $Hours = [System.Math]::DivRem($Minutes, 60, [ref]$Minutes)
+    "{0}{1:00}:{2:00}:{3:00.000}" -f $Sign,$Hours,$Minutes,$Seconds
+}
+
+
 if ($host.name -eq 'ConsoleHost') {
 
     # invert prompt text color intensities; helps tell each command apart
