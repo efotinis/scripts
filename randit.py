@@ -5,12 +5,11 @@ import os
 import re
 import sys
 import time
-import urllib.request
-import urllib.parse
 import webbrowser
 import argparse
-import webutil
 import contextlib
+
+import requests
 
 
 USER_AGENT = 'randit.py'
@@ -23,24 +22,8 @@ NAME_RX = re.compile(r'^https?://www.reddit.com/r/(.*)/(?:\?.*)?$')
 
 def get_destination(url):
     """Get destination URL (possibly redirected)."""
-    # NOTE: 'urllib' automatically follows redirects
-    # ('requests' OTOH would need the 'allow_redirects' flag)
-    req = webutil.HeadRequest(url, headers={'User-Agent': USER_AGENT})
-    resp = urllib.request.urlopen(req)
-    resp.close()
-    return resp.url
-
-
-def strip_age_check(url):
-    """Remove the age verification redirect.
-
-    Example:
-        'http://www.reddit.com/over18?dest=http%3A%2F%2Fwww.reddit.com%2Fr%2Ffoobar%2F'
-    becomes:
-        'http://www.reddit.com/r/foobar/'
-    """
-    s = urllib.parse.urlsplit(url).query
-    return urllib.parse.parse_qs(s)['dest'][0]
+    with requests.head(url, headers={'User-Agent': USER_AGENT}) as res:
+        return res.headers['location']
 
 
 def parse_args():
@@ -85,8 +68,6 @@ def url_generator(nsfw, count, history):
         time.sleep(REDDIT_REQUEST_DELAY_SEC)
         # the additional delay caused by resolving the redirection prevents duplicates
         s = get_destination(url)
-        if nsfw:
-            s = strip_age_check(s)
         s = s.partition('?')[0]  # strip query
         name = get_name(s)
         if name in history:
