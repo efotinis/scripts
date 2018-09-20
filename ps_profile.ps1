@@ -18,6 +18,7 @@ Function global:y {
 }
 function global:z ($time) { c:\scripts\suspend.py -l $time }
 Function global:.. { Set-Location .. }
+Function global:... { Set-Location ..\.. }
 Function global:?? ($Cmd) { help $Cmd -Full }
 Set-Alias -Scope global yd C:\tools\youtube-dl.exe
 Set-Alias -Scope global minf C:\tools\MediaInfo\MediaInfo.exe
@@ -74,23 +75,58 @@ function global:IsAdmin {
 
 
 # media file duration in seconds using AVPROBE
-function Duration ($path) {
+function global:Duration ($path) {
     $j = (avprobe.exe -v 0 -of json -show_format $path | ConvertFrom-Json)
     $j.format.duration
 }
 
 
 # Convert seconds to "[-]hh:mm:ss.lll".
-function PrettySec ($Seconds) {
+function global:PrettySec ([double]$Seconds, [int]$Decimals = 0, [string]$Plus = '') {
     if ($Seconds -lt 0) {
         $Seconds = -$Seconds
         $Sign = '-'
     } else {
-        $Sign = ''
+        $Sign = $Plus
+    }
+    if ($Decimals -lt 0) {
+        $Decimals = 0
     }
     $Minutes = [System.Math]::DivRem($Seconds, 60, [ref]$Seconds)
     $Hours = [System.Math]::DivRem($Minutes, 60, [ref]$Minutes)
-    "{0}{1:00}:{2:00}:{3:00.000}" -f $Sign,$Hours,$Minutes,$Seconds
+    $Fmt = '{0}{1:00}:{2:00}:{3:00.' + ('0' * $Decimals) + '}'
+    $Fmt -f $Sign,$Hours,$Minutes,$Seconds
+}
+
+
+# Convert seconds to "[[[h]h:]m]m:ss" (i.e. like video durations shown on YouTube).
+function global:PrettyDuration ([int]$Seconds) {
+    if ($Seconds -lt 0) {
+        $Seconds = -$Seconds
+    }
+    $Minutes = [System.Math]::DivRem($Seconds, 60, [ref]$Seconds)
+    $Hours = [System.Math]::DivRem($Minutes, 60, [ref]$Minutes)
+    if ($Hours) {
+        '{0:#0}:{1:00}:{2:00}' -f $Hours,$Minutes,$Seconds
+    }
+    else {
+        '{0:#0}:{1:00}' -f $Minutes,$Seconds
+    }
+}
+
+
+# Insert dashes to YYYYMMDD string.
+function global:DateDashes ([string]$Ymd) {
+    $Ymd.Insert(6,'-').Insert(4,'-')
+}
+
+
+# Replace invalid filename characters with underscore.
+function global:SafeName ($s) {
+    foreach ($c in [IO.Path]::GetInvalidFileNameChars()) {
+        $s = $s.Replace($c, '_')
+    };
+    return $s;
 }
 
 
