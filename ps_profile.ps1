@@ -130,6 +130,44 @@ function global:SafeName ($s) {
 }
 
 
+# Convert bytes to '[-]N <unit>' where N always has 3 significant digits.
+function global:PrettySize {
+    param (
+        [Parameter(Mandatory)]
+        [long]$Bytes
+    )
+
+    [string]$Sign = ''
+    if ($Bytes -lt 0) {
+        $Sign = '-'
+        $Bytes = -$Bytes
+    }
+
+    [double]$n = $Bytes
+    [string]$Unit = ''
+
+    if ($n -le 999) {
+        return "$Sign$n byte" + $(if ($n -eq 1) { '' } else { 's' })
+    }
+
+    foreach ($c in [char[]]'KMGTPE') {
+        if ($n -ge 999.5) {
+            $Unit = $c
+            $n /= 1024
+        }
+    }
+    [string]$Fmt = $(
+        if ($n -lt 10) {
+            'N2'
+        } elseif ($n -lt 100) {
+            'N1'
+        } else {
+            'N0'
+        }
+    )
+    return ('{0}{1:'+$Fmt+'} {2}B') -f ($Sign, $n, $Unit)
+}
+
 if ($host.name -eq 'ConsoleHost') {
 
     # invert prompt text color intensities; helps tell each command apart
