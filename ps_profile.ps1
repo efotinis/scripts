@@ -1,3 +1,7 @@
+Set-StrictMode -Version Latest
+
+Import-Module C:\scripts\EFUtil.psm1
+
 # shorthands and aliases
 function global:m ($i, $b, $c) {
     if ($i -eq $null) {
@@ -81,6 +85,7 @@ function global:Duration ($path) {
 }
 
 
+<#
 # Convert seconds to "[-]hh:mm:ss.lll".
 function global:PrettySec ([double]$Seconds, [int]$Decimals = 0, [string]$Plus = '') {
     if ($Seconds -lt 0) {
@@ -113,6 +118,7 @@ function global:PrettyDuration ([int]$Seconds) {
         '{0:#0}:{1:00}' -f $Minutes,$Seconds
     }
 }
+#>
 
 
 # Insert dashes to YYYYMMDD string.
@@ -130,6 +136,7 @@ function global:SafeName ($s) {
 }
 
 
+<#
 # Convert bytes to '[-]N <unit>' where N always has 3 significant digits.
 function global:PrettySize {
     param (
@@ -167,12 +174,14 @@ function global:PrettySize {
     )
     return ('{0}{1:'+$Fmt+'} {2}B') -f ($Sign, $n, $Unit)
 }
+#>
+
 
 if ($host.name -eq 'ConsoleHost') {
 
     # invert prompt text color intensities; helps tell each command apart
     function global:prompt {
-        $s = "$($executionContext.SessionState.Path.CurrentLocation)$('>' * ($nestedPromptLevel + 1))"
+        $s = "$($ExecutionContext.SessionState.Path.CurrentLocation)$('>' * ($NestedPromptLevel + 1))"
         Write-Host  $s -NoNewline `
             -ForegroundColor ($host.UI.RawUI.ForegroundColor -bxor 8) `
             -BackgroundColor ($host.UI.RawUI.BackgroundColor -bxor 8)
