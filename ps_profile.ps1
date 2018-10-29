@@ -85,42 +85,6 @@ function global:Duration ($path) {
 }
 
 
-<#
-# Convert seconds to "[-]hh:mm:ss.lll".
-function global:PrettySec ([double]$Seconds, [int]$Decimals = 0, [string]$Plus = '') {
-    if ($Seconds -lt 0) {
-        $Seconds = -$Seconds
-        $Sign = '-'
-    } else {
-        $Sign = $Plus
-    }
-    if ($Decimals -lt 0) {
-        $Decimals = 0
-    }
-    $Minutes = [System.Math]::DivRem($Seconds, 60, [ref]$Seconds)
-    $Hours = [System.Math]::DivRem($Minutes, 60, [ref]$Minutes)
-    $Fmt = '{0}{1:00}:{2:00}:{3:00.' + ('0' * $Decimals) + '}'
-    $Fmt -f $Sign,$Hours,$Minutes,$Seconds
-}
-
-
-# Convert seconds to "[[[h]h:]m]m:ss" (i.e. like video durations shown on YouTube).
-function global:PrettyDuration ([int]$Seconds) {
-    if ($Seconds -lt 0) {
-        $Seconds = -$Seconds
-    }
-    $Minutes = [System.Math]::DivRem($Seconds, 60, [ref]$Seconds)
-    $Hours = [System.Math]::DivRem($Minutes, 60, [ref]$Minutes)
-    if ($Hours) {
-        '{0:#0}:{1:00}:{2:00}' -f $Hours,$Minutes,$Seconds
-    }
-    else {
-        '{0:#0}:{1:00}' -f $Minutes,$Seconds
-    }
-}
-#>
-
-
 # Insert dashes to YYYYMMDD string.
 function global:DateDashes ([string]$Ymd) {
     $Ymd.Insert(6,'-').Insert(4,'-')
@@ -136,45 +100,17 @@ function global:SafeName ($s) {
 }
 
 
-<#
-# Convert bytes to '[-]N <unit>' where N always has 3 significant digits.
-function global:PrettySize {
-    param (
-        [Parameter(Mandatory)]
-        [long]$Bytes
-    )
-
-    [string]$Sign = ''
-    if ($Bytes -lt 0) {
-        $Sign = '-'
-        $Bytes = -$Bytes
-    }
-
-    [double]$n = $Bytes
-    [string]$Unit = ''
-
-    if ($n -le 999) {
-        return "$Sign$n byte" + $(if ($n -eq 1) { '' } else { 's' })
-    }
-
-    foreach ($c in [char[]]'KMGTPE') {
-        if ($n -ge 999.5) {
-            $Unit = $c
-            $n /= 1024
-        }
-    }
-    [string]$Fmt = $(
-        if ($n -lt 10) {
-            'N2'
-        } elseif ($n -lt 100) {
-            'N1'
-        } else {
-            'N0'
-        }
-    )
-    return ('{0}{1:'+$Fmt+'} {2}B') -f ($Sign, $n, $Unit)
+# Change the extension of a file path
+function global:SetExt ($path, $ext) {
+    [IO.Path]::ChangeExtension($path, $ext)
 }
-#>
+
+
+# Pretty size of all file objects piped in.
+function global:FSize {
+    $m = $Input | Measure-Object -Sum -Property Length
+    PrettySize $m.Sum
+}
 
 
 if ($host.name -eq 'ConsoleHost') {
