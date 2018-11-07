@@ -15,11 +15,6 @@ function global:m ($i, $b, $c) {
     }
 }
 Function global:x { exit }
-Function global:y {
-    Set-Location C:\docs\youtube
-    Remove-Item Function:y
-    Set-Alias -Scope Global y C:\docs\scripts\youtube-playlist-table\ypt.py
-}
 function global:z ($time) { c:\scripts\suspend.py -l $time }
 Function global:.. { Set-Location .. }
 Function global:... { Set-Location ..\.. }
