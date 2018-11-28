@@ -24,6 +24,17 @@ Set-Alias -Scope global minf C:\tools\MediaInfo\MediaInfo.exe
 Set-Alias -Scope global 7z "$Env:ProgramFiles\7-Zip\7z.exe"
 Set-Alias -Scope global j "$Env:DROPBOX\jo.py"
 Set-Alias -Scope global fn C:\scripts\filternames.ps1
+Set-Alias -Scope global mpc (Get-ItemPropertyValue HKCU:\Software\MPC-HC\MPC-HC ExePath)
+switch ($env:COMPUTERNAME) {
+    'core' {
+        Set-Alias -Scope global srip 'C:\Program Files (x86)\Streamripper\streamripper.exe'
+        Set-Alias -Scope global slink 'C:\Program Files\Python37\Scripts\streamlink.exe'
+    }
+    'lap7' {
+        Set-Alias -Scope global srip 'C:\tools\streamripper\streamripper.exe'
+        Set-Alias -Scope global slink 'C:\Program Files\Python36-32\Scripts\streamlink.exe'
+    }
+}
 
 
 # get/set console title
