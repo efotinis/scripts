@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Configuration>
+  <ViewDefinitions>
+    <View>
+      <Name>DefaultView</Name>
+      <ViewSelectedBy>
+        <TypeName>VideoInfo</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader><Label>Wdth</Label><Width>4</Width><Alignment>right</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>Hght</Label><Width>4</Width><Alignment>right</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>Time</Label><Width>8</Width><Alignment>right</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>Kbps</Label><Width>5</Width><Alignment>right</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>Fps</Label><Width>6</Width><Alignment>right</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>Vid</Label><Width>4</Width><Alignment>left</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>Aud</Label><Width>4</Width><Alignment>left</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>Size</Label><Width>7</Width><Alignment>right</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>Path</Label><Alignment>left</Alignment></TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem><PropertyName>Width</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Height</PropertyName></TableColumnItem>
+              <TableColumnItem><ScriptBlock>PrettyDuration $_.Duration</ScriptBlock></TableColumnItem>
+              <TableColumnItem><ScriptBlock>$_.Bitrate / 1000 -as [int]</ScriptBlock></TableColumnItem>
+              <TableColumnItem><PropertyName>Framerate</PropertyName><FormatString>N2</FormatString></TableColumnItem>
+              <TableColumnItem><PropertyName>Video</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Audio</PropertyName></TableColumnItem>
+              <TableColumnItem><ScriptBlock>PrettySize $_.Size</ScriptBlock></TableColumnItem>
+              <TableColumnItem><PropertyName>Path</PropertyName></TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+  </ViewDefinitions>
+</Configuration>

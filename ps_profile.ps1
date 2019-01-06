@@ -1,6 +1,7 @@
 Set-StrictMode -Version Latest
 
 Import-Module C:\scripts\EFUtil.psm1
+Update-FormatData C:\scripts\EF.Format.ps1xml
 
 # shorthands and aliases
 function global:m ($i, $b, $c) {
