@@ -56,7 +56,7 @@ function ConvertFrom-PrettySize {
     $Size = $Size.ToLower() -replace '\s+', ''
     
     if (-not ($Size -match '^([0-9.]+)(.*)$')) {
-        throw 'invalid size'
+        throw ('invalid size: "{0}"' -f $Size)
     }
     $Number, $Unit = $Matches[1..2]
     $Number = [double]$Number
@@ -65,7 +65,7 @@ function ConvertFrom-PrettySize {
     }
     
     if (-not ($Unit -match '^([kmgtpe])(i?)b?$')) {
-        throw 'invalid unit'
+        throw ('invalid unit: "{0}"' -f $Unit)
     }
     $Unit, $Iec = $Matches[1..2]
     $Base = if ($Base10 -or $Iec) { 1000 } else { 1024 }
@@ -117,6 +117,25 @@ function ConvertTo-PrettyDuration {
     else {
         '{0:#0}:{1:00}' -f $Minutes,$Seconds
     }
+}
+
+
+function ConvertFrom-PrettyDuration {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Duration
+    )
+    
+    $Duration = $Duration.Trim()
+    if (-not ($Duration -match '^(-)?(?:(\d+):)?(?:(\d\d?):)(\d\d)$')) {
+        throw ('invalid duration: "{0}"' -f $Duration)
+    }
+    $Sign, $Hours, $Minutes, $Seconds = $Matches[1..4]
+    $Hours = [int]$Hours
+    $Minutes = [int]$Minutes
+    $Seconds = [int]$Seconds
+    $Sign = if ($Sign -eq '-') { -1 } else { 1 }
+    $Sign * ((($Hours * 60) + $Minutes) * 60 + $Seconds)
 }
 
 
