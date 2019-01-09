@@ -57,7 +57,23 @@ function fps_value ($Ratio) {
 }
 
 
+$progress = $null
+$progressIndex = 0
+if ($Path.Count -gt 15) {
+    $progress = @{
+        Activity='Extracting video information'
+    }
+}
+
 $Path | % {
+    if ($progress) {
+        $progressIndex += 1
+        $progress.CurrentOperation = $_
+        $progress.Status = "$progressIndex of $($Path.Count)"
+        $progress.PercentComplete = ($progressIndex - 1) / $Path.Count * 100
+        Write-Progress @progress
+    }
+    
     $info = avprobe.exe $_ -show_format -show_streams -of json -v 0 | ConvertFrom-Json
     if (-not ($info | Get-Member format) -or -not ($info | Get-Member streams)) {
         Write-Error -Message 'could not get video info' `
@@ -88,4 +104,9 @@ $Path | % {
         [int64]$format.size, 
         $_
     )
+}
+
+if ($progress) {
+    $progress.Completed = $true
+    Write-Progress @progress
 }
