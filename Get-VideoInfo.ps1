@@ -74,6 +74,12 @@ $Path | % {
         Write-Progress @progress
     }
     
+    if (-not (Test-Path -PathType Leaf $_)) {
+        Write-Error -Message 'path is not a file' `
+            -TargetObject $_
+        return
+    }
+    
     $info = avprobe.exe $_ -show_format -show_streams -of json -v 0 | ConvertFrom-Json
     if (-not ($info | Get-Member format) -or -not ($info | Get-Member streams)) {
         Write-Error -Message 'could not get video info' `
