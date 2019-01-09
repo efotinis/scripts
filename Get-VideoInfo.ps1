@@ -56,15 +56,23 @@ function fps_value ($Ratio) {
     $a / $b
 }
 
+
 $Path | % {
     $info = avprobe.exe $_ -show_format -show_streams -of json -v 0 | ConvertFrom-Json
     if (-not ($info | Get-Member format) -or -not ($info | Get-Member streams)) {
-        Write-Error "could not get info: $_"
+        Write-Error -Message 'could not get video info' `
+            -TargetObject $_
         return
     }
     $format = $info.format
     $video = $info.streams | IsVideoStream | select -first 1
     $audio = $info.streams | IsAudioStream | select -first 1
+
+    if (-not $video) {
+        Write-Error -Message 'could not find video stream' `
+            -TargetObject $_
+        return
+    }
 
     $vcodec = $video.codec_name
     $acodec = & { if ($audio) { $audio.codec_name } else { $null } }
