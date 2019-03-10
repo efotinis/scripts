@@ -5,14 +5,27 @@ Update-FormatData C:\scripts\EF.Format.ps1xml
 
 # shorthands and aliases
 function global:m ($i, $b, $c) {
+    # multiply value by ten, preserving leading sign (if any);
+    # note that $b/$c params will be either numeric or string,
+    # depending on whether they include a leading sign or not
+    function Value ($n) {
+        if ($n -match '([+-])(.*)') {
+            $Matches[1] + [int]([double]$Matches[2] * 10) 
+        } else {
+            $n * 10
+        }
+    }
+    if ($b -ne $null) { $b = Value $b }
+    if ($c -ne $null) { $c = Value $c }
+    
     if ($i -eq $null) {
         monctl
     } elseif ($b -eq $null) {
         monctl -m $i
     } elseif ($c -eq $null) {
-        monctl -m $i -b ($b*10-as[int]) -c ($b*10-as[int])
+        monctl -m $i -b $b -c $b
     } else {
-        monctl -m $i -b ($b*10-as[int]) -c ($c*10-as[int])
+        monctl -m $i -b $b -c $c
     }
 }
 Function global:x { exit }
