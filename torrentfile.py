@@ -13,6 +13,7 @@ import sys
 import pprint
 import argparse
 import glob
+import codecs
 
 
 try:
@@ -51,7 +52,14 @@ def parse_args():
                        help='print torrent hash and path instead')
     group.add_argument('-l', dest='listing', action='store_true',
                        help='print list of file sizes and paths instead')
-    return ap.parse_args()
+    group.add_argument('-e', dest='decoder', default='utf-8',
+                       help='encoding for decoding path names in list; default: %(default)s')
+    args = ap.parse_args()
+    try:
+        args.decoder = codecs.getdecoder(args.decoder)
+    except LookupError as x:
+        ap.error(x)
+    return args
 
 
 def gen_file_paths(patterns):
@@ -90,7 +98,7 @@ if __name__ == '__main__':
         elif args.listing:            
             print(path)
             for item_path, size in filesinfo(obj):
-                print('  %15d  %s' % (size, item_path))
+                print('  %15d  %s' % (size, args.decoder(item_path)[0]))
 
         else:
             print('----', path)
