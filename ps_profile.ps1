@@ -33,6 +33,8 @@ function global:z ($time) { c:\scripts\suspend.py -l $time }
 Function global:.. { Set-Location .. }
 Function global:... { Set-Location ..\.. }
 Function global:?? ($Cmd) { help $Cmd -Full }
+function global:yc { yps (gcb) }  # play youtube stream from clipboard url
+function global:mc { mcver -d30 }  # show minecraft updates in the last 30 days
 Set-Alias -Scope global yd C:\tools\youtube-dl.exe
 Set-Alias -Scope global minf C:\tools\MediaInfo\MediaInfo.exe
 Set-Alias -Scope global 7z "$Env:ProgramFiles\7-Zip\7z.exe"
