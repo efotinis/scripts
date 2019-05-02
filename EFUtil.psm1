@@ -33,9 +33,9 @@ function ConvertTo-PrettySize {
         }
     }
     [string]$Fmt = $(
-        if ($n -lt 10) {
+        if ($n -lt 9.995) {
             'N2'
-        } elseif ($n -lt 100) {
+        } elseif ($n -lt 99.95) {
             'N1'
         } else {
             'N0'
