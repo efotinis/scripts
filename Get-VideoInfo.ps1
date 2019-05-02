@@ -74,7 +74,7 @@ $Path | % {
         Write-Progress @progress
     }
     
-    if (-not (Test-Path -PathType Leaf $_)) {
+    if (-not (Test-Path -PathType Leaf -LiteralPath $_)) {
         Write-Error -Message 'path is not a file' `
             -TargetObject $_
         return
