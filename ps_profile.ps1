@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 
-Import-Module C:\scripts\EFUtil.psm1
-Update-FormatData C:\scripts\EF.Format.ps1xml
+Import-Module D:\scripts\EFUtil.psm1
+Update-FormatData D:\scripts\EF.Format.ps1xml
 
 # shorthands and aliases
 function global:m ($i, $b, $c) {
@@ -29,17 +29,39 @@ function global:m ($i, $b, $c) {
     }
 }
 Function global:x { exit }
-function global:z ($time) { c:\scripts\suspend.py -l $time }
+function global:z ($time) { D:\scripts\suspend.py -l $time }
 Function global:.. { Set-Location .. }
 Function global:... { Set-Location ..\.. }
 Function global:?? ($Cmd) { help $Cmd -Full }
-function global:yc { yps (gcb) }  # play youtube stream from clipboard url
-function global:mc { mcver -d30 }  # show minecraft updates in the last 30 days
+function global:yc { yps -f 18 (gcb) }  # play youtube stream from clipboard url
+function global:yc22 { yps -f 22 (gcb) }  # play youtube stream from clipboard url
+if ($Env:COMPUTERNAME -eq 'CORE') {
+
+    # launch current Minecraft instance
+    function global:mc { D:\games\MultiMC\MultiMC.exe -l 19w03c }
+    # show Minecraft updates in the last 30 days (or launches version wiki)
+    function global:mcv {
+        param([switch]$Wiki)
+        if ($Wiki) {
+            start 'https://minecraft.gamepedia.com/Java_Edition_version_history/Development_versions'
+        } else {
+            mcver -d30
+        }
+    }
+    # backup/restore main hardcore Minecraft world
+    function global:mcb { E:\backups\minecraft\backup.ps1 19w03c Serendipity }
+    function global:mcr { E:\backups\minecraft\backup.ps1 19w03c Serendipity -RestoreLast }
+
+    # backup/list main Firefox profile
+    function global:fxb { E:\backups\firefox\backup.ps1 kgfe1h9i.default-1510666418771 }
+    function global:fxl { E:\backups\firefox\list_file_age.ps1 kgfe1h9i.default-1510666418771 }
+
+}
 Set-Alias -Scope global yd C:\tools\youtube-dl.exe
 Set-Alias -Scope global minf C:\tools\MediaInfo\MediaInfo.exe
 Set-Alias -Scope global 7z "$Env:ProgramFiles\7-Zip\7z.exe"
 Set-Alias -Scope global j "$Env:DROPBOX\jo.py"
-Set-Alias -Scope global fn C:\scripts\filternames.ps1
+Set-Alias -Scope global fn D:\scripts\filternames.ps1
 Set-Alias -Scope global mpc (Get-ItemPropertyValue HKCU:\Software\MPC-HC\MPC-HC ExePath)
 switch ($env:COMPUTERNAME) {
     'core' {
