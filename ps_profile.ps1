@@ -57,6 +57,14 @@ if ($Env:COMPUTERNAME -eq 'CORE') {
     function global:fxl { E:\backups\firefox\list_file_age.ps1 kgfe1h9i.default-1510666418771 }
 
 }
+function global:ss { nircmdc.exe screensaver }
+function global:ec ($Name) {  # edit command, if it's a file
+    $cmd = Get-Command $Name
+    if ($cmd.CommandType -ne 'ExternalScript') {
+        throw 'cannot edit; command is not an external script'
+    }
+    notepad $cmd.path
+}
 Set-Alias -Scope global yd C:\tools\youtube-dl.exe
 Set-Alias -Scope global minf C:\tools\MediaInfo\MediaInfo.exe
 Set-Alias -Scope global 7z "$Env:ProgramFiles\7-Zip\7z.exe"
