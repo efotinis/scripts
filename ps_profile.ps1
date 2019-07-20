@@ -65,6 +65,15 @@ function global:ec ($Name) {  # edit command, if it's a file
     }
     notepad $cmd.path
 }
+function global:fr ([int]$a, [int]$b) {
+    # print simplified fraction a/b
+    py -c '
+import sys
+import fractions
+x, y = map(int, sys.argv[1:])
+print(fractions.Fraction(x, y))
+    ' $a $b
+}
 Set-Alias -Scope global yd C:\tools\youtube-dl.exe
 Set-Alias -Scope global minf C:\tools\MediaInfo\MediaInfo.exe
 Set-Alias -Scope global 7z "$Env:ProgramFiles\7-Zip\7z.exe"
@@ -236,4 +245,14 @@ if ($host.name -eq 'ConsoleHost') {
         }
     }
 
+}
+
+
+# get the last known home WAN IP
+function global:HomeWan {
+    $tail = cat $Env:Dropbox\data\wan.log | select -last 1
+    if ($tail -NotMatch '(\d+\.\d+\.\d+\.\d+)$') {
+        throw 'no IP found in log tail'
+    }
+    $Matches[1]
 }
