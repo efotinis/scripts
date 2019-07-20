@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 
-Import-Module D:\scripts\EFUtil.psm1
-Update-FormatData D:\scripts\EF.Format.ps1xml
+Import-Module $Env:Scripts\EFUtil.psm1
+Update-FormatData $Env:Scripts\EF.Format.ps1xml
 
 # shorthands and aliases
 function global:m ($i, $b, $c) {
@@ -29,7 +29,7 @@ function global:m ($i, $b, $c) {
     }
 }
 Function global:x { exit }
-function global:z ($time) { D:\scripts\suspend.py -l $time }
+function global:z ($time) { & $Env:Scripts\suspend.py -l $time }
 Function global:.. { Set-Location .. }
 Function global:... { Set-Location ..\.. }
 Function global:?? ($Cmd) { help $Cmd -Full }
@@ -69,7 +69,7 @@ Set-Alias -Scope global yd C:\tools\youtube-dl.exe
 Set-Alias -Scope global minf C:\tools\MediaInfo\MediaInfo.exe
 Set-Alias -Scope global 7z "$Env:ProgramFiles\7-Zip\7z.exe"
 Set-Alias -Scope global j "$Env:DROPBOX\jo.py"
-Set-Alias -Scope global fn D:\scripts\filternames.ps1
+Set-Alias -Scope global fn $Env:Scripts\filternames.ps1
 Set-Alias -Scope global mpc (Get-ItemPropertyValue HKCU:\Software\MPC-HC\MPC-HC ExePath)
 switch ($env:COMPUTERNAME) {
     'core' {
