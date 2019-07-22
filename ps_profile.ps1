@@ -250,8 +250,9 @@ if ($host.name -eq 'ConsoleHost') {
 
 # get the last known home WAN IP
 function global:HomeWan {
-    $tail = cat $Env:Dropbox\data\wan.log | select -last 1
+    $tail = cat $Env:SyncMain\data\wan.log | select -last 1
     if ($tail -NotMatch '(\d+\.\d+\.\d+\.\d+)$') {
+        # TODO: show error message instead
         throw 'no IP found in log tail'
     }
     $Matches[1]

@@ -36,8 +36,6 @@ Add-Type -TypeDefinition @"
     }
 "@
 
-#Update-FormatData 'C:\Users\Elias\Dropbox\tools\new scripts\VideoInfo.Format.ps1xml'
-
 
 filter IsVideoStream {
     if ($_.codec_type -eq 'video' -and $_.avg_frame_rate -ne '0/0') {

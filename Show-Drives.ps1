@@ -33,7 +33,7 @@ Add-Type -TypeDefinition @"
     }
 "@
 
-Update-FormatData 'C:\Users\Elias\Dropbox\tools\new scripts\fmt.ps1xml'
+Update-FormatData $Env:SyncMain\util\fmt.ps1xml
 
 
 [System.IO.DriveInfo]::GetDrives() | 
