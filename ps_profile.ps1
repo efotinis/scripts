@@ -60,10 +60,17 @@ if ($Env:COMPUTERNAME -eq 'CORE') {
 function global:ss { nircmdc.exe screensaver }
 function global:ec ($Name) {  # edit command, if it's a file
     $cmd = Get-Command $Name
-    if ($cmd.CommandType -ne 'ExternalScript') {
-        throw 'cannot edit; command is not an external script'
+    function isTextScript ($cmd) {
+        $ext = '.BAT;.CMD;.VBS;.JS;.WSH;.PY;.PYW' -split ';'
+        return $cmd.CommandType -eq 'Application' -and
+            $cmd.Extension -in $ext
     }
-    notepad $cmd.path
+    if ($cmd.CommandType -eq 'ExternalScript' -or (isTextScript $cmd)) {
+        notepad $cmd.path
+    }
+    else {
+        throw 'cannot edit; not a text script'
+    }
 }
 function global:fr ([int]$a, [int]$b) {
     # print simplified fraction a/b
