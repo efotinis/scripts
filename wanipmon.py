@@ -1,14 +1,20 @@
-# Log WAN IP changes to a cloud file (currently in Dropbox).
+# Log WAN IP changes to a synced file.
 # Useful as a makeshift dyndns.
 
 import os, time, myip
 
-OUTFILE = os.path.expanduser('~\\Dropbox\\data\\wan.log')
+OUTFILE = os.path.expandvars('%SyncMain%\\data\\wan.log'))
 INTERVAL_MINUTES = 5
 
 def logLine(s):
     with open(OUTFILE, 'a', encoding='ascii') as f:
         print(s, file=f)
+
+def get_ip_or_error():
+    try:
+        return myip.query()
+    except Exception as x:
+        return repr(x)
 
 if __name__ == '__main__':
     print(f'updating WAN IP log every {INTERVAL_MINUTES} minute(s); hit Ctrl-C to end...')
@@ -17,7 +23,7 @@ if __name__ == '__main__':
     while True:
         timestamp = time.ctime()
         try:
-            ip = myip.query()
+            ip = get_ip_or_error()
             if ip != lastIP:
                 logLine(f'{timestamp} {ip}')
                 lastIP = ip
