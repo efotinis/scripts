@@ -3,7 +3,7 @@
 
 import os, time, myip
 
-OUTFILE = os.path.expandvars('%SyncMain%\\data\\wan.log'))
+OUTFILE = os.path.expandvars('%SyncMain%\\data\\wan.log')
 INTERVAL_MINUTES = 5
 
 def logLine(s):
