@@ -10,14 +10,14 @@ function global:m ($i, $b, $c) {
     # depending on whether they include a leading sign or not
     function Value ($n) {
         if ($n -match '([+-])(.*)') {
-            $Matches[1] + [int]([double]$Matches[2] * 10) 
+            $Matches[1] + [int]([double]$Matches[2] * 10)
         } else {
             $n * 10
         }
     }
     if ($b -ne $null) { $b = Value $b }
     if ($c -ne $null) { $c = Value $c }
-    
+
     if ($i -eq $null) {
         monctl
     } elseif ($b -eq $null) {
@@ -117,8 +117,8 @@ function global:PlaySound ($path) {
 
 # output speech
 function global:Speak (
-    [string]$Text, 
-    [int]$Volume = 100, 
+    [string]$Text,
+    [int]$Volume = 100,
     [int]$Rate = 0
 ) {
     $Voice = New-Object -ComObject SAPI.SpVoice
@@ -263,4 +263,24 @@ function global:HomeWan {
         throw 'no IP found in log tail'
     }
     $Matches[1]
+}
+
+
+# Count of characters in string.
+function CharCount {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$InputObject,
+        [Parameter(Mandatory)][char]$Character
+    )
+    # NOTE: this is significantly faster that the simpler:
+    #   [char[]]$InputObject | ? { $_ -eq $Character } | measure | select -exp count
+    # (4.5s vs 160s for 6.5MiB input)
+    $count = 0
+    for ($i = 0; $i -lt $InputObject.Length; ++$i) {
+        if ($InputObject[$i] -eq $Character) {
+            ++$count
+        }
+    }
+    $count
 }
