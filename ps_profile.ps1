@@ -267,7 +267,7 @@ function global:HomeWan {
 
 
 # Count of characters in string.
-function CharCount {
+function global:CharCount {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$InputObject,
@@ -283,4 +283,26 @@ function CharCount {
         }
     }
     $count
+}
+
+
+function global:SnapshotDir ($Source, $Dest, $Name) {
+    if (-not (Test-Path -Type Container $Source)) {
+        Write-Error "source directory does not exist: $Source"
+        return
+    }
+    if (-not (Test-Path -Type Container $Dest)) {
+        Write-Error "destination directory does not exist: $Dest"
+        return
+    }
+    $timestamp = Get-Date -Format FileDateTime
+    $machine = $Env:ComputerName
+    $outfile = Join-Path $Dest "$Name-$timestamp-$machine.7z"
+    Push-Location $Source
+    try {
+        7z a $outfile -mtc=on *
+    }
+    finally {
+        Pop-Location
+    }
 }
