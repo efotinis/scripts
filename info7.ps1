@@ -4,7 +4,10 @@
 
 [CmdletBinding()]
 param(
-    [string]$Archive
+    [string]$Archive,
+
+    [object]$Password,    # [SecureString] or unspecified
+    [switch]$GetPassword  # prompt for password; overrides $Password
 )
 
 # Convert non-empty hashtable to PSCustomObject.
@@ -12,6 +15,13 @@ function MakeObject ($h) {
     if ($h.Count) {
         [PSCustomObject]$h
     }
+}
+
+# Convert SecureString to plain text.
+function GetSecureStringText ([SecureString]$s) {
+    [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+        [Runtime.InteropServices.Marshal]::SecureStringToBSTR($Password)
+    )
 }
 
 # Convert info output from 7-Zip to PSCustomObjects.
@@ -79,4 +89,15 @@ function ZipInfo {
     }
 }
 
-7z l -slt $Archive | ZipInfo
+if ($GetPassword) {
+    $Password = Read-Host 'password' -AsSecureString
+}
+
+$args = @(
+    'l'
+    '-slt'
+    if ($Password) { '-p' + (GetSecureStringText $pswText) }
+    $Archive
+)
+
+7z @args | ZipInfo
