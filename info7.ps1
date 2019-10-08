@@ -96,7 +96,7 @@ if ($GetPassword) {
 $args = @(
     'l'
     '-slt'
-    if ($Password) { '-p' + (GetSecureStringText $pswText) }
+    if ($Password) { '-p' + (GetSecureStringText $Password) }
     $Archive
 )
 
