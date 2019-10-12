@@ -33,8 +33,19 @@ function global:z ($time) { & $Env:Scripts\suspend.py -l $time }
 Function global:.. { Set-Location .. }
 Function global:... { Set-Location ..\.. }
 Function global:?? ($Cmd) { help $Cmd -Full }
-function global:yc { yps -f 18 (gcb) }  # play youtube stream from clipboard url
-function global:yc22 { yps -f 22 (gcb) }  # play youtube stream from clipboard url
+function global:yc ([switch]$HiDef) {  # play youtube stream from clipboard url
+    Function GetYouTubeIdFromUrl ([string]$Url) {
+        if ($Url -match 'https://www\.youtube\.com/watch\?v=(.{11})') {
+            return $Matches[1]
+        }
+        if ($Url -match '(.{11})') {
+            return $Matches[1]
+        }
+        Write-Error "could not find ID in URL: $Url"
+    }
+    $fmt = if ($HiDef) { 22 } else { 18 }
+    yps -f $fmt (GetYouTubeIdFromUrl (gcb))
+}
 if ($Env:COMPUTERNAME -eq 'CORE') {
 
     # launch current Minecraft instance
@@ -181,6 +192,31 @@ function global:FSize {
 }
 
 
+# Pretty size and count of all file/dir objects piped in.
+function global:FStats {
+begin {
+    $files, $dirs, $bytes = 0, 0, 0
+}
+process {
+    if ($_.PSIsContainer) {
+        $dirs += 1
+    }
+    else {
+        $files += 1
+        $bytes += $_.Length
+    }
+}
+end {
+    'dirs: {0:N0}, files: {1:N0}, size: {2} ({3:N0} byte(s))' -f (
+        $dirs,
+        $files,
+        (PrettySize $bytes),
+        $bytes
+    )
+}
+}
+
+
 if ($host.name -eq 'ConsoleHost') {
 
     # invert prompt text color intensities; helps tell each command apart
@@ -324,3 +360,36 @@ function global:SnapshotDir ($Source, $Dest, $Name) {
         Pop-Location
     }
 }
+
+
+function global:New-DateDirectory {
+    param(
+        [string]$Parent = '.',  # parent path
+        [switch]$Time,          # include time
+        [switch]$Compact,       # compact format; minimize symbol chars
+        [switch]$Stay           # stay in current location and return dir object instead
+    )
+
+    if ($Time) {
+        $fmt = if ($Compact) { 'yyyMMdd-HHmmss' } else { 'yyy-MM-dd HH_mm_ss' }
+    }
+    else {
+        $fmt = if ($Compact) { 'yyyMMdd' } else { 'yyy-MM-dd' }
+    }
+
+    $path = Join-Path $Parent (Get-Date -Format $fmt)
+    $dir = New-Item -Type Directory $path
+    if ($dir) {
+        if ($Stay) {
+            $dir
+        }
+        else {
+            Set-Location $dir
+        }
+    }
+}
+
+Set-Alias -Scope global mdd New-DateDirectory
+
+
+function global:gvi { Get-VideoInfo.ps1 (ls -file) | tee -v a; $global:a = $a }
