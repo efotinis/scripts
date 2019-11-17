@@ -33,7 +33,11 @@ function global:z ($time) { & $Env:Scripts\suspend.py -l $time }
 Function global:.. { Set-Location .. }
 Function global:... { Set-Location ..\.. }
 Function global:?? ($Cmd) { help $Cmd -Full }
-function global:yc ([switch]$HiDef) {  # play youtube stream from clipboard url
+function global:yc {  # play youtube stream from clipboard url
+    param(
+        [switch]$HiDef,  # use '-f 22' instead of '-f 18'
+        [int]$TailView = 0  # if >0, prompt to launch in browser at specified seconds before end; useful to mark video as watched
+    )
     Function GetYouTubeIdFromUrl ([string]$Url) {
         if ($Url -match 'https://www\.youtube\.com/watch\?v=(.{11})') {
             return $Matches[1]
@@ -43,8 +47,16 @@ function global:yc ([switch]$HiDef) {  # play youtube stream from clipboard url
         }
         Write-Error "could not find ID in URL: $Url"
     }
+    $id = GetYouTubeIdFromUrl (gcb)
     $fmt = if ($HiDef) { 22 } else { 18 }
-    yps -f $fmt (GetYouTubeIdFromUrl (gcb))
+    yps -f $fmt -- $id
+    if ($TailView -gt 0) {
+        Write-Host -NoNewLine "getting video info...`r"
+        $info = yd -j -- $id | ConvertFrom-Json
+        $timestamp = $info.duration - $TailView
+        Read-Host 'press Enter to launch in browser' > $null
+        start "https://youtube.com/watch?v=${id}&t=${timestamp}"
+    }
 }
 if ($Env:COMPUTERNAME -eq 'CORE') {
 
