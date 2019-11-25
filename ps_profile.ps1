@@ -120,6 +120,7 @@ switch ($env:COMPUTERNAME) {
         Set-Alias -Scope global slink 'C:\Program Files\Python36-32\Scripts\streamlink.exe'
     }
 }
+Set-Alias -Scope global ddmver 'D:\docs\apps\dell display manager\check-version.ps1'
 
 
 # get/set console title
