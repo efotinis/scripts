@@ -87,13 +87,24 @@ class ImageGenerator:
         self.IMGW, self.IMGH = 557, 690
         self.FONT = ImageFont.truetype('arial.ttf', int(self.BANNERH * 0.85))
         self.clr1, self.clr2 = (240,105,66), (152,185,102)
+        self.TRIM = (40, 60, 50, 0)  # l,t,r,b border to trim off source images
         
     def create(self, outpath, title, images, altclr):
         images = list(images)
-        im = Image.new('RGB', (self.IMGW * len(images), self.IMGH + self.BANNERH))
+        trimmed_w = self.IMGW - self.TRIM[0] - self.TRIM[2]
+        trimmed_h = self.IMGH - self.TRIM[1] - self.TRIM[3]
+        im = Image.new('RGB', (
+            trimmed_w * len(images), 
+            trimmed_h + self.BANNERH
+        ))
         for i, data in enumerate(images):
-            im2 = Image.open(io.BytesIO(data))
-            im.paste(im2, (self.IMGW * i, self.BANNERH))
+            im2 = Image.open(io.BytesIO(data)).crop((
+                self.TRIM[0],
+                self.TRIM[1],
+                self.IMGW - self.TRIM[2],
+                self.IMGH - self.TRIM[3]
+            ))
+            im.paste(im2, (trimmed_w * i, self.BANNERH))
         dr = ImageDraw.Draw(im)
         clr = self.clr2 if altclr else self.clr1
         dr.text((0, 0), title, font=self.FONT, fill=clr)
