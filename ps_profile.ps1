@@ -406,3 +406,29 @@ Set-Alias -Scope global mdd New-DateDirectory
 
 
 function global:gvi { Get-VideoInfo.ps1 (ls -file) | tee -v a; $global:a = $a }
+
+<#
+Split array into sub-arrays, based on part size or count.
+Last part may contain less items than the rest.
+Based on:
+    https://gallery.technet.microsoft.com/scriptcenter/Split-an-array-into-parts-4357dcc1
+#>
+function global:SplitArray { 
+    param(
+        $Items,
+        [int]$Count,
+        [int]$Size
+    )
+    if ($Count -gt 0) {
+        $Size = [Math]::Ceiling($Items.Count / $Count)
+    } elseif ($Size -gt 0) {
+        $Count = [Math]::Ceiling($Items.Count / $Size)
+    } else {
+        $Count, $Size = 1, $Items.Count
+    }
+    for ($i = 0; $i -lt $Count; ++$i) {
+        $beg = $i * $Size
+        $end = [Math]::Min(($i + 1) * $Size, $Items.Count)
+        ,@($Items[$beg..($end - 1)])
+    }
+}
