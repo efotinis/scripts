@@ -13,7 +13,8 @@
           <TableColumnHeader><Label>Time</Label><Width>8</Width><Alignment>right</Alignment></TableColumnHeader>
           <TableColumnHeader><Label>Kbps</Label><Width>5</Width><Alignment>right</Alignment></TableColumnHeader>
           <TableColumnHeader><Label>Fps</Label><Width>6</Width><Alignment>right</Alignment></TableColumnHeader>
-          <TableColumnHeader><Label>Vid</Label><Width>6</Width><Alignment>left</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>Vid</Label><Width>8</Width><Alignment>left</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>VTag</Label><Width>4</Width><Alignment>left</Alignment></TableColumnHeader>
           <TableColumnHeader><Label>Aud</Label><Width>6</Width><Alignment>left</Alignment></TableColumnHeader>
           <TableColumnHeader><Label>Size</Label><Width>7</Width><Alignment>right</Alignment></TableColumnHeader>
           <TableColumnHeader><Label>Path</Label><Alignment>left</Alignment></TableColumnHeader>
@@ -27,6 +28,7 @@
               <TableColumnItem><ScriptBlock>$_.Bitrate / 1000 -as [int]</ScriptBlock></TableColumnItem>
               <TableColumnItem><PropertyName>Framerate</PropertyName><FormatString>N2</FormatString></TableColumnItem>
               <TableColumnItem><PropertyName>Video</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>VideoTag</PropertyName></TableColumnItem>
               <TableColumnItem><PropertyName>Audio</PropertyName></TableColumnItem>
               <TableColumnItem><ScriptBlock>PrettySize $_.Size</ScriptBlock></TableColumnItem>
               <TableColumnItem><PropertyName>Path</PropertyName></TableColumnItem>

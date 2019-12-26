@@ -16,12 +16,13 @@ Add-Type -TypeDefinition @"
         public int      Bitrate;
         public double   Framerate;
         public string   Video;
+        public string   VideoTag;
         public string   Audio;
         public int64    Size;
         public string   Path;
         public VideoInfo(
             int width, int height, double duration, int bitrate, double framerate, 
-            string video, string audio, int64 size, string path) 
+            string video, string videoTag, string audio, int64 size, string path) 
         {
             Width = width;
             Height = height;
@@ -29,6 +30,7 @@ Add-Type -TypeDefinition @"
             Bitrate = bitrate;
             Framerate = framerate;
             Video = video;
+            VideoTag = videoTag;
             Audio = audio;
             Size = size;
             Path = path;
@@ -52,6 +54,10 @@ filter IsAudioStream {
 function fps_value ($Ratio) {
     $a, $b = $Ratio -split '/',2
     $a / $b
+}
+
+function CodecTag ([string]$s) {
+    $s -replace '\[0\]',"`0"
 }
 
 
@@ -103,7 +109,8 @@ $Path | % {
         [double]$format.duration, 
         [int]$format.bit_rate, 
         (fps_value $video.avg_frame_rate), 
-        $vcodec, 
+        $vcodec,
+        (CodecTag $video.codec_tag_string),
         $acodec,
         [int64]$format.size, 
         $_
