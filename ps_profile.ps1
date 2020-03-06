@@ -35,7 +35,7 @@ Function global:... { Set-Location ..\.. }
 Function global:?? ($Cmd) { help $Cmd -Full }
 function global:yc {  # play youtube stream from clipboard url
     param(
-        [switch]$HiDef,  # use '-f 22' instead of '-f 18'
+        [switch]$HiDef,  # use high quality stream, if available
         [int]$TailView = 0  # if >0, prompt to launch in browser at specified seconds before end; useful to mark video as watched
     )
     Function GetYouTubeIdFromUrl ([string]$Url) {
@@ -48,7 +48,7 @@ function global:yc {  # play youtube stream from clipboard url
         Write-Error "could not find ID in URL: $Url"
     }
     $id = GetYouTubeIdFromUrl (gcb)
-    $fmt = if ($HiDef) { 22 } else { 18 }
+    $fmt = if ($HiDef) { '22/18' } else { '18' }
     yps -f $fmt -- $id
     if ($TailView -gt 0) {
         Write-Host -NoNewLine "getting video info...`r"
@@ -61,7 +61,7 @@ function global:yc {  # play youtube stream from clipboard url
 if ($Env:COMPUTERNAME -eq 'CORE') {
 
     # launch current Minecraft instance
-    function global:mc { D:\games\MultiMC\MultiMC.exe -l 19w03c }
+    function global:mc { D:\games\MultiMC\MultiMC.exe -l $Env:MULTIMC_MAIN_INST }
     # show Minecraft updates in the last 30 days (or launches version wiki)
     function global:mcv {
         param([switch]$Wiki)
@@ -315,7 +315,7 @@ function global:HomeWan {
 }
 
 
-# Count of characters in string.
+# Count of characters in string (case-insensitive).
 function global:CharCount {
     [CmdletBinding()]
     param(
@@ -328,6 +328,24 @@ function global:CharCount {
     $count = 0
     for ($i = 0; $i -lt $InputObject.Length; ++$i) {
         if ($InputObject[$i] -eq $Character) {
+            ++$count
+        }
+    }
+    $count
+}
+# Count of characters in string (case-sensitive).
+function global:CaseCharCount {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$InputObject,
+        [Parameter(Mandatory)][char]$Character
+    )
+    # NOTE: this is significantly faster that the simpler:
+    #   [char[]]$InputObject | ? { $_ -eq $Character } | measure | select -exp count
+    # (4.5s vs 160s for 6.5MiB input)
+    $count = 0
+    for ($i = 0; $i -lt $InputObject.Length; ++$i) {
+        if ($InputObject[$i] -ceq $Character) {
             ++$count
         }
     }
