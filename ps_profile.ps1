@@ -162,6 +162,13 @@ function global:Reversed
 }
 
 
+function global:Shuffled
+{
+    $a = @($input)
+    $a | Get-Random -Count $a.Length
+}
+
+
 # get elevation status
 function global:IsAdmin {
     ([Security.Principal.WindowsPrincipal] `
