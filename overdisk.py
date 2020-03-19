@@ -654,6 +654,12 @@ def cmd_list(state, params):
                 total_stats[2] += item.size
     order_index_map = {'d':0, 'f':1, 's':2, 'n':3, '*':None}
     order_index = order_index_map[state.list_order.lower()]
+
+    # move <files> entry to table body when in dir/file/byte ordering
+    if order_index in (0,1,2):
+        data_rows += [file_stats + ['<files>']]
+        file_stats = None
+
     if order_index is not None:
         data_rows.sort(
             key=operator.itemgetter(order_index),
@@ -661,8 +667,9 @@ def cmd_list(state, params):
         )
 
     data_rows = list(tail_filter(data_rows, state.tail_count))
-    data_rows += [file_stats + ['<files>']] + \
-                [total_stats + ['<total>']]
+    if file_stats:
+        data_rows += [file_stats + ['<files>']]
+    data_rows += [total_stats + ['<total>']]
 
     size_title, size_fmt = size_title_and_formatter(state.unit)
     number_str = lambda x, row: '{:,}'.format(x)
@@ -675,7 +682,7 @@ def cmd_list(state, params):
         TableColumn(size_title, 'r', size_str),
         TableColumn('name', '', identity),
         ]
-    for s in output_table(cols, data_rows, state.colsep, 2):
+    for s in output_table(cols, data_rows, state.colsep, 1 + bool(file_stats)):
         uprint(s)
 
 
