@@ -431,7 +431,22 @@ function global:New-DateDirectory {
     }
 }
 
-Set-Alias -Scope global mdd New-DateDirectory
+Set-Alias -Scope global ndd New-DateDirectory
+
+
+# Create new directory path if it doesn't exist and switch to it.
+function global:nd ([string]$Path) {
+    if (-not (Test-Path -LiteralPath $Path -PathType Container -IsValid)) {
+        Write-Error "invalid path: $Path"
+        return
+    }
+    if (Test-Path -LiteralPath $Path -PathType Container) {
+        Write-Warning "directory already exists: $Path"
+    } elseif (-not (mkdir $Path)) {
+         return
+    }
+    Set-Location -LiteralPath $Path
+}
 
 
 function global:gvi { Get-VideoInfo.ps1 (ls -file) | tee -v a; $global:a = $a }
