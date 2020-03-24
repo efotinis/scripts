@@ -242,8 +242,11 @@ if ($host.name -eq 'ConsoleHost') {
 
     # invert prompt text color intensities; helps tell each command apart
     function global:prompt {
-        $s = "$($ExecutionContext.SessionState.Path.CurrentLocation)$('>' * ($NestedPromptLevel + 1))"
-        Write-Host  $s -NoNewline `
+        $s = $ExecutionContext.SessionState.Path.CurrentLocation
+        # replace home path with ~
+        $s = $s -replace ([RegEx]::Escape($Env:USERPROFILE)+'(?:$|(?=\\))'),'~'
+        $s += '>' * ($NestedPromptLevel + 1)
+        Write-Host $s -NoNewline `
             -ForegroundColor ($host.UI.RawUI.ForegroundColor -bxor 8) `
             -BackgroundColor ($host.UI.RawUI.BackgroundColor -bxor 8)
         Write-Output ' '
