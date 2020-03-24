@@ -110,6 +110,7 @@ Set-Alias -Scope global 7z "$Env:ProgramFiles\7-Zip\7z.exe"
 Set-Alias -Scope global j "$Env:DROPBOX\jo.py"
 Set-Alias -Scope global fn $Env:Scripts\filternames.ps1
 Set-Alias -Scope global mpc (Get-ItemPropertyValue HKCU:\Software\MPC-HC\MPC-HC ExePath)
+Set-Alias -Scope global g goto.ps1
 switch ($env:COMPUTERNAME) {
     'core' {
         Set-Alias -Scope global srip 'C:\Program Files (x86)\Streamripper\streamripper.exe'
