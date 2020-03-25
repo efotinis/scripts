@@ -345,6 +345,7 @@ class CmdDispatcher(object):
             'alias': cmd_alias,
             'colsep': cmd_colsep,
             'cls': cmd_cls,
+            'con': cmd_con,
             'quit': cmd_quit,
         }
         
@@ -836,6 +837,32 @@ def cmd_cls(state, params):
     if params:
         raise CmdError('no params required')
     console_stuff.cls()
+
+
+def cmd_con(state, params):
+    import getopt
+    import win32console
+    try:
+        opts, args = getopt.getopt(params, 'w:h:')
+    except getopt.GetoptError as x:
+        raise CmdError(str(x))
+    if args:
+        raise CmdError('no params required')
+    opts = dict(opts)
+    if not opts:
+        rows, cols = console_stuff.consolesize()
+        print(f'width: {cols}, height: {rows}')
+    else:
+        try:
+            h = win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
+            size = h.GetConsoleScreenBufferInfo()['Size']
+            if '-w' in opts:
+                size.X = int(opts['-w'])
+            if '-h' in opts:
+                size.Y = int(opts['-h'])
+            h.SetConsoleScreenBufferSize(size)
+        except win32console.error:
+            print('could not set console size')
 
 
 def cmd_quit(state, params):
