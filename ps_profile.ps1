@@ -104,6 +104,7 @@ x, y = map(int, sys.argv[1:])
 print(fractions.Fraction(x, y))
     ' $a $b
 }
+Set-Alias -Scope global ed $Env:windir\system32\notepad.exe
 Set-Alias -Scope global yd C:\tools\youtube-dl.exe
 Set-Alias -Scope global minf C:\tools\MediaInfo\MediaInfo.exe
 Set-Alias -Scope global 7z "$Env:ProgramFiles\7-Zip\7z.exe"
