@@ -241,11 +241,29 @@ end {
 
 if ($host.name -eq 'ConsoleHost') {
 
+    enum PromptPath {
+        Full  # full path
+        Tail  # last component only
+        None  # no path
+    }
+    $global:PromptPathPref = [PromptPath]::Full
+
     # invert prompt text color intensities; helps tell each command apart
     function global:prompt {
-        $s = $ExecutionContext.SessionState.Path.CurrentLocation
-        # replace home path with ~
-        $s = $s -replace ([RegEx]::Escape($Env:USERPROFILE)+'(?:$|(?=\\))'),'~'
+        try {
+            $pp = (Get-Variable -Name PromptPathPref -Scope Global -ErrorAction Ignore).Value
+        } catch {
+            $pp = [PromptPath]::Full
+        }
+        $s = ''
+        if ($pp -ne [PromptPath]::None) {
+            $s = $ExecutionContext.SessionState.Path.CurrentLocation
+            # replace home path with ~
+            $s = $s -replace ([RegEx]::Escape($Env:USERPROFILE)+'(?:$|(?=\\))'),'~'
+            if ($pp -eq [PromptPath]::Tail) {
+                $s = Split-Path -Leaf $s
+            }
+        }
         $s += '>' * ($NestedPromptLevel + 1)
         Write-Host $s -NoNewline `
             -ForegroundColor ($host.UI.RawUI.ForegroundColor -bxor 8) `
