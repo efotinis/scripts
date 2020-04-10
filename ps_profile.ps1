@@ -345,38 +345,31 @@ function global:HomeWan {
 }
 
 
-# Count of characters in string (case-insensitive).
+# Count of characters in string.
 function global:CharCount {
-    [CmdletBinding()]
     param(
-        [Parameter(Mandatory)][string]$InputObject,
-        [Parameter(Mandatory)][char]$Character
+        [Parameter(ValueFromPipeline)]
+        [string]$InputObject,
+        
+        [Parameter(Mandatory)]
+        [char]$Character,
+        
+        [switch]$CaseSensitive
     )
-    # NOTE: this is significantly faster that the simpler:
-    #   [char[]]$InputObject | ? { $_ -eq $Character } | measure | select -exp count
-    # (4.5s vs 160s for 6.5MiB input)
+
     $count = 0
-    for ($i = 0; $i -lt $InputObject.Length; ++$i) {
-        if ($InputObject[$i] -eq $Character) {
-            ++$count
+    if ($CaseSensitive) {
+        for ($i = 0; $i -lt $InputObject.Length; ++$i) {
+            if ($InputObject[$i] -ceq $Character) {
+                ++$count
+            }
         }
     }
-    $count
-}
-# Count of characters in string (case-sensitive).
-function global:CaseCharCount {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory)][string]$InputObject,
-        [Parameter(Mandatory)][char]$Character
-    )
-    # NOTE: this is significantly faster that the simpler:
-    #   [char[]]$InputObject | ? { $_ -eq $Character } | measure | select -exp count
-    # (4.5s vs 160s for 6.5MiB input)
-    $count = 0
-    for ($i = 0; $i -lt $InputObject.Length; ++$i) {
-        if ($InputObject[$i] -ceq $Character) {
-            ++$count
+    else {
+        for ($i = 0; $i -lt $InputObject.Length; ++$i) {
+            if ($InputObject[$i] -ieq $Character) {
+                ++$count
+            }
         }
     }
     $count
