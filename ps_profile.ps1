@@ -15,14 +15,14 @@ function global:m ($i, $b, $c) {
             $n * 10
         }
     }
-    if ($b -ne $null) { $b = Value $b }
-    if ($c -ne $null) { $c = Value $c }
+    if ($null -ne $b) { $b = Value $b }
+    if ($null -ne $c) { $c = Value $c }
 
-    if ($i -eq $null) {
+    if ($null -eq $i) {
         monctl
-    } elseif ($b -eq $null) {
+    } elseif ($null -eq $b) {
         monctl -m $i
-    } elseif ($c -eq $null) {
+    } elseif ($null -eq$c) {
         monctl -m $i -b $b -c $b
     } else {
         monctl -m $i -b $b -c $c
@@ -47,7 +47,7 @@ function global:yc {  # play youtube stream from clipboard url
         }
         Write-Error "could not find ID in URL: $Url"
     }
-    $id = GetYouTubeIdFromUrl (gcb)
+    $id = GetYouTubeIdFromUrl (Get-Clipboard)
     $fmt = if ($HiDef) { '22/18' } else { '18' }
     yps -f $fmt -- $id
     if ($TailView -gt 0) {
@@ -55,7 +55,7 @@ function global:yc {  # play youtube stream from clipboard url
         $info = yd -j -- $id | ConvertFrom-Json
         $timestamp = $info.duration - $TailView
         Read-Host 'press Enter to launch in browser' > $null
-        start "https://youtube.com/watch?v=${id}&t=${timestamp}"
+        Start-Process "https://youtube.com/watch?v=${id}&t=${timestamp}"
     }
 }
 if ($Env:COMPUTERNAME -eq 'CORE') {
@@ -66,7 +66,7 @@ if ($Env:COMPUTERNAME -eq 'CORE') {
     function global:mcv {
         param([switch]$Wiki)
         if ($Wiki) {
-            start 'https://minecraft.gamepedia.com/Java_Edition_version_history/Development_versions'
+            Start-Process 'https://minecraft.gamepedia.com/Java_Edition_version_history/Development_versions'
         } else {
             mcver -d30
         }
@@ -127,7 +127,7 @@ Set-Alias -Scope global ddmver 'D:\docs\apps\dell display manager\check-version.
 
 # get/set console title
 function global:WndTitle ($s) {
-    if ($s -eq $null) {
+    if ($null -eq $s) {
         $Host.UI.RawUI.WindowTitle
     } else {
         $Host.UI.RawUI.WindowTitle = $s
@@ -336,7 +336,7 @@ if ($host.name -eq 'ConsoleHost') {
 
 # get the last known home WAN IP
 function global:HomeWan {
-    $tail = cat $Env:SyncMain\data\wan.log | select -last 1
+    $tail = Get-Content $Env:SyncMain\data\wan.log | Select-Object -last 1
     if ($tail -NotMatch '(\d+\.\d+\.\d+\.\d+)$') {
         # TODO: show error message instead
         throw 'no IP found in log tail'
@@ -461,7 +461,7 @@ function global:nd ([string]$Path) {
 }
 
 
-function global:gvi { Get-VideoInfo.ps1 (ls -file) | tee -v a; $global:a = $a }
+function global:gvi { Get-VideoInfo.ps1 (Get-ChildItem -file) | Tee-Object -v a; $global:a = $a }
 
 <#
 Split array into sub-arrays, based on part size or count.
