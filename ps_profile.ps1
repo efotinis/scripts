@@ -207,35 +207,30 @@ function global:SetExt ($path, $ext) {
 }
 
 
-# Pretty size of all file objects piped in.
-function global:FSize {
-    $m = $Input | Measure-Object -Sum -Property Length
-    PrettySize $m.Sum
-}
-
-
-# Pretty size and count of all file/dir objects piped in.
-function global:FStats {
-begin {
-    $files, $dirs, $bytes = 0, 0, 0
-}
-process {
-    if ($_.PSIsContainer) {
-        $dirs += 1
+# Measure total files, dirs and bytes of passed FileSystemInfo objects.
+function global:Get-FileTotal
+{
+    begin {
+        $a = [PSCustomObject]@{
+            dirs=0
+            files=0
+            bytes=0
+            size=''
+        }
     }
-    else {
-        $files += 1
-        $bytes += $_.Length
+    process {
+        if ($_.PSIsContainer) {
+            $a.dirs += 1
+        }
+        else {
+            $a.files += 1
+            $a.bytes += $_.Length
+        }
     }
-}
-end {
-    'dirs: {0:N0}, files: {1:N0}, size: {2} ({3:N0} byte(s))' -f (
-        $dirs,
-        $files,
-        (PrettySize $bytes),
-        $bytes
-    )
-}
+    end {
+        $a.size = PrettySize $a.bytes
+        $a
+    }
 }
 
 
@@ -443,8 +438,6 @@ function global:New-DateDirectory {
     }
 }
 
-Set-Alias -Scope global ndd New-DateDirectory
-
 
 # Create new directory path if it doesn't exist and switch to it.
 function global:nd ([string]$Path) {
@@ -490,8 +483,9 @@ function global:SplitArray {
 }
 
 
-# Perform DuckDuckGo search in new FireFox tab using passed terms.
-function global:ddg {
+# Perform web search using all passed args in a single query.
+function global:New-WebQuery {
+    # Open DuckDuckGo search in new FireFox tab.
     # NOTES:
     # - Tried using Python's webbrowser builtin module to automatically
     #   use the default browser, but it launches IE11 instead. Explicitly
@@ -514,3 +508,7 @@ function global:Show-VerbGroup ([string[]]$Verb = '*')
     )
 }
 
+
+Set-Alias -Scope global ndd New-DateDirectory
+Set-Alias -Scope global gft Get-FileTotal
+Set-Alias -Scope global ddg New-WebQuery
