@@ -259,7 +259,7 @@ if ($host.name -eq 'ConsoleHost') {
         if ($pp -ne [PromptPath]::None) {
             $s = $ExecutionContext.SessionState.Path.CurrentLocation
             # replace home path with ~
-            $s = $s -replace ([RegEx]::Escape($Env:USERPROFILE)+'(?:$|(?=\\))'),'~'
+            $s = $s -replace ([RegEx]::Escape($HOME)+'(?:$|(?=\\))'),'~'
             if ($pp -eq [PromptPath]::Tail) {
                 $s = Split-Path -Leaf $s
             }
@@ -503,3 +503,14 @@ function global:ddg {
     $url = "https://duckduckgo.com/?q=$query"
     & 'C:\Program Files\Mozilla Firefox\firefox.exe' -new-tab $url
 }
+
+
+# Table of PowerShell verbs, grouped by group.
+function global:Show-VerbGroup ([string[]]$Verb = '*')
+{
+    Get-Verb -Verb $Verb | Group-Object Group | Format-Table -Wrap @(
+        @{name='Group'; expr='Name'}
+        @{name='Verbs'; expr={$_.Group.Verb -join ', '}}
+    )
+}
+
