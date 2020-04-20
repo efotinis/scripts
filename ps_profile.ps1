@@ -488,3 +488,18 @@ function global:SplitArray {
         ,@($Items[$beg..($end - 1)])
     }
 }
+
+
+# Perform DuckDuckGo search in new FireFox tab using passed terms.
+function global:ddg {
+    # NOTES:
+    # - Tried using Python's webbrowser builtin module to automatically
+    #   use the default browser, but it launches IE11 instead. Explicitly
+    #   requesting "firefox" or using its path does not work.
+    # - Firefox's "-search" option only needs the query terms, but it does not
+    #   work with the "-new-tab" option, so we need to build the whole
+    #   query URL manually.
+    $query = [Net.WebUtility]::UrlEncode(($Args -join ' '))
+    $url = "https://duckduckgo.com/?q=$query"
+    & 'C:\Program Files\Mozilla Firefox\firefox.exe' -new-tab $url
+}
