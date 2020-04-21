@@ -255,6 +255,14 @@ if ($host.name -eq 'ConsoleHost') {
         }
         $pathPref = GetGlobal 'PromptPathPref' [PromptPath]::Full
         $homeRepl = GetGlobal 'PromptHomeRepl' $false
+        # color options:
+        #   ''      normal
+        #   'i'     invert (swap fg and bg)
+        #   '*'     toggle fg and bg intensity
+        #   '*/'    toggle fg intensity
+        #   '/*'    toggle bg intensity
+        #   other   set to specified attrib, e.g. W/N, R+/G, etc.
+        $color = GetGlobal 'PromptColor' '/*'
         $s = ''
         if ($pathPref -ne [PromptPath]::None) {
             $s = $ExecutionContext.SessionState.Path.CurrentLocation
@@ -268,9 +276,21 @@ if ($host.name -eq 'ConsoleHost') {
             }
         }
         $s += '>' * ($NestedPromptLevel + 1)
-        Write-Host $s -NoNewline `
-            -ForegroundColor ($host.UI.RawUI.ForegroundColor -bxor 8) `
-            -BackgroundColor ($host.UI.RawUI.BackgroundColor -bxor 8)
+        $fg = $host.UI.RawUI.ForegroundColor
+        $bg = $host.UI.RawUI.BackgroundColor
+        switch ($color) {
+            '' { break }
+            'i' { $fg, $bg = $bg, $fg; break }
+            '*' { $fg = $fg -bxor 8; $bg = $bg -bxor 8; break }
+            '*/' { $fg = $fg -bxor 8; break }
+            '/*' { $bg = $bg -bxor 8; break }
+            default {
+                $newFg, $newBg = global:Get-ColorAttribute $color
+                if ($newFg) { $fg = $newFg }
+                if ($newBg) { $bg = $newBg }
+            }
+        }
+        Write-Host $s -NoNewline -ForegroundColor $fg -BackgroundColor $bg
         Write-Output ' '
     }
 
@@ -305,32 +325,32 @@ if ($host.name -eq 'ConsoleHost') {
         }
     }
 
-    function global:Color ([string]$Spec) {
+    # Convert a color attribute (e.g. "w/n") to a pair of fg/bg colors.
+    # Missing or invalid colors are set to $null.
+    function global:Get-ColorAttribute ([string]$Spec)
+    {
         $Colors = @{
-            'n'='black';
-            'b'='darkblue';
-            'g'='darkgreen';
-            'c'='darkcyan';
-            'r'='darkred';
-            'm'='darkmagenta';
-            'y'='darkyellow';
-            'w'='gray';
-            'n+'='darkgray';
-            'b+'='blue';
-            'g+'='green';
-            'c+'='cyan';
-            'r+'='red';
-            'm+'='magenta';
-            'y+'='yellow';
-            'w+'='white'
+            'n'='black';       'n+'='darkgray'
+            'b'='darkblue';    'b+'='blue'
+            'g'='darkgreen';   'g+'='green'
+            'c'='darkcyan';    'c+'='cyan'
+            'r'='darkred';     'r+'='red'
+            'm'='darkmagenta'; 'm+'='magenta'
+            'y'='darkyellow';  'y+'='yellow'
+            'w'='gray';        'w+'='white'
         }
+        $fg, $bg = $Spec -split '/',2
+        if ($fg) { $Colors.Item($fg) } else { $null }
+        if ($bg) { $Colors.Item($bg) } else { $null }
+    }
 
-        $fore, $back = (($spec + '/') -split '/')[0..1]
-        if ($fore -in $Colors.Keys) {
-            $Host.UI.RawUI.ForegroundColor = $Colors[$fore]
+    function global:Color ([string]$Spec) {
+        $fore, $back = global:Get-ColorAttribute $Spec
+        if ($fore) {
+            $Host.UI.RawUI.ForegroundColor = $fore
         }
-        if ($back -in $Colors.Keys) {
-            $Host.UI.RawUI.BackgroundColor = $Colors[$back]
+        if ($back) {
+            $Host.UI.RawUI.BackgroundColor = $back
         }
     }
 
@@ -524,3 +544,4 @@ Set-Alias -Scope global ddg New-WebQuery
 
 $global:PromptPathPref = [PromptPath]::Tail
 $global:PromptHomeRepl = $true
+$global:PromptColor = '*'
