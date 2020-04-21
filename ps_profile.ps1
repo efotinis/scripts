@@ -241,21 +241,27 @@ if ($host.name -eq 'ConsoleHost') {
         Tail  # last component only
         None  # no path
     }
-    $global:PromptPathPref = [PromptPath]::Full
 
     # invert prompt text color intensities; helps tell each command apart
     function global:prompt {
-        try {
-            $pp = (Get-Variable -Name PromptPathPref -Scope Global -ErrorAction Ignore).Value
-        } catch {
-            $pp = [PromptPath]::Full
+        # Get value of global variable or default.
+        function GetGlobal ($Name, $Def) {
+            try {
+                $var = Get-Variable -Name $Name -Scope Global -ErrorAction Ignore
+                $var.Value
+            } catch {
+                $Def
+            }
         }
+        $pathPref = GetGlobal 'PromptPathPref' [PromptPath]::Full
+        $homeRepl = GetGlobal 'PromptHomeRepl' $false
         $s = ''
-        if ($pp -ne [PromptPath]::None) {
+        if ($pathPref -ne [PromptPath]::None) {
             $s = $ExecutionContext.SessionState.Path.CurrentLocation
-            # replace home path with ~
-            $s = $s -replace ([RegEx]::Escape($HOME)+'(?:$|(?=\\))'),'~'
-            if ($pp -eq [PromptPath]::Tail) {
+            # replace home path with "~:"; since "~" alone is a valid
+            # directory name, an extra, invalid path char (colon) is used
+            $s = $s -replace ([RegEx]::Escape($HOME)+'(?:$|(?=\\))'),':~'
+            if ($pathPref -eq [PromptPath]::Tail) {
                 $s = Split-Path -Leaf $s
             }
         }
@@ -512,3 +518,7 @@ function global:Show-VerbGroup ([string[]]$Verb = '*')
 Set-Alias -Scope global ndd New-DateDirectory
 Set-Alias -Scope global gft Get-FileTotal
 Set-Alias -Scope global ddg New-WebQuery
+
+
+$global:PromptPathPref = [PromptPath]::Tail
+$global:PromptHomeRepl = $true
