@@ -258,9 +258,11 @@ if ($host.name -eq 'ConsoleHost') {
         $s = ''
         if ($pathPref -ne [PromptPath]::None) {
             $s = $ExecutionContext.SessionState.Path.CurrentLocation
-            # replace home path with "~:"; since "~" alone is a valid
-            # directory name, an extra, invalid path char (colon) is used
-            $s = $s -replace ([RegEx]::Escape($HOME)+'(?:$|(?=\\))'),':~'
+            if ($homeRepl) {
+                # replace home path with "~:"; since "~" alone is a valid
+                # directory name, an extra, invalid path char (colon) is used
+                $s = $s -replace ([RegEx]::Escape($HOME)+'(?:$|(?=\\))'),':~'
+            }
             if ($pathPref -eq [PromptPath]::Tail) {
                 $s = Split-Path -Leaf $s
             }
