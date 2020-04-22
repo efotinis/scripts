@@ -81,20 +81,6 @@ if ($Env:COMPUTERNAME -eq 'CORE') {
 
 }
 function global:ss { nircmdc.exe screensaver }
-function global:ec ($Name) {  # edit command, if it's a file
-    $cmd = Get-Command $Name
-    function isTextScript ($cmd) {
-        $ext = '.BAT;.CMD;.VBS;.JS;.WSH;.PY;.PYW' -split ';'
-        return $cmd.CommandType -eq 'Application' -and
-            $cmd.Extension -in $ext
-    }
-    if ($cmd.CommandType -eq 'ExternalScript' -or (isTextScript $cmd)) {
-        notepad $cmd.path
-    }
-    else {
-        throw 'cannot edit; not a text script'
-    }
-}
 function global:fr ([int]$a, [int]$b) {
     # print simplified fraction a/b
     py -c '
@@ -104,7 +90,6 @@ x, y = map(int, sys.argv[1:])
 print(fractions.Fraction(x, y))
     ' $a $b
 }
-Set-Alias -Scope global ed $Env:windir\system32\notepad.exe
 Set-Alias -Scope global yd C:\tools\youtube-dl.exe
 Set-Alias -Scope global minf C:\tools\MediaInfo\MediaInfo.exe
 Set-Alias -Scope global 7z "$Env:ProgramFiles\7-Zip\7z.exe"
@@ -123,6 +108,41 @@ switch ($env:COMPUTERNAME) {
     }
 }
 Set-Alias -Scope global ddmver 'D:\docs\apps\dell display manager\check-version.ps1'
+
+
+# ---- file editing -------------------
+
+# Get path of PS external script or OS executable script.
+function global:Get-CommandFile ($Name)
+{
+    function isTextScript ($cmd) {
+        $ext = '.BAT;.CMD;.VBS;.JS;.WSH;.PY;.PYW' -split ';'
+        $cmd.CommandType -eq 'Application' -and $cmd.Extension -in $ext
+    }
+    $cmd = Get-Command $Name
+    if ($cmd.CommandType -eq 'ExternalScript' -or (isTextScript $cmd)) {
+        return $cmd.Path
+    }
+    Write-Error "command '$Name' does not seem to be a file"
+}
+
+function global:Edit-FileInNotepad ([string]$Path) {
+    & "$Env:windir\system32\notepad.exe" $Path
+}
+function global:Edit-FileInVSCode ([string]$Path) {
+    & "$Env:ProgramFiles\Microsoft VS Code\Code.exe" $Path > $null
+}
+function global:Edit-ScriptInNotepad ([string]$Name) {
+    $path = global:Get-CommandFile $Name
+    if ($path) { global:Edit-FileInNotepad $path }
+}
+function global:Edit-ScriptInVSCode ([string]$Name) {
+    $path = global:Get-CommandFile $Name
+    if ($path) { global:Edit-FileInVSCode $path }
+}
+
+
+# -------------------------------------
 
 
 # get/set console title
@@ -522,6 +542,11 @@ function global:Show-VerbGroup ([string[]]$Verb = '*')
 Set-Alias -Scope global ndd New-DateDirectory
 Set-Alias -Scope global gft Get-FileTotal
 Set-Alias -Scope global ddg New-WebQuery
+
+Set-Alias -Scope Global ed  Edit-FileInNotepad
+Set-Alias -Scope Global ec  Edit-FileInVSCode
+Set-Alias -Scope Global eds Edit-ScriptInNotepad
+Set-Alias -Scope Global ecs Edit-ScriptInVSCode
 
 
 $global:PromptPathPref = [PromptPath]::Tail
