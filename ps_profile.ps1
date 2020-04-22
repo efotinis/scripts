@@ -399,24 +399,6 @@ function global:CharCount {
 }
 
 
-function global:FancyPrompt {
-    Set-Item Function:\prompt {
-        Write-Host "$($ExecutionContext.SessionState.Path.CurrentLocation)" `
-            -ForegroundColor ($host.UI.RawUI.ForegroundColor -bxor 8) `
-            -BackgroundColor ($host.UI.RawUI.BackgroundColor -bxor 8) `
-            -NoNewline
-        Write-Output "$('>' * ($NestedPromptLevel + 1)) "
-    }
-}
-
-
-function global:SimplePrompt {
-    Set-Item Function:\prompt {
-        '> '
-    }
-}
-
-
 function global:SnapshotDir ($Source, $Dest, $Name) {
     if (-not (Test-Path -Type Container $Source)) {
         Write-Error "source directory does not exist: $Source"
