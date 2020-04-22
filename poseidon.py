@@ -23,6 +23,8 @@ def parse_args():
     args = ap.parse_args()
     if args.outdir is None:
         # FIXME: use proper API for Desktop path to support non-English locales
+        #   REF: https://stackoverflow.com/a/1448255
+        #   REF: https://stackoverflow.com/questions/17933917/get-the-users-desktop-folder-using-windows-api#comment68313796_17935926
         args.outdir = os.path.expanduser('~\\Desktop')
     return args
 

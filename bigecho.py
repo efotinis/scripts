@@ -1,3 +1,4 @@
+#!python2
 """Print using large letters. Inspired by BIGECHO.COM."""
 
 try:
