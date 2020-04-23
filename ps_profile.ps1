@@ -116,7 +116,7 @@ Set-Alias -Scope global ddmver 'D:\docs\apps\dell display manager\check-version.
 function global:Get-CommandFile ($Name)
 {
     function isTextScript ($cmd) {
-        $ext = '.BAT;.CMD;.VBS;.JS;.WSH;.PY;.PYW' -split ';'
+        $ext = '.BAT;.CMD;.VBS;.JS;.WSH;.PY;.PYW;.PSM1' -split ';'
         $cmd.CommandType -eq 'Application' -and $cmd.Extension -in $ext
     }
     $cmd = Get-Command $Name
