@@ -93,10 +93,12 @@ function ConvertTo-PrettySeconds {
     if ($Decimals -lt 0) {
         $Decimals = 0
     }
+    # NOTE: save fractional part, since DivRem implicitly casts to int/long
+    $fract = $Seconds - [System.Math]::Truncate($Seconds)
     $Minutes = [System.Math]::DivRem($Seconds, 60, [ref]$Seconds)
     $Hours = [System.Math]::DivRem($Minutes, 60, [ref]$Minutes)
     $Fmt = '{0}{1:00}:{2:00}:{3:00.' + ('0' * $Decimals) + '}'
-    $Fmt -f $Sign,$Hours,$Minutes,$Seconds
+    $Fmt -f $Sign,$Hours,$Minutes,($Seconds+$fract)
 }
 
 
