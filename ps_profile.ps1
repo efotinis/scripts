@@ -539,6 +539,39 @@ function global:Show-VerbGroup ([string[]]$Verb = '*')
 }
 
 
+# Run script block and print min/avg execution time.
+function global:timeit {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [scriptblock]$Code,
+        [int]$Iterations = 1
+    )
+    if ($Iterations -lt 1) {
+        throw "iterations must be > 1"
+    }
+    $sw = [System.Diagnostics.Stopwatch]::new()
+    $ticksAcc = 0
+    $ticksMin = [double]::MaxValue
+    for ($n = 0; $n -lt $Iterations; ++$n) {
+        $sw.Restart()
+        & $Code
+        $sw.Stop()
+        $ticks = $sw.ElapsedTicks
+        $ticksAcc += $ticks
+        if ($ticks -lt $ticksMin) {
+            $ticksMin = $ticks
+        }
+    }
+    $freq = [System.Diagnostics.Stopwatch]::Frequency
+    $timeMin = ConvertTo-PrettySeconds ($ticksMin / $freq) -Decimals 6
+    $timeAvg = ConvertTo-PrettySeconds ($ticksAcc / $freq / $Iterations) -Decimals 6
+    Write-Host "min: $timeMin"
+    Write-Host "avg: $timeAvg"
+    Write-Host "iterations: $Iterations"
+}
+
+
 Set-Alias -Scope global ndd New-DateDirectory
 Set-Alias -Scope global gft Get-FileTotal
 Set-Alias -Scope global ddg New-WebQuery
