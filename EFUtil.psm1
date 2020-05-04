@@ -6,6 +6,6 @@ function hms2sec ([string]$s) {
 #>
 
 
-Set-Alias PrettySize ConvertTo-PrettySize
-Set-Alias PrettySec ConvertTo-PrettySeconds
-Set-Alias PrettyDuration ConvertTo-PrettyDuration
+Set-Alias PrettySize ConvertTo-NiceSize
+Set-Alias PrettySec ConvertTo-NiceSeconds
+Set-Alias PrettyDuration ConvertTo-NiceDuration

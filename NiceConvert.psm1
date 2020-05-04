@@ -18,7 +18,7 @@
 
 
 # Convert bytes to '[-]N <unit>' where N always has 3 significant digits.
-function ConvertTo-PrettySize
+function ConvertTo-NiceSize
 {
     param (
         [Parameter(Mandatory)]
@@ -57,7 +57,7 @@ function ConvertTo-PrettySize
 }
 
 
-function ConvertFrom-PrettySize
+function ConvertFrom-NiceSize
 {
     param(
         [Parameter(Mandatory)]
@@ -88,7 +88,7 @@ function ConvertFrom-PrettySize
 
 
 # Convert seconds to "[-]hh:mm:ss.lll".
-function ConvertTo-PrettySeconds
+function ConvertTo-NiceSeconds
 {
     param(
         [Parameter(Mandatory)]
@@ -117,7 +117,7 @@ function ConvertTo-PrettySeconds
 
 
 # Convert seconds to "[[[h]h:]m]m:ss" (i.e. like video durations shown on YouTube).
-function ConvertTo-PrettyDuration
+function ConvertTo-NiceDuration
 {
     param(
         [Parameter(Mandatory)]
@@ -137,7 +137,7 @@ function ConvertTo-PrettyDuration
 }
 
 
-function ConvertFrom-PrettyDuration
+function ConvertFrom-NiceDuration
 {
     param(
         [Parameter(Mandatory)]

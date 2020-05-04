@@ -249,7 +249,7 @@ function global:Get-FileTotal
         }
     }
     end {
-        $a.size = PrettySize $a.bytes
+        $a.size = ConvertTo-NiceSize $a.bytes
         $a
     }
 }
@@ -565,8 +565,8 @@ function global:timeit {
         }
     }
     $freq = [System.Diagnostics.Stopwatch]::Frequency
-    $timeMin = ConvertTo-PrettySeconds ($ticksMin / $freq) -Decimals 6
-    $timeAvg = ConvertTo-PrettySeconds ($ticksAcc / $freq / $Iterations) -Decimals 6
+    $timeMin = ConvertTo-NiceSeconds ($ticksMin / $freq) -Decimals 6
+    $timeAvg = ConvertTo-NiceSeconds ($ticksAcc / $freq / $Iterations) -Decimals 6
     Write-Host "min: $timeMin"
     Write-Host "avg: $timeAvg"
     Write-Host "iterations: $Iterations"
