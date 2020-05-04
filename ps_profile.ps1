@@ -1,6 +1,7 @@
 Set-StrictMode -Version Latest
 
 Import-Module $Env:Scripts\EFUtil.psm1
+Import-Module $Env:Scripts\NiceConvert.psm1
 Update-FormatData $Env:Scripts\EF.Format.ps1xml
 
 # shorthands and aliases
