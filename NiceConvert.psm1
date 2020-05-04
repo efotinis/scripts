@@ -12,8 +12,7 @@
 .OUTPUTS
     ...
 .NOTES
-    The conversions are not exact and in the case of time spans like months
-    and years use simplified calculations. This is intended, since 
+    The conversions are only intended for displaying and as such are not exact.
 #>
 
 
@@ -155,3 +154,92 @@ function ConvertFrom-NiceDuration
     $Sign = if ($Sign -eq '-') { -1 } else { 1 }
     $Sign * ((($Hours * 60) + $Minutes) * 60 + $Seconds)
 }
+
+
+function DaysToApproximateCYMD ([int]$d)
+{
+    $c = [Math]::DivRem($d, 36500, [ref]$d)
+    $y = [Math]::DivRem($d, 365, [ref]$d)
+    $m = [Math]::DivRem($d, 30, [ref]$d)
+    $c, $y, $m, $d
+}
+
+
+# If span < 1, get all.
+function GetFirstNonZeroIndexes ([object[]]$Items, [int]$Span)
+{
+    if ($Span -lt 1) {
+        $Span = $Items.Count
+    }
+    # skip any zeroes before the last item
+    for ($i = 0; $i -lt ($Items.Count - 1) -and -not $Items[$i]; ++$i) {
+    }
+    # return the first index (either first nonzero or the last item)
+    $i
+    $i += 1
+    # return the rest
+    for ($end = [Math]::Min($Items.Count, $i + $Span - 1); $i -lt $end; ++$i) {
+        if ($Items[$i]) {
+            $i
+        }
+    }
+}
+
+
+function ConvertTo-NiceAge
+{
+    param(
+        [Parameter(Mandatory)]
+        $DateOrSpan,
+
+        # max count of most significant parts to show
+        [int]$Precision = 2,
+
+        # output sentence formats
+        $Format = @('{0} ago','in {0}'),
+
+        # used between parts in sentence mode
+        [string]$Joiner = ' ',
+
+        # no sentence formatting; only add '-' for negative
+        [switch]$Simple,
+
+        # like simple, but also use spaces to align parts
+        [switch]$Tabulate
+    )
+
+
+    $ts = if ($DateOrSpan -is [datetime]) {
+        (Get-Date) - $DateOrSpan
+    } else {
+        $DateOrSpan
+    }
+
+    $negative = $false
+    if ($ts -lt 0) {
+        $negative = $true
+        $ts = -$ts
+    }
+
+    $d, $h, $m, $s = $ts.Days, $ts.Hours, $ts.Minutes, $ts.Seconds
+    $c, $y, $mo, $d = DaysToApproximateCYMD $d
+    $values = @($c, $y, $mo, $d, $h, $m, $s)
+    $names = @('c', 'y','mo','d','h','m','s')
+    $indexes = GetFirstNonZeroIndexes $values $Precision
+
+    $isSentence = -not ($Simple -or $Tabulate)
+    $partFmt = if ($Tabulate) { '{0,2}{1,-2}' } else { '{0}{1}' }
+    if ($negative -and -not $isSentence) { $values[$indexes[0]] = -$values[$indexes[0]] }
+    $parts = foreach ($i in $indexes) { $partFmt -f $values[$i],$names[$i] }
+    $whole = $parts -join $Joiner
+
+    if ($isSentence) {
+        $Format[$negative] -f $whole
+    }
+    else {
+        $whole
+    }
+}
+
+
+Export-ModuleMember -Function *-*
