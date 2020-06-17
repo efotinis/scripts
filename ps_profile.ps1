@@ -33,6 +33,7 @@ Function global:x { exit }
 function global:z ($time) { & $Env:Scripts\suspend.py -l $time }
 Function global:.. { Set-Location .. }
 Function global:... { Set-Location ..\.. }
+function global:slc { Set-Location -LiteralPath (Get-Clipboard) }
 Function global:?? ($Cmd) { help $Cmd -Full }
 function global:yc {  # play youtube stream from clipboard url
     param(
@@ -570,6 +571,35 @@ function global:timeit {
     Write-Host "min: $timeMin"
     Write-Host "avg: $timeAvg"
     Write-Host "iterations: $Iterations"
+}
+
+
+# Eject drive.
+function global:eject {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Drive
+    )
+    $ssfDRIVES = 0x11  # "My Computer"
+    $shell = New-Object -comObject Shell.Application
+    $driveObj = $shell.Namespace($ssfDRIVES).ParseName($Drive)
+    if (-not $driveObj) {
+        throw "drive does not exist: $Drive"
+    }
+    $driveObj.InvokeVerb("Eject")  # NOTE: must be localized string
+}
+
+
+# String hashset of all lines of specified files.
+function global:FileHashSet ([string[]]$Path) {
+    $ret = [Collections.Generic.Hashset[string]]@()
+    foreach ($curPath in $Path) {
+        $ret.UnionWith(
+            [Collections.Generic.Hashset[string]]@(Get-Content -LiteralPath $curPath)
+        )
+    }
+    ,$ret
 }
 
 
