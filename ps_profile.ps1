@@ -616,3 +616,8 @@ Set-Alias -Scope Global ecs Edit-ScriptInVSCode
 $global:PromptPathPref = [PromptPath]::Tail
 $global:PromptHomeRepl = $true
 $global:PromptColor = '*'
+
+
+# change default transfer protocols ("Ssl3, Tls"), both of which are insecure;
+# note that TLS v1.1 has also been deprecated
+[Net.ServicePointManager]::SecurityProtocol = 'Tls12, Tls13'
