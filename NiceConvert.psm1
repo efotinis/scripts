@@ -21,13 +21,27 @@ function ConvertTo-NiceSize
 {
     param (
         [Parameter(Mandatory)]
-        [long]$Bytes
+        [long]$Bytes,
+        
+        [ValidateSet('jedec', 'iec', 'metric')]
+        [string]$Style = 'jedec'
     )
 
     [string]$Sign = ''
     if ($Bytes -lt 0) {
         $Sign = '-'
         $Bytes = -$Bytes
+    }
+    
+    if ($Style -eq 'jedec') {
+        $MULTIPLIER = 1024
+        $PREFIX_TAIL = 'B'
+    } elseif ($Style -eq 'iec') {
+        $MULTIPLIER = 1024
+        $PREFIX_TAIL = 'iB'
+    } else {
+        $MULTIPLIER = 1000
+        $PREFIX_TAIL = 'B'
     }
 
     [double]$n = $Bytes
@@ -40,7 +54,7 @@ function ConvertTo-NiceSize
     foreach ($c in [char[]]'KMGTPE') {
         if ($n -ge 999.5) {
             $Unit = $c
-            $n /= 1024
+            $n /= $MULTIPLIER
         }
     }
     [string]$Fmt = $(
@@ -52,7 +66,7 @@ function ConvertTo-NiceSize
             'N0'
         }
     )
-    return ('{0}{1:'+$Fmt+'} {2}B') -f ($Sign, $n, $Unit)
+    return ('{0}{1:'+$Fmt+'} {2}{3}') -f ($Sign, $n, $Unit, $PREFIX_TAIL)
 }
 
 
