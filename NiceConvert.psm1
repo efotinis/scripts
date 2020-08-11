@@ -62,6 +62,7 @@ function ConvertFrom-NiceSize
         [Parameter(Mandatory)]
         [string]$Size,
         
+        # Assume base-10, when not using IEC prefix (otherwise ignored).
         [switch]$Base10
     )
     
@@ -80,7 +81,7 @@ function ConvertFrom-NiceSize
         throw ('invalid unit: "{0}"' -f $Unit)
     }
     $Unit, $Iec = $Matches[1..2]
-    $Base = if ($Base10 -or $Iec) { 1000 } else { 1024 }
+    $Base = if ($Iec -or -not $Base10) { 1024 } else { 1000 }
     $Factor = [Math]::Pow($Base, 'kmgtpe'.IndexOf($Unit) + 1)
     return [long]($Number * $Factor)
 }
