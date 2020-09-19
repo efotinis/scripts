@@ -220,7 +220,10 @@ function ConvertTo-NiceAge
         [switch]$Simple,
 
         # like simple, but also use spaces to align parts
-        [switch]$Tabulate
+        [switch]$Tabulate,
+
+        # swap begin/end semantics
+        [switch]$Invert
     )
 
 
@@ -228,6 +231,10 @@ function ConvertTo-NiceAge
         (Get-Date) - $DateOrSpan
     } else {
         $DateOrSpan
+    }
+    
+    if ($Invert) {
+        $ts = -$ts
     }
 
     $negative = $false
