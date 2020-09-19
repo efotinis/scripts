@@ -18,11 +18,13 @@ Add-Type -TypeDefinition @"
         public string   Video;
         public string   VideoTag;
         public string   Audio;
+        public int      Channels;
         public int64    Size;
         public string   Path;
         public VideoInfo(
             int width, int height, double duration, int bitrate, double framerate, 
-            string video, string videoTag, string audio, int64 size, string path) 
+            string video, string videoTag, string audio, int channels, int64 size, 
+            string path) 
         {
             Width = width;
             Height = height;
@@ -32,6 +34,7 @@ Add-Type -TypeDefinition @"
             Video = video;
             VideoTag = videoTag;
             Audio = audio;
+            Channels = channels;
             Size = size;
             Path = path;
         }
@@ -102,6 +105,7 @@ $Path | % {
 
     $vcodec = $video.codec_name
     $acodec = & { if ($audio) { $audio.codec_name } else { $null } }
+    $channels = & { if ($audio) { $audio.channels } else { $null } }
 
     [VideoInfo]::new(
         [int]$video.width, 
@@ -112,6 +116,7 @@ $Path | % {
         $vcodec,
         (CodecTag $video.codec_tag_string),
         $acodec,
+        $channels,
         [int64]$format.size, 
         $_
     )
