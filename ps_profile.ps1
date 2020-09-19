@@ -50,7 +50,7 @@ function global:yc {  # play youtube stream from clipboard url
         Write-Error "could not find ID in URL: $Url"
     }
     $id = GetYouTubeIdFromUrl (Get-Clipboard)
-    $fmt = if ($HiDef) { '22/18' } else { '18' }
+    $fmt = if ($HiDef) { 22,18 } else { 18 }
     yps -f $fmt -- $id
     if ($TailView -gt 0) {
         Write-Host -NoNewLine "getting video info...`r"
