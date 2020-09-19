@@ -62,20 +62,7 @@ function global:yc {  # play youtube stream from clipboard url
 }
 if ($Env:COMPUTERNAME -eq 'CORE') {
 
-    # launch current Minecraft instance
-    function global:mc { D:\games\MultiMC\MultiMC.exe -l $Env:MULTIMC_MAIN_INST }
-    # show Minecraft updates in the last 30 days (or launches version wiki)
-    function global:mcv {
-        param([switch]$Wiki)
-        if ($Wiki) {
-            Start-Process 'https://minecraft.gamepedia.com/Java_Edition_version_history/Development_versions'
-        } else {
-            mcver -d30
-        }
-    }
-    # backup/restore main hardcore Minecraft world
-    function global:mcb { E:\backups\minecraft\backup.ps1 19w03c Serendipity }
-    function global:mcr { E:\backups\minecraft\backup.ps1 19w03c Serendipity -RestoreLast }
+    Set-Alias -Scope Global mc MinecraftUtil.ps1
 
     # backup/list main Firefox profile
     function global:fxb { E:\backups\firefox\backup.ps1 kgfe1h9i.default-1510666418771 }
