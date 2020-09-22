@@ -135,18 +135,23 @@ function ConvertTo-NiceDuration
 {
     param(
         [Parameter(Mandatory)]
-        [int]$Seconds
+        [int]$Seconds,
+        
+        [string]$Plus = ''
     )
     if ($Seconds -lt 0) {
         $Seconds = -$Seconds
+        $Sign = '-'
+    } else {
+        $Sign = $Plus
     }
     $Minutes = [System.Math]::DivRem($Seconds, 60, [ref]$Seconds)
     $Hours = [System.Math]::DivRem($Minutes, 60, [ref]$Minutes)
     if ($Hours) {
-        '{0:#0}:{1:00}:{2:00}' -f $Hours,$Minutes,$Seconds
+        '{0}{1:#0}:{2:00}:{3:00}' -f $Sign,$Hours,$Minutes,$Seconds
     }
     else {
-        '{0:#0}:{1:00}' -f $Minutes,$Seconds
+        '{0}{1:#0}:{2:00}' -f $Sign,$Minutes,$Seconds
     }
 }
 
