@@ -131,11 +131,14 @@ function ConvertTo-NiceSeconds
 
 
 # Convert seconds to "[[[h]h:]m]m:ss" (i.e. like video durations shown on YouTube).
+# If $HideSeconds is true, convert to "[h]h:mm".
 function ConvertTo-NiceDuration
 {
     param(
         [Parameter(Mandatory)]
         [int]$Seconds,
+        
+        [switch]$HideSeconds,
         
         [string]$Plus = ''
     )
@@ -145,13 +148,19 @@ function ConvertTo-NiceDuration
     } else {
         $Sign = $Plus
     }
-    $Minutes = [System.Math]::DivRem($Seconds, 60, [ref]$Seconds)
-    $Hours = [System.Math]::DivRem($Minutes, 60, [ref]$Minutes)
-    if ($Hours) {
-        '{0}{1:#0}:{2:00}:{3:00}' -f $Sign,$Hours,$Minutes,$Seconds
-    }
-    else {
-        '{0}{1:#0}:{2:00}' -f $Sign,$Minutes,$Seconds
+    if ($HideSeconds) {
+        $Minutes = [System.Math]::Round($Seconds / 60)
+        $Hours = [System.Math]::DivRem($Minutes, 60, [ref]$Minutes)
+        '{0}{1:#0}:{2:00}' -f $Sign,$Hours,$Minutes
+    } else {
+        $Minutes = [System.Math]::DivRem($Seconds, 60, [ref]$Seconds)
+        $Hours = [System.Math]::DivRem($Minutes, 60, [ref]$Minutes)
+        if ($Hours) {
+            '{0}{1:#0}:{2:00}:{3:00}' -f $Sign,$Hours,$Minutes,$Seconds
+        }
+        else {
+            '{0}{1:#0}:{2:00}' -f $Sign,$Minutes,$Seconds
+        }
     }
 }
 
