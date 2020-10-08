@@ -590,6 +590,17 @@ function global:FileHashSet ([string[]]$Path) {
 }
 
 
+# Wait until external network connection reestablishes.
+function global:waitnet ([int]$WaitSeconds = 10, [switch]$Silent) {
+    while (-not (myip)) {
+        sleep $WaitSeconds
+    }
+    if (-not $Silent) {
+        msgbeep.py ok
+    }
+}
+
+
 Set-Alias -Scope global ndd New-DateDirectory
 Set-Alias -Scope global gft Get-FileTotal
 Set-Alias -Scope global ddg New-WebQuery
