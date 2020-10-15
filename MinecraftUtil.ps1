@@ -4,9 +4,17 @@ param(
     
     [Parameter(ParameterSetName="Backup", Position=0)]
     [switch]$Backup,
-    
+
     [Parameter(ParameterSetName="Restore", Position=0)]
     [switch]$Restore,
+
+        [Parameter(ParameterSetName="Backup", Position=1, Mandatory)]
+        [Parameter(ParameterSetName="Restore", Position=1, Mandatory)]
+        [string]$Instance,
+
+        [Parameter(ParameterSetName="Backup", Position=2, Mandatory)]
+        [Parameter(ParameterSetName="Restore", Position=2, Mandatory)]
+        [string]$World,
     
     [Parameter(ParameterSetName="Doc", Position=0)]
     [switch]$Doc,
@@ -32,11 +40,11 @@ if ($Play) {
 
 } elseif ($Backup) {
 
-    E:\backups\minecraft\backup.ps1 19w03c Serendipity
+    E:\backups\minecraft\backup.ps1 $Instance $World
 
 } elseif ($Restore) {
 
-    E:\backups\minecraft\backup.ps1 19w03c Serendipity -RestoreLast
+    E:\backups\minecraft\backup.ps1 $Instance $World -RestoreLast
 
 } elseif ($Doc) {
 
