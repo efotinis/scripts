@@ -35,7 +35,6 @@ Function global:.. { Set-Location .. }
 Function global:... { Set-Location ..\.. }
 function global:slc { Set-Location -LiteralPath (Get-Clipboard) }
 Function global:?? ($Cmd) { help $Cmd -Full }
-Function global:?p ($Cmd, $Param) { help $Cmd -Parameter $Param }
 function global:yc {  # play youtube stream from clipboard url
     param(
         [switch]$HiDef,  # use high quality stream, if available
@@ -607,13 +606,13 @@ function global:waitnet ([int]$WaitSeconds = 10, [switch]$Silent) {
 Set-Alias -Scope global ndd New-DateDirectory
 Set-Alias -Scope global gft Get-FileTotal
 Set-Alias -Scope global ddg New-WebQuery
-
 Set-Alias -Scope Global ed  Edit-FileInNotepad
 Set-Alias -Scope Global ec  Edit-FileInVSCode
 Set-Alias -Scope Global eds Edit-ScriptInNotepad
 Set-Alias -Scope Global ecs Edit-ScriptInVSCode
-
 Set-Alias -Scope Global log ~\SimpleLog.ps1
+Set-Alias -Scope Global ?p  Show-CommandParameter.ps1
+
 
 $global:PromptPathPref = [PromptPath]::Tail
 $global:PromptHomeRepl = $true
