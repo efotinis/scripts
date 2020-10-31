@@ -35,6 +35,7 @@ Function global:.. { Set-Location .. }
 Function global:... { Set-Location ..\.. }
 function global:slc { Set-Location -LiteralPath (Get-Clipboard) }
 Function global:?? ($Cmd) { help $Cmd -Full }
+Function global:?p ($Cmd, $Param) { help $Cmd -Parameter $Param }
 function global:yc {  # play youtube stream from clipboard url
     param(
         [switch]$HiDef,  # use high quality stream, if available
@@ -176,7 +177,9 @@ function global:Reversed
 function global:Shuffled
 {
     $a = @($input)
-    $a | Get-Random -Count $a.Length
+    if ($a.Count) {
+        $a | Get-Random -Count $a.Length
+    }
 }
 
 
@@ -610,6 +613,7 @@ Set-Alias -Scope Global ec  Edit-FileInVSCode
 Set-Alias -Scope Global eds Edit-ScriptInNotepad
 Set-Alias -Scope Global ecs Edit-ScriptInVSCode
 
+Set-Alias -Scope Global log ~\SimpleLog.ps1
 
 $global:PromptPathPref = [PromptPath]::Tail
 $global:PromptHomeRepl = $true
