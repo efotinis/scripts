@@ -581,12 +581,17 @@ function global:eject {
 
 
 # String hashset of all lines of specified files.
-function global:FileHashSet ([string[]]$Path) {
+# Missing files are ignored, unless -MustExist is specified.
+function global:FileHashSet ([string[]]$Path, [switch]$MustExist) {
     $ret = [Collections.Generic.Hashset[string]]@()
     foreach ($curPath in $Path) {
-        $ret.UnionWith(
-            [Collections.Generic.Hashset[string]]@(Get-Content -LiteralPath $curPath)
-        )
+        if ((Test-Path -LiteralPath $curPath) -or $MustExist) {
+            $ret.UnionWith(
+                [Collections.Generic.Hashset[string]]@(
+                    Get-Content -LiteralPath $curPath
+                )
+            )
+        }
     }
     ,$ret
 }
