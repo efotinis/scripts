@@ -286,6 +286,10 @@ if ($host.name -eq 'ConsoleHost') {
                 $s = Split-Path -Leaf $s
             }
         }
+        $jobs = @(Get-Job)
+        if ($jobs) {
+            $s += ':{0}j' -f $jobs.Count
+        }
         $s += '>' * ($NestedPromptLevel + 1)
         $fg = $host.UI.RawUI.ForegroundColor
         $bg = $host.UI.RawUI.BackgroundColor
