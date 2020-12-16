@@ -2,6 +2,8 @@
 param(
     [Parameter(Mandatory)]
     [string]$Command,
+    
+    [switch]$Simple,
 
     [string[]]$Parameter  # if omitted, show parameter attribute table
 )
@@ -40,16 +42,31 @@ function FmtBool ([string]$s) {
 
 if ($Parameter.Count -eq 0) {
     # output table
-    Get-Help $Command -Parameter * | Format-Table -AutoSize @(
-        @{ n='type'; e={FmtType $_.type.name}; a='r' }
-        'name'
-        @{ n='pipe'; e={FmtPInput $_.pipelineinput} }
-        @{ n='req'; e={FmtBool $_.required} }
-        @{ n='pos'; e={FmtPosition $_.position} }
-        @{ n='vlen'; e={FmtBool $_.variableLength} }
-        @{ n='glob'; e={FmtBool $_.globbing} }
-        @{ n='default'; e={FmtDefVal $_.defaultValue} }
-    )
+    if ($Simple) {
+        Get-Help $Command -Parameter * | Format-Table -AutoSize @(
+            @{ n='type'; e={FmtType $_.type.name}; a='r' }
+            'name'
+            @{ n='pipe'; e={FmtPInput $_.pipelineinput} }
+            @{ n='req'; e={FmtBool $_.required} }
+            @{ n='pos'; e={FmtPosition $_.position} }
+            @{ n='vlen'; e={FmtBool $_.variableLength} }
+            @{ n='glob'; e={FmtBool $_.globbing} }
+            @{ n='default'; e={FmtDefVal $_.defaultValue} }
+        )
+    } else {
+        (Get-Help $Command).syntax.syntaxItem | % {
+            $_.parameter | Format-Table -AutoSize @(
+                @{ n='type'; e={FmtType $_.type.name}; a='r' }
+                'name'
+                @{ n='pipe'; e={FmtPInput $_.pipelineinput} }
+                @{ n='req'; e={FmtBool $_.required} }
+                @{ n='pos'; e={FmtPosition $_.position} }
+                @{ n='vlen'; e={FmtBool $_.variableLength} }
+                @{ n='glob'; e={FmtBool $_.globbing} }
+                @{ n='default'; e={FmtDefVal $_.defaultValue} }
+            )
+        }
+    }
 } else {
     # output description
     foreach ($p in $Parameter) {
