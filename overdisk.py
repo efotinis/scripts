@@ -30,8 +30,6 @@ import efutil
 import winfiles
 import six
 
-uprint = efutil.uprint
-
 
 # string alignment types mapped to functions
 STR_ALIGN = {'l': str.ljust, 'r': str.rjust, 'c': str.center, '': lambda s, n: s}
@@ -451,7 +449,7 @@ class ScanStatus(object):
         self.last_update = t
         self.spo.restore(True)
         s = s[len(self.root):]  # trim root
-        uprint(s[:79])  # TODO: use a better trimming func, removing middle path elements
+        print(s[:79])  # TODO: use a better trimming func, removing middle path elements
 
     def cleanup(self):
         self.spo.restore(True)
@@ -548,7 +546,7 @@ def cmd_root(state, params):
     if len(params) > 1:
         raise CmdError('at most one param required')
     if not params:
-        uprint(state.root_path)
+        print(state.root_path)
         return
     if params[:1] == params[-1:] == '"':
         params = params[1:-1]
@@ -566,7 +564,7 @@ def cmd_cd(state, params):
     if len(params) > 1:
         raise CmdError('at most one param required')
     if not params:
-        uprint(os.path.join(state.root_path, state.rel_path))
+        print(os.path.join(state.root_path, state.rel_path))
         return
     (target,) = params
     state.rel_path = walk_path(state, *setup_dir_change(state, target))
@@ -629,7 +627,7 @@ def cmd_dir(state, params):
         TableColumn('name', '', name_str),
         ]
     for s in output_table(cols, data_rows, state.colsep):
-        uprint(s)
+        print(s)
 
 
 def cmd_list(state, params):
@@ -684,7 +682,7 @@ def cmd_list(state, params):
         TableColumn('name', '', identity),
         ]
     for s in output_table(cols, data_rows, state.colsep, 1 + bool(file_stats)):
-        uprint(s)
+        print(s)
 
 
 def cmd_extcnt(state, params):
@@ -722,7 +720,7 @@ def cmd_extcnt(state, params):
         TableColumn('ext', '', identity),
         ]
     for s in output_table(cols, data_rows, state.colsep, 1):
-        uprint(s)
+        print(s)
 
 
 def cmd_scan(state, params):
@@ -730,7 +728,7 @@ def cmd_scan(state, params):
         raise CmdError('at most one param required')
     rel_path, dir = locate_dir(state, params[0] if params else '')
     abs_path = os.path.join(state.root_path, rel_path)
-    uprint('scanning "%s" ...' % os.path.join(state.root_path, abs_path))
+    print('scanning "%s" ...' % os.path.join(state.root_path, abs_path))
     with ScanStatus(abs_path) as status:
         dir.get_children(abs_path, status)
 
@@ -767,7 +765,7 @@ def cmd_order(state, params, attr, accepted_flags):
         raise CmdError('at most one param required')
     cur = getattr(state, attr)
     if not params:
-        uprint(cur)
+        print(cur)
         return
     new_flag = params[0]
     if not new_flag in accepted_flags:
@@ -791,7 +789,7 @@ def cmd_unit(state, params):
     if len(params) > 1:
         raise CmdError('at most one param required')
     if not params:
-        uprint(state.unit)
+        print(state.unit)
         return
     unit = params[0]
     if unit not in 'bkmgtpe*':
@@ -804,17 +802,17 @@ def cmd_alias(state, params):
     keys = sorted(aliases.keys())
     if not params:
         for key in keys:
-            uprint(key + '=' + aliases[key])
+            print(key + '=' + aliases[key])
         return
     for s in params:
         name, sep, value = s.partition('=')
         name, value = name.strip().lower(), value.strip().lower()
         if not name:
-            uprint('WARNING: empty alias name: "%s"' % s)
+            print('WARNING: empty alias name: "%s"' % s)
         elif not sep:
             for key in keys:
                 if key.startswith(name):
-                    uprint(key + '=' + aliases[key])
+                    print(key + '=' + aliases[key])
         elif not value:
             del aliases[name]
         else:
@@ -828,7 +826,7 @@ def cmd_colsep(state, params):
         s = state.colsep
         if ' ' in s:
             s = '"' + s + '"'
-        uprint(s)
+        print(s)
         return
     state.colsep = params[0]
 
@@ -906,7 +904,7 @@ def main(args):
     state.root_path = args.root
     cmd_dispatcher = CmdDispatcher(state)
 
-    uprint('scanning "%s" ...' % state.root_path)
+    print('scanning "%s" ...' % state.root_path)
     with ScanStatus(state.root_path) as status:
         data = next(winfiles.find(state.root_path))
         state.root = Dir(state.root_path, data, status)
@@ -930,9 +928,9 @@ def main(args):
             cmd = state.aliases.get(cmd, cmd)
             cmd_dispatcher.dispatch(cmd, params)
         except (CmdError, PathError) as x:
-            uprint('ERROR: ' + str(x))
+            print('ERROR: ' + str(x))
         finally:
-            uprint('')
+            print('')
 
 
 if __name__ == '__main__':
