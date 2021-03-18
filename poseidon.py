@@ -2,6 +2,11 @@
 # coding: utf8
 """Create combined weather report images from Poseidon System."""
 
+"""
+    NOTE: Site changed to modern UI on 2021-02-08. Nothing works anymore.
+    Even unofficial app will seize, moving to an official one.
+"""
+
 import argparse
 import contextlib
 import datetime
