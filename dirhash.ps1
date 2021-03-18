@@ -4,11 +4,12 @@
 [CmdLetBinding()]
 param(
   [string[]]$Path = '.',
-  [string]$Algorithm = 'sha256'
+  [string]$Algorithm = 'sha256',
+  [scriptblock]$Filter = { $true }
 )
 
 foreach ($topDir in $Path) {
-    ls -rec -file $topDir | Get-FileHash -Algorithm $Algorithm | % { 
+    ls -rec -file $topDir | ? $Filter | Get-FileHash -Algorithm $Algorithm | % { 
         "$($_.hash) $((Resolve-Path -relative -LiteralPath $_.path).substring(2))"
     }
 }
