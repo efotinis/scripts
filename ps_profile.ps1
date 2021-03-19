@@ -34,6 +34,7 @@ function global:z ($time) { & $Env:Scripts\suspend.py -l $time }
 Function global:.. { Set-Location .. }
 Function global:... { Set-Location ..\.. }
 function global:slc { Set-Location -LiteralPath (Get-Clipboard) }
+function global:glc { Get-Location | % Path | Set-Clipboard }
 Function global:?? ($Cmd) { help $Cmd -Full }
 function global:yc {  # play youtube stream from clipboard url
     param(
@@ -85,7 +86,7 @@ Set-Alias -Scope global 7z "$Env:ProgramFiles\7-Zip\7z.exe"
 Set-Alias -Scope global j "$Env:DROPBOX\jo.py"
 Set-Alias -Scope global fn $Env:Scripts\filternames.ps1
 Set-Alias -Scope global mpc (Get-ItemPropertyValue HKCU:\Software\MPC-HC\MPC-HC ExePath)
-Set-Alias -Scope global g goto.ps1
+Set-Alias -Scope global go goto.ps1
 switch ($env:COMPUTERNAME) {
     'core' {
         Set-Alias -Scope global srip 'C:\Program Files (x86)\Streamripper\streamripper.exe'
@@ -178,6 +179,16 @@ function global:Shuffled
     $a = @($input)
     if ($a.Count) {
         $a | Get-Random -Count $a.Length
+    }
+}
+
+
+# Select random items from pipeline, keeping their relative order.
+function global:PickOrdered ([int]$Count) {
+    $items = @($Input)
+    $indexes = 0..($items.Count - 1)
+    $indexes | Get-Random -Count $Count | Sort-Object | % {
+        $items[$_]
     }
 }
 
@@ -612,6 +623,116 @@ function global:waitnet ([int]$WaitSeconds = 10, [switch]$Silent) {
 }
 
 
+# Set PowerShell console visibility.
+function global:ShowConsole ([bool]$Mode) {
+    Add-Type -Namespace $null -Name WinApi -MemberDefinition @"
+        [DllImport("user32.dll")]
+            public static extern bool ShowWindow(IntPtr wnd, int cmd);
+"@
+
+    # cache the handle, since MainWindowHandle is 0
+    # when the main window of a process is hidden
+    $hwnd = (Get-Process -Id $PID).MainWindowHandle
+    if ($hwnd -ne [IntPtr]::Zero) {
+        $global:_ShowConsole_hwnd = $hwnd
+    } else {
+        $hwnd = $global:_ShowConsole_hwnd
+    }
+
+    $cmd = @{
+        $true=5  # SW_SHOW
+        $false=0  # SW_HIDE
+    }
+    $null = [WinApi]::ShowWindow($hwnd, $cmd[$mode])
+}
+
+
+# Convert numeric value to string of chararacter flags.
+# Use '-' in $Chars to mark unused bits; these are not included in the output,
+# unless $Fixed is set.
+# Output LSB is right-justified, with unset bits set to '-'.
+function global:FlagString ([int]$Value, [string]$Chars, [switch]$Fixed) {
+    $length = $Chars.Length
+    $mask = 1 -shl ($length - 1)
+    $ret = ''
+    for ($i = 0; $i -lt $length; ++$i) {
+        $c = $Chars[$i]
+        if ($c -eq '-') {
+            if ($Fixed) {
+                $ret += '-'
+            }
+        } elseif ($Value -band $mask) {
+            $ret += $c
+        } else {
+            $ret += '-'
+        }
+        $mask = $mask -shr 1
+    }
+    $ret
+}
+
+
+# Edit text interactively.
+#
+# Return object properties:
+# - [bool]Changed: shows whether user saved text in editor UI
+# - [string]Value: resulting text, or original if user didn't save
+
+
+function global:Edit-String {
+    param(
+        [string]$Text
+    )
+
+    $ret = [PSCustomObject]@{
+        Value=$Text
+        Changed=$false
+    }
+
+    # prepare temp file for editing
+    $path = [System.IO.Path]::GetTempFileName()
+    $Text | Set-Content -LiteralPath $path -Encoding Utf8 -NoNewLine
+    $f = Get-Item -LiteralPath $path
+    $f.Attributes -= [System.IO.FileAttributes]::Archive
+
+    Start-Process -FilePath notepad -ArgumentList $f.FullName -Wait
+    $f.Refresh()
+
+    # get result from temp file and delete it
+    $ret.Value = $f | Get-Content -Encoding Utf8 -Raw
+    if ($f.Attributes -band [System.IO.FileAttributes]::Archive) {
+        $ret.Changed = $true
+    }
+    $f | Remove-Item
+
+    $ret
+}
+
+
+# get youtube-dl local/remote versions
+function global:ydv {
+    function LatestVersion {
+        $r = Invoke-WebRequest -Uri 'https://yt-dl.org/update/LATEST_VERSION'
+        ($r.Content -as [char[]]) -join ''
+    }
+    function VersionToAge ([string]$Version) {
+        ConvertTo-NiceAge ((Get-Date).Date - (Get-Date $Version))
+    }
+    $local = yd --version
+    [PSCustomObject]@{
+        Type='Local'
+        Version=$local
+        Age=VersionToAge $local
+    }
+    $latest = LatestVersion
+    [PSCustomObject]@{
+        Type='Latest'
+        Version=$latest
+        Age=VersionToAge $latest
+    }
+}
+
+
 Set-Alias -Scope global ndd New-DateDirectory
 Set-Alias -Scope global gft Get-FileTotal
 Set-Alias -Scope global ddg New-WebQuery
@@ -631,3 +752,6 @@ $global:PromptColor = '*'
 # change default transfer protocols ("Ssl3, Tls"), both of which are insecure;
 # note that TLS v1.1 has also been deprecated
 [Net.ServicePointManager]::SecurityProtocol = 'Tls12, Tls13'
+
+
+& 'D:\docs\scripts\SmartFileSystem.Format.ps1'
