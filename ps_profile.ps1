@@ -85,7 +85,6 @@ Set-Alias -Scope global minf C:\tools\MediaInfo\MediaInfo.exe
 Set-Alias -Scope global 7z "$Env:ProgramFiles\7-Zip\7z.exe"
 Set-Alias -Scope global j "$Env:DROPBOX\jo.py"
 Set-Alias -Scope global fn $Env:Scripts\filternames.ps1
-Set-Alias -Scope global mpc (Get-ItemPropertyValue HKCU:\Software\MPC-HC\MPC-HC ExePath)
 Set-Alias -Scope global go goto.ps1
 switch ($env:COMPUTERNAME) {
     'core' {
@@ -733,6 +732,70 @@ function global:ydv {
 }
 
 
+# start videos in MPC-HC
+function global:Start-Video {
+    param(
+        [Parameter(Mandatory, ValueFromPipeline<#, ValueFromPipelineByPropertyName#>)]
+        #[Alias('FullName')]
+        [object[]]$InputObject,
+        [switch]$Open,
+        [switch]$Play,
+        [switch]$Close,
+        [switch]$PlayNext,
+        [switch]$New,
+        [switch]$Add,
+        [switch]$Randomized,
+        [int]$StartMsec,
+        [ValidatePattern("^(\d+:)?\d+:\d+$")]
+        [string]$StartPos,  # hh:mm:ss
+        [ValidatePattern("^\d+,\d+$")]
+        [string]$FixedSize,  # w,h
+        [switch]$FullScreen,
+        [switch]$Minimized,
+        [switch]$NoFocus
+    )
+    begin {
+        $regLoc = @{
+            Path='HKCU:\Software\MPC-HC\MPC-HC'
+            Name='ExePath'
+        }
+        $exe = Get-Item -LiteralPath (Get-ItemPropertyValue @regLoc -ea 0) -ea 0
+        if (-not $exe) {
+            throw 'MPC-HC executable not found'
+        }
+        $filePaths = @()
+        $opt = @(
+            if ($Open)      { '/open' }
+            if ($Play)      { '/play' }
+            if ($Close)     { '/close' }
+            if ($PlayNext)  { '/playnext' }
+            if ($New)       { '/new' }
+            if ($Add)       { '/add' }
+            if ($Randomized) { '/randomized' }
+            if ($StartMsec) { '/start',$StartMsec }
+            if ($StartPos)  { '/startpos',$StartPos }
+            if ($FixedSize) { '/fixedsize',$FixedSize }
+            if ($FullScreen) { '/fullscreen' }
+            if ($Minimized) { '/minimized' }
+            if ($NoFocus)   { '/nofocus' }
+        )
+    }
+    process {
+        $filePaths += foreach ($item in $InputObject) {
+            if ($item -is [System.IO.FileSystemInfo]) {
+                $item.FullName
+            } else {
+                $item
+            }
+        }
+    }
+    end {
+        & $exe $filePaths @opt
+    }
+
+}
+
+
 Set-Alias -Scope global ndd New-DateDirectory
 Set-Alias -Scope global gft Get-FileTotal
 Set-Alias -Scope global ddg New-WebQuery
@@ -742,6 +805,7 @@ Set-Alias -Scope Global eds Edit-ScriptInNotepad
 Set-Alias -Scope Global ecs Edit-ScriptInVSCode
 Set-Alias -Scope Global log ~\SimpleLog.ps1
 Set-Alias -Scope Global ?p  Show-CommandParameter.ps1
+Set-Alias -Scope global mpc Start-Video
 
 
 $global:PromptPathPref = [PromptPath]::Tail
