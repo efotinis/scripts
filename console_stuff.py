@@ -90,6 +90,34 @@ def consolesize():
     return size.Y, size.X
 
 
+def set_full_width(buffer, columns):
+    """Set console buffer width and fit window width to it if possible."""
+
+    info = buffer.GetConsoleScreenBufferInfo()
+    buffer_size = info['Size']
+    original_window_rect = info['Window']
+
+    w = min(columns, buffer.GetLargestConsoleWindowSize().X)
+    h = original_window_rect.Bottom - original_window_rect.Top + 1
+    new_window_rect = win32console.PySMALL_RECTType(0, 0, w - 1, h - 1)
+
+    # NOTE: the minimum depends on system metrics and if exceeded will cause
+    # the API to fail; the maximum is automatically capped without error at
+    # a value that depends on the total buffer size (width * height)
+    new_buffer_size = win32console.PyCOORDType(columns, buffer_size.Y)
+
+    try:
+        if columns < buffer_size.X:
+            buffer.SetConsoleWindowInfo(True, new_window_rect)
+            buffer.SetConsoleScreenBufferSize(new_buffer_size)
+        else:
+            buffer.SetConsoleScreenBufferSize(new_buffer_size)
+            buffer.SetConsoleWindowInfo(True, new_window_rect)
+    except win32console.error:
+        buffer.SetConsoleWindowInfo(True, original_window_rect)
+        raise
+
+
 if __name__ == '__main__':
     import sys
     if not iscon():
