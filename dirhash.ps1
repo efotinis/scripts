@@ -8,8 +8,44 @@ param(
   [scriptblock]$Filter = { $true }
 )
 
-foreach ($topDir in $Path) {
-    ls -rec -file $topDir | ? $Filter | Get-FileHash -Algorithm $Algorithm | % { 
-        "$($_.hash) $((Resolve-Path -relative -LiteralPath $_.path).substring(2))"
+$totalBytes = 0
+$files = foreach ($topDir in $Path) {
+    Get-ChildItem -Recurse -File -Path $topDir | ? $Filter | % {
+        $totalBytes += $_.Length
+        $_
     }
+}
+
+function PathToRelative ([string]$Path) {
+    (Resolve-Path -Relative -LiteralPath $Path).Substring(2)
+}
+
+
+$doneFiles = 0
+$doneBytes = 0
+$progress = @{
+    Activity = 'Generating file hashes'
+    Status = ''
+    CurrentOperation = ''
+    PercentComplete = 0
+}
+$currentFileSize = 0
+
+filter PreHash {
+    $script:progress.CurrentOperation = PathToRelative $_.FullName
+    $script:progress.Status = "Done: $script:doneFiles of $($files.Count); $(ConvertTo-NiceSize $script:doneBytes) of $(ConvertTo-NiceSize $totalBytes)"
+    Write-Progress @script:progress
+    $script:currentFileSize = $_.Length
+    $_
+}
+
+filter PostHash {
+    $script:doneFiles += 1
+    $script:doneBytes += $script:currentFileSize
+    $script:progress.PercentComplete = [int](100 * $script:doneBytes / $script:totalBytes)
+    $_
+}
+
+$files | PreHash | Get-FileHash -Algorithm $Algorithm | PostHash | % { 
+    "$($_.hash) $(PathToRelative $_.path)"
 }
