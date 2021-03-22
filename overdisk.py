@@ -24,6 +24,8 @@ import fnmatch
 import itertools
 
 import win32file
+import win32console
+
 import AutoComplete
 import console_stuff
 import efutil
@@ -177,6 +179,7 @@ Commands:
                 No params show all aliases, 'name' shows aliases starting
                 with name, 'name=' deletes and 'name=value' sets an alias.
   COLSEP [sep]  Set (or show) the string used to separate table columns.
+  COLS          Set (or show) the console buffer width.
   CLS           Clear screen.
   HELP          Show help.
   QUIT          Exit.
@@ -341,8 +344,8 @@ class CmdDispatcher(object):
             'unit': cmd_unit,
             'alias': cmd_alias,
             'colsep': cmd_colsep,
+            'cols': cmd_cols,
             'cls': cmd_cls,
-            'con': cmd_con,
             'quit': cmd_quit,
         }
         
@@ -830,36 +833,25 @@ def cmd_colsep(state, params):
     state.colsep = params[0]
 
 
+def cmd_cols(state, params):
+    if len(params) > 1:
+        raise CmdError('at most one param required')
+    if not params:
+        print(console_stuff.consolesize()[1])
+        return
+    try:
+        stdout = win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
+        console_stuff.set_full_width(stdout, int(params[0]))
+    except ValueError:
+        raise CmdError('invalid columns value')
+    except win32console.error:
+        raise CmdError('could not set specified columns')
+
+
 def cmd_cls(state, params):
     if params:
         raise CmdError('no params required')
     console_stuff.cls()
-
-
-def cmd_con(state, params):
-    import getopt
-    import win32console
-    try:
-        opts, args = getopt.getopt(params, 'w:h:')
-    except getopt.GetoptError as x:
-        raise CmdError(str(x))
-    if args:
-        raise CmdError('no params required')
-    opts = dict(opts)
-    if not opts:
-        rows, cols = console_stuff.consolesize()
-        print(f'width: {cols}, height: {rows}')
-    else:
-        try:
-            h = win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
-            size = h.GetConsoleScreenBufferInfo()['Size']
-            if '-w' in opts:
-                size.X = int(opts['-w'])
-            if '-h' in opts:
-                size.Y = int(opts['-h'])
-            h.SetConsoleScreenBufferSize(size)
-        except win32console.error:
-            print('could not set console size')
 
 
 def cmd_quit(state, params):
