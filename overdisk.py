@@ -35,6 +35,8 @@ import winfiles
 # string alignment types mapped to functions
 STR_ALIGN = {'l': str.ljust, 'r': str.rjust, 'c': str.center, '': lambda s, n: s}
 
+FILE_ATTRIBUTE_REPARSE_POINT = 0x400
+
 
 class PathError(Exception):
     """Path traversing error."""
@@ -98,7 +100,10 @@ class Dir(Item):
         Item.__init__(self, path, data)
         if status:
             status.update(path)
-        self.get_children(path, status)
+        if self.attr & FILE_ATTRIBUTE_REPARSE_POINT:
+            self.children = []
+        else:
+            self.get_children(path, status)
         
     def get_children(self, path, status=None):
         self.children = []
@@ -615,8 +620,15 @@ def cmd_dir(state, params):
     # move dirs to beginning
     data_rows.sort(key=is_dir_row, reverse=True)
 
+    def size_str(x, row):
+        if not is_dir_row(row):
+            return size_fmt(x)
+        elif row[2] & FILE_ATTRIBUTE_REPARSE_POINT:
+            return '<JUNCT>'
+        else:
+            return '<DIR>'
+
     size_title, size_fmt = size_title_and_formatter(state.unit)
-    size_str = lambda x, row: '<DIR>' if is_dir_row(row) else size_fmt(x)
     date_str = lambda x, row: date_to_str(x)
     attr_str = lambda x, row: attr_to_str(x)
     NAME_LEN = 44  # FIXME: calc from console if possible
