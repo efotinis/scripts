@@ -29,6 +29,8 @@ if __name__ == '__main__':
             console_stuff.set_full_width(stdout, args.newcols)
         except win32console.error:
             raise SystemExit('could not set specified buffer size')
-        finally:
-            info = stdout.GetConsoleScreenBufferInfo()
-            print(info['Size'].X)
+        else:
+            actual = stdout.GetConsoleScreenBufferInfo()['Size'].X
+            if actual != args.newcols:
+                msg = 'buffer columns set to {0} instead of requested {1}'
+                raise SystemExit(msg.format(actual, args.newcols))
