@@ -49,3 +49,5 @@ filter PostHash {
 $files | PreHash | Get-FileHash -Algorithm $Algorithm | PostHash | % { 
     "$($_.hash) $(PathToRelative $_.path)"
 }
+
+Write-Progress @script:progress -Completed
