@@ -76,22 +76,17 @@ process {
 
 end {
 
-    $progress = $null
-    $progressIndex = 0
-    if ($inputItems.Count -gt 1) {
-        $progress = @{
-            Activity='Extracting video information'
-        }
+    $progress = @{
+        Activity='Extracting video information'
     }
+    $progressIndex = 0
 
     $inputItems | % {
-        if ($progress) {
-            $progressIndex += 1
-            $progress.CurrentOperation = $_
-            $progress.Status = "$progressIndex of $($inputItems.Count)"
-            $progress.PercentComplete = ($progressIndex - 1) / $inputItems.Count * 100
-            Write-Progress @progress
-        }
+        $progressIndex += 1
+        $progress.CurrentOperation = $_
+        $progress.Status = "$progressIndex of $($inputItems.Count)"
+        $progress.PercentComplete = ($progressIndex - 1) / $inputItems.Count * 100
+        Write-Progress @progress
         
         if (-not (Test-Path -PathType Leaf -LiteralPath $_)) {
             Write-Error -Message 'path is not a file' -TargetObject $_
@@ -131,9 +126,6 @@ end {
         )
     }
 
-    if ($progress) {
-        $progress.Completed = $true
-        Write-Progress @progress
-    }
+    Write-Progress @progress -Completed
 
 }
