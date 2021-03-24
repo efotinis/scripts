@@ -806,6 +806,7 @@ Set-Alias -Scope Global ecs Edit-ScriptInVSCode
 Set-Alias -Scope Global log ~\SimpleLog.ps1
 Set-Alias -Scope Global ?p  Show-CommandParameter.ps1
 Set-Alias -Scope global mpc Start-Video
+Set-Alias -Scope global ts  'C:\Users\Elias\Desktop\stuff\assorted\torrent search\Search-Torrent.ps1'
 
 
 $global:PromptPathPref = [PromptPath]::Tail
