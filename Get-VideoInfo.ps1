@@ -81,30 +81,30 @@ end {
     }
     $progressIndex = 0
 
-    $inputItems | % {
+    foreach ($item in $inputItems) {
         $progressIndex += 1
-        $progress.CurrentOperation = $_
+        $progress.CurrentOperation = $item
         $progress.Status = "$progressIndex of $($inputItems.Count)"
         $progress.PercentComplete = ($progressIndex - 1) / $inputItems.Count * 100
         Write-Progress @progress
         
-        if (-not (Test-Path -PathType Leaf -LiteralPath $_)) {
-            Write-Error -Message 'path is not a file' -TargetObject $_
-            return
+        if (-not (Test-Path -PathType Leaf -LiteralPath $item)) {
+            Write-Error -Message 'path is not a file' -TargetObject $item
+            continue
         }
         
-        $info = avprobe.exe $_ -show_format -show_streams -of json -v 0 | ConvertFrom-Json
+        $info = avprobe.exe $item -show_format -show_streams -of json -v 0 | ConvertFrom-Json
         if (-not ($info | Get-Member format) -or -not ($info | Get-Member streams)) {
-            Write-Error -Message 'could not get video info' -TargetObject $_
-            return
+            Write-Error -Message 'could not get video info' -TargetObject $item
+            continue
         }
         $format = $info.format
         $video = $info.streams | IsVideoStream | select -first 1
         $audio = $info.streams | IsAudioStream | select -first 1
 
         if (-not $video) {
-            Write-Error -Message 'could not find video stream' -TargetObject $_
-            return
+            Write-Error -Message 'could not find video stream' -TargetObject $item
+            continue
         }
 
         $vcodec = $video.codec_name
@@ -122,7 +122,7 @@ end {
             $acodec,
             $channels,
             [int64]$format.size, 
-            $_
+            $item
         )
     }
 
