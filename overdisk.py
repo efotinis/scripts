@@ -109,6 +109,8 @@ class Dir(Item):
         self.children = []
         try:
             for data in winfiles.find(os.path.join(path, '*'), times='unix'):
+                if status:
+                    status.update(path)
                 child_path = os.path.join(path, data.name)
                 factory = Dir if winfiles.is_dir(data.attr) else File
                 self.children += [factory(child_path, data, status)]
@@ -446,6 +448,7 @@ class ScanStatus(object):
         self.spo = console_stuff.SamePosOutput(fallback=True)
         self.root = root
         self.last_update = time.time()
+        self.spinner = itertools.cycle('-\\|/')
 
     def update(self, s):
         t = time.time()
@@ -456,7 +459,8 @@ class ScanStatus(object):
         self.last_update = t
         self.spo.restore(True)
         s = s[len(self.root):]  # trim root
-        print(s[:79])  # TODO: use a better trimming func, removing middle path elements
+        print(next(self.spinner) + ' ' + s[:77])  # TODO: use a better trimming func, removing middle path elements
+
 
     def cleanup(self):
         self.spo.restore(True)
