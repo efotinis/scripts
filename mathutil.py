@@ -102,3 +102,46 @@ def round_to_sgnf(x, digits):
         http://stackoverflow.com/questions/3410976/how-to-round-a-number-to-significant-figures-in-python#3411435
     """
     return round(x, -int(math.floor(math.log10(x))) + (digits - 1))
+
+
+def repeating_decimal_division(a, b):
+    """Decimal representation of the fraction a / b in three parts:
+    integer part, non-recurring fractional part, and recurring part.
+
+    Source: https://stackoverflow.com/a/251597
+        "How to Calculate Recurring Digits?"
+
+    Example:
+    >>> repeating_decimal_division(1, 3)
+    (0, [], [3])  # 0.(3) or 0. 3...
+    >>> repeating_decimal_division(9570, 888)
+    (10, [7, 7], [7, 0, 2])  # 10.77(702) or 10.77 702...
+    """
+    if not (a > 0 and b > 0):
+        raise ValueError('dividend and divisor must be > 0')
+    integer = a // b
+    remainder = a % b
+    seen = {remainder: 0}
+    digits = []
+    while True:
+        remainder *= 10
+        digits.append(remainder // b)
+        remainder = remainder % b
+        if remainder in seen:
+            where = seen[remainder]
+            return integer, digits[:where], digits[where:]
+        else:
+            seen[remainder] = len(digits)
+
+
+def repeating_decimal_division_repr(a, b):
+    """String using parenthesized repetend.
+
+    See https://en.wikipedia.org/wiki/Repeating_decimal#Notation
+    """
+    i, j, k = repeating_decimal_division(a, b)
+    return '{}.{}({})'.format(
+        i,
+        ''.join(str(n) for n in j),
+        ''.join(str(n) for n in k)
+    )
