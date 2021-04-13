@@ -744,7 +744,7 @@ function global:Start-Video {
         [switch]$PlayNext,
         [switch]$New,
         [switch]$Add,
-        [switch]$Randomized,
+        [switch]$Randomize,
         [int]$StartMsec,
         [ValidatePattern("^(\d+:)?\d+:\d+$")]
         [string]$StartPos,  # hh:mm:ss
@@ -771,7 +771,7 @@ function global:Start-Video {
             if ($PlayNext)  { '/playnext' }
             if ($New)       { '/new' }
             if ($Add)       { '/add' }
-            if ($Randomized) { '/randomized' }
+            if ($Randomize) { '/randomize' }
             if ($StartMsec) { '/start',$StartMsec }
             if ($StartPos)  { '/startpos',$StartPos }
             if ($FixedSize) { '/fixedsize',$FixedSize }
@@ -796,6 +796,35 @@ function global:Start-Video {
 }
 
 
+# Storage unit fudge factors, i.e. number to multiply advertised capacity
+# (in decimal units) to get actual capacity (in binary units).
+# Use a unit prefix (k,m,g,...) for a single factor or -List for summary.
+function global:Get-DiskSizeFudgeFactor {
+    [CmdletBinding()]
+    param(
+        [Parameter(ParameterSetName='unit', Position=0)]
+        [ValidateSet('k','m','g','t','p','e','z','y')]
+        [string]$Unit,
+        
+        [Parameter(ParameterSetName='list')]
+        [switch]$List
+    )
+    $units = 'kmgtpezy'
+    if ($List) {
+        $i = 0
+        foreach ($c in [char[]]$units) {
+            [PSCustomObject]@{
+                Unit = $units[$i]
+                FactorBinary = 1 / [Math]::Pow(1.024, $i + 1)
+            }
+            ++$i
+        }
+    } else {
+        1 / [Math]::Pow(1.024, $units.IndexOf($Unit.ToLower()) + 1)
+    }
+}
+
+
 Set-Alias -Scope global ndd New-DateDirectory
 Set-Alias -Scope global gft Get-FileTotal
 Set-Alias -Scope global ddg New-WebQuery
@@ -807,6 +836,8 @@ Set-Alias -Scope Global log ~\SimpleLog.ps1
 Set-Alias -Scope Global ?p  Show-CommandParameter.ps1
 Set-Alias -Scope global mpc Start-Video
 Set-Alias -Scope global ts  'C:\Users\Elias\Desktop\stuff\assorted\torrent search\Search-Torrent.ps1'
+Set-Alias -Scope global eatlines D:\projects\eatlines.exe
+Set-Alias -Scope global ff Get-DiskSizeFudgeFactor
 
 
 $global:PromptPathPref = [PromptPath]::Tail
