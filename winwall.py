@@ -1,9 +1,12 @@
 #!python3
 """Windows wallpaper functions."""
 
+import argparse
+import os
+
 import win32api
-from win32con import REG_SZ, SPI_GETDESKWALLPAPER, SPI_SETDESKWALLPAPER, SPIF_SENDCHANGE, SPIF_UPDATEINIFILE
 import win32gui
+from win32con import REG_SZ, SPI_GETDESKWALLPAPER, SPI_SETDESKWALLPAPER, SPIF_SENDCHANGE, SPIF_UPDATEINIFILE
 
 import winregx
 
@@ -18,6 +21,34 @@ STYLE_VALUES = {  # WallpaperStyle/TileWallpaper values
 }
 WIN7_ONLY_STYLES = ('fit', 'fill')
 IS_WIN7_OR_NEWER = win32api.GetVersionEx()[:2] >= (6, 1)
+
+
+def parse_args():
+    ap = argparse.ArgumentParser(
+        description='manage Windows wallpaper'
+    )
+    ap.add_argument(
+        'path', 
+        type=pathArg,
+        help='image file; specify a dash ("-") to remove wallpaper'
+    )
+    ap.add_argument(
+        '-s', 
+        dest='style', 
+        choices=STYLE_VALUES, 
+        default='fill',
+        help='position style; default: %(default)s'
+    )
+    return ap.parse_args()
+
+
+def pathArg(s):
+    """Ensure image path is valid, absolute path or '-'."""
+    if s != '-':
+        s = os.path.abspath(s)
+        if not os.path.isfile(s):
+            raise argparse.ArgumentTypeError('image file not found')
+    return s
 
 
 def _getval(key, name, reqtype):
@@ -67,3 +98,14 @@ def set(path=None, style=None):
 def remove():
     """Remove wallpaper."""
     set('')
+
+
+if __name__ == '__main__':
+    try:
+        args = parse_args()
+        if args.path == '-':
+            remove()
+        else:
+            set(args.path, args.style)
+    except Exception as x:
+        raise SystemExit(str(x))
