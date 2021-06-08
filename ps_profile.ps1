@@ -825,6 +825,16 @@ function global:Get-DiskSizeFudgeFactor {
 }
 
 
+function global:NiceSum ([string]$Property = 'length') {
+    ConvertTo-NiceSize ($input | measure -sum $Property | % sum)
+}
+
+
+function global:NiceDuration ([string]$Property = 'duration') {
+    ConvertTo-NiceDuration ($input | measure -sum $Property | % sum)
+}
+
+
 Set-Alias -Scope global ndd New-DateDirectory
 Set-Alias -Scope global gft Get-FileTotal
 Set-Alias -Scope global ddg New-WebQuery
