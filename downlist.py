@@ -52,6 +52,12 @@ def parse_args():
     return args
 
 
+def output_result_line(path, status):
+    """Replace previous console line with nicely formatted result."""
+    os.system('d:/projects/eatlines.exe 1')
+    print(status.rjust(8), path)
+
+
 if __name__ == '__main__':
     args = parse_args()
 
@@ -65,13 +71,13 @@ if __name__ == '__main__':
             local = os.path.join(args.outdir, local)
             try:
                 if dlmgr.download_with_resume(url, local, dlmgr.Status(), counters=counters):
-                    print('done')
+                    output_result_line(url, 'done')
                     okcount += 1
                 else:
-                    print('skipped')
+                    output_result_line(url, 'skipped')
                     skipcount += 1
             except Exception as err:
-                print('failed')
+                output_result_line(url, 'failed')
                 print('could not get "%s"; dest: "%s"; reason: "%s"' % (url, local, err), file=sys.stderr)
                 errcount += 1
     except KeyboardInterrupt:
