@@ -849,6 +849,70 @@ function global:ydj {
 }
 
 
+# Get objects whose named property matches all specified wildcard patterns.
+filter global:AllLike {
+    param(
+        [string]$Property,
+        [string[]]$Pattern
+    )
+    $val = $_.$Property
+    foreach ($p in $Pattern) {
+        if ($val -notlike $p) {
+            return
+        }
+    }
+    $_
+}
+
+
+# Get objects whose named property matches any specified wildcard patterns.
+filter global:AnyLike {
+    param(
+        [string]$Property,
+        [string[]]$Pattern
+    )
+    $val = $_.$Property
+    foreach ($p in $Pattern) {
+        if ($val -like $p) {
+            $_
+            return
+        }
+    }
+}
+
+
+# Get objects whose named property matches all specified regex patterns.
+filter global:AllMatch {
+    param(
+        [string]$Property,
+        [string[]]$Pattern
+    )
+    $val = $_.$Property
+    foreach ($p in $Pattern) {
+        if ($val -notmatch $p) {
+            return
+        }
+    }
+    $_
+}
+
+
+# Get objects whose named property matches any specified regex patterns.
+filter global:AnyMatch {
+    param(
+        [string]$Property,
+        [string[]]$Pattern
+    )
+    $val = $_.$Property
+    foreach ($p in $Pattern) {
+        if ($val -match $p) {
+            $_
+            return
+        }
+    }
+}
+
+
 Set-Alias -Scope global ndd New-DateDirectory
 Set-Alias -Scope global gft Get-FileTotal
 Set-Alias -Scope global ddg New-WebQuery
