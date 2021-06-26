@@ -835,6 +835,20 @@ function global:NiceDuration ([string]$Property = 'duration') {
 }
 
 
+# Get YouTube video info.
+function global:ydj {
+    param(
+        [string]$Url,
+        [switch]$Full  # do not strip verbose fields
+    )
+    $a = yd -ij -- $Url | ConvertFrom-Json
+    if (-not $Full) {
+        $a = $a | select * -exclude formats,requested_formats,thumbnails
+    }
+    return $a
+}
+
+
 Set-Alias -Scope global ndd New-DateDirectory
 Set-Alias -Scope global gft Get-FileTotal
 Set-Alias -Scope global ddg New-WebQuery
