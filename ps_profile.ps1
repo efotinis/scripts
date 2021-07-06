@@ -1,8 +1,13 @@
+using module D:\Scripts\WindowUtil.psm1
+
 Set-StrictMode -Version Latest
 
 Import-Module $Env:Scripts\EFUtil.psm1
 Import-Module $Env:Scripts\NiceConvert.psm1
+Import-Module $Env:Scripts\WindowUtil.psm1
+
 Update-FormatData $Env:Scripts\EF.Format.ps1xml
+
 
 # shorthands and aliases
 function global:m ($i, $b, $c) {
@@ -624,11 +629,6 @@ function global:waitnet ([int]$WaitSeconds = 10, [switch]$Silent) {
 
 # Set PowerShell console visibility.
 function global:ShowConsole ([bool]$Mode) {
-    Add-Type -Namespace $null -Name WinApi -MemberDefinition @"
-        [DllImport("user32.dll")]
-            public static extern bool ShowWindow(IntPtr wnd, int cmd);
-"@
-
     # cache the handle, since MainWindowHandle is 0
     # when the main window of a process is hidden
     $hwnd = (Get-Process -Id $PID).MainWindowHandle
@@ -638,11 +638,11 @@ function global:ShowConsole ([bool]$Mode) {
         $hwnd = $global:_ShowConsole_hwnd
     }
 
-    $cmd = @{
-        $true=5  # SW_SHOW
-        $false=0  # SW_HIDE
+    $cmd = switch ($Mode) {
+        $true { [ShowStatus]::Show } }
+        $false { { [ShowStatus]::Hide } }
     }
-    $null = [WinApi]::ShowWindow($hwnd, $cmd[$mode])
+    $null = [WinApi]::ShowWindow($hwnd, $cmd)
 }
 
 
