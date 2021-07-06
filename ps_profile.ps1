@@ -639,8 +639,8 @@ function global:ShowConsole ([bool]$Mode) {
     }
 
     $cmd = switch ($Mode) {
-        $true { [ShowStatus]::Show } }
-        $false { { [ShowStatus]::Hide } }
+        $true { [ShowStatus]::Show }
+        $false { [ShowStatus]::Hide }
     }
     $null = [WinApi]::ShowWindow($hwnd, $cmd)
 }

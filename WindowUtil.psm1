@@ -89,37 +89,4 @@ function Set-WindowShow ($HWnd, $Status) {
 }
 
 
-<#
-$hwnd = (Get-Process -Id $PID).MainWindowHandle
-if ($hwnd -eq [IntPtr]::Zero) {
-    throw 'could not get console window handle'
-}
-
-Read-Host 'press Enter to save window coords' > $null
-
-$rc = New-Object WinApi+RECT
-if (-not [WinApi]::GetWindowRect($hwnd, [ref]$rc)) {
-    throw 'could not get console window coords'
-}
-$rc
-exit
-
-Read-Host 'press Enter to restore window coords' > $null
-
-if (-not [WinApi]::MoveWindow($hwnd, $rc.Left, $rc.Top, $rc.Width, $rc.Height, $true)) {
-    throw 'could not set console window coords'
-}
-if (-not [WinApi]::MoveWindow($hwnd, $rc.Left, $rc.Top, $rc.Width, $rc.Height, $true)) {
-    throw 'could not set console window coords'
-}
-if (-not [WinApi]::GetWindowRect($hwnd, [ref]$rc)) {
-    throw 'could not get console window coords'
-}
-$rc
-
-
-[WinApi+RECT]::new(2, 988, 959, 1079)
-#>
-
-
 Export-ModuleMember -Function *-*
