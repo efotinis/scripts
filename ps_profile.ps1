@@ -5,6 +5,7 @@ Set-StrictMode -Version Latest
 Import-Module $Env:Scripts\EFUtil.psm1
 Import-Module $Env:Scripts\NiceConvert.psm1
 Import-Module $Env:Scripts\WindowUtil.psm1
+Import-Module $Env:Scripts\PipelineUtil.psm1
 
 Update-FormatData $Env:Scripts\EF.Format.ps1xml
 
@@ -168,33 +169,10 @@ function global:Speak (
 }
 
 
-# reverse input sequence
-# http://stackoverflow.com/questions/22771724/reverse-elements-via-pipeline
-function global:Reversed
-{
-    $a = @($input)
-    [array]::reverse($a)
-    return $a
-}
-
-
-function global:Shuffled
-{
-    $a = @($input)
-    if ($a.Count) {
-        $a | Get-Random -Count $a.Length
-    }
-}
-
-
-# Select random items from pipeline, keeping their relative order.
-function global:PickOrdered ([int]$Count) {
-    $items = @($Input)
-    $indexes = 0..($items.Count - 1)
-    $indexes | Get-Random -Count $Count | Sort-Object | % {
-        $items[$_]
-    }
-}
+Set-Alias -Scope global Reversed Get-ReverseArray
+Set-Alias -Scope global Reverse Get-ReverseArray
+Set-Alias -Scope global Shuffle Get-ShuffleArray
+Set-Alias -Scope global Pick Get-OrderedSubset
 
 
 # get elevation status
@@ -849,68 +827,10 @@ function global:ydj {
 }
 
 
-# Get objects whose named property matches all specified wildcard patterns.
-filter global:AllLike {
-    param(
-        [string]$Property,
-        [string[]]$Pattern
-    )
-    $val = $_.$Property
-    foreach ($p in $Pattern) {
-        if ($val -notlike $p) {
-            return
-        }
-    }
-    $_
-}
-
-
-# Get objects whose named property matches any specified wildcard patterns.
-filter global:AnyLike {
-    param(
-        [string]$Property,
-        [string[]]$Pattern
-    )
-    $val = $_.$Property
-    foreach ($p in $Pattern) {
-        if ($val -like $p) {
-            $_
-            return
-        }
-    }
-}
-
-
-# Get objects whose named property matches all specified regex patterns.
-filter global:AllMatch {
-    param(
-        [string]$Property,
-        [string[]]$Pattern
-    )
-    $val = $_.$Property
-    foreach ($p in $Pattern) {
-        if ($val -notmatch $p) {
-            return
-        }
-    }
-    $_
-}
-
-
-# Get objects whose named property matches any specified regex patterns.
-filter global:AnyMatch {
-    param(
-        [string]$Property,
-        [string[]]$Pattern
-    )
-    $val = $_.$Property
-    foreach ($p in $Pattern) {
-        if ($val -match $p) {
-            $_
-            return
-        }
-    }
-}
+Set-Alias -Scope global AllLike Get-AllLikeProperty
+Set-Alias -Scope global AnyLike Get-AnyLikeProperty
+Set-Alias -Scope global AllMatch Get-AllMatchProperty
+Set-Alias -Scope global AnyMatch Get-AnyMatchProperty
 
 
 Set-Alias -Scope global ndd New-DateDirectory
