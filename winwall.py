@@ -30,7 +30,9 @@ def parse_args():
     ap.add_argument(
         'path', 
         type=pathArg,
-        help='image file; specify a dash ("-") to remove wallpaper'
+        nargs='?',
+        help='image file; specify a dash ("-") to remove wallpaper; '
+            'omit to print current path and style'
     )
     ap.add_argument(
         '-s', 
@@ -103,7 +105,11 @@ def remove():
 if __name__ == '__main__':
     try:
         args = parse_args()
-        if args.path == '-':
+        if not args.path:
+            path, style = get()
+            print(path)
+            print(style)
+        elif args.path == '-':
             remove()
         else:
             set(args.path, args.style)
