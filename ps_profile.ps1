@@ -238,6 +238,23 @@ function global:Get-FileTotal
 }
 
 
+# Measure total count and length of non-container FileSystemInfo objects grouped by extension.
+function global:Get-ExtensionInfo {
+    @($input) | 
+        Where-Object { -not $_.PSIsContainer } | 
+        Group-Object Extension | 
+        ForEach-Object {
+            $x = $_.Group | Get-FileTotal
+            [PSCustomObject]@{
+                Count=$_.count
+                Extension=$_.name
+                Length=$x.bytes
+                Size=$x.size 
+            }
+        }
+}
+
+
 if ($host.name -eq 'ConsoleHost') {
 
     enum PromptPath {
@@ -835,6 +852,7 @@ Set-Alias -Scope global AnyMatch Get-AnyMatchProperty
 
 Set-Alias -Scope global ndd New-DateDirectory
 Set-Alias -Scope global gft Get-FileTotal
+Set-Alias -Scope global ext Get-ExtensionInfo
 Set-Alias -Scope global ddg New-WebQuery
 Set-Alias -Scope Global ed  Edit-FileInNotepad
 Set-Alias -Scope Global ec  Edit-FileInVSCode
