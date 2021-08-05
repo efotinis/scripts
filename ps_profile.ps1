@@ -1,4 +1,4 @@
-using module D:\Scripts\WindowUtil.psm1
+using module .\WindowUtil.psm1
 
 Set-StrictMode -Version Latest
 
