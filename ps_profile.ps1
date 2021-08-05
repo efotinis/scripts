@@ -876,4 +876,4 @@ $global:PromptColor = '*'
 [Net.ServicePointManager]::SecurityProtocol = 'Tls12, Tls13'
 
 
-& 'D:\docs\scripts\SmartFileSystem.Format.ps1'
+& "$Env:scripts\SmartFileSystem.Format.ps1"

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Configuration>
+    <ViewDefinitions>
+        <View>
+            <Name>DefaultView</Name>
+            <ViewSelectedBy>
+                <TypeName>System.IO.DirectoryInfo</TypeName>
+                <TypeName>System.IO.FileInfo</TypeName>
+            </ViewSelectedBy>
+
+            <GroupBy>
+                <PropertyName>PSParentPath</PropertyName> 
+                <CustomControl>
+                    <CustomEntries>
+                        <CustomEntry>
+                            <CustomItem>
+                                <Frame>
+                                    <!-- NOTE: LeftIndent is ignored -->
+                                    <LeftIndent>4</LeftIndent>
+                                    <CustomItem>
+                                        <Text AssemblyName="System.Management.Automation" BaseName="FileSystemProviderStrings" ResourceId="DirectoryDisplayGrouping"/>
+                                        <ExpressionBinding>
+                                          <ScriptBlock>
+                                              $_.PSParentPath.Replace("Microsoft.PowerShell.Core\FileSystem::", "")                                                  
+                                          </ScriptBlock>
+                                        </ExpressionBinding>
+                                        <!--NewLine/-->
+                                    </CustomItem> 
+                                </Frame>
+                            </CustomItem>
+                        </CustomEntry>
+                    </CustomEntries>
+                </CustomControl>
+            </GroupBy>
+
+            <TableControl>
+                <TableHeaders>
+                    <TableColumnHeader><Label>Attr</Label><Width>13</Width><Alignment>Right</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>Age</Label><Width>4</Width><Alignment>Right</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>Modify</Label><Width>8</Width><Alignment>Right</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>Size</Label><Width>5</Width><Alignment>Right</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>Name</Label><Alignment>left</Alignment></TableColumnHeader>
+                </TableHeaders>
+                <TableRowEntries>
+                    <TableRowEntry>
+                        <Wrap/>
+                        <TableColumnItems>
+                            <TableColumnItem><ScriptBlock>(FlagString $_.Attributes 'eioclptn-ad-shr') -replace '-','.'</ScriptBlock></TableColumnItem>
+                            <TableColumnItem><ScriptBlock>FileTableAge $_.CreationTime -Precision 1</ScriptBlock></TableColumnItem>
+                            <TableColumnItem><ScriptBlock>FileTableAge $_.LastWriteTime -Precision 2</ScriptBlock></TableColumnItem>
+                            <TableColumnItem><ScriptBlock>if ($_.PSIsContainer) { '' } else { (ConvertTo-NiceSize $_.Length) -replace 'B$','' -replace 'bytes','B' -replace ' ','' }</ScriptBlock></TableColumnItem>
+                            <TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+                        </TableColumnItems>
+                    </TableRowEntry>
+                </TableRowEntries>
+            </TableControl>
+
+        </View>
+    </ViewDefinitions>
+</Configuration>
