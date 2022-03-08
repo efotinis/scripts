@@ -10,6 +10,9 @@ Import-Module $Env:Scripts\PipelineUtil.psm1
 Update-FormatData $Env:Scripts\EF.Format.ps1xml
 
 
+# NOTE: this script is getting large; must break it up
+
+
 # shorthands and aliases
 function global:m ($i, $b, $c) {
     # multiply value by ten, preserving leading sign (if any);
@@ -42,6 +45,7 @@ Function global:... { Set-Location ..\.. }
 function global:slc { Set-Location -LiteralPath (Get-Clipboard) }
 function global:glc { Get-Location | % Path | Set-Clipboard }
 Function global:?? ($Cmd) { help $Cmd -Full }
+function global:cdef ([string]$Name) { gcm $Name | % Definition }
 function global:yc {  # play youtube stream from clipboard url
     param(
         [switch]$HiDef,  # use high quality stream, if available
@@ -86,10 +90,9 @@ x, y = map(int, sys.argv[1:])
 print(fractions.Fraction(x, y))
     ' $a $b
 }
-Set-Alias -Scope global yd C:\tools\youtube-dl.exe
+Set-Alias -Scope global yd C:\tools\yt-dlp.exe
 Set-Alias -Scope global minf C:\tools\MediaInfo\MediaInfo.exe
 Set-Alias -Scope global 7z "$Env:ProgramFiles\7-Zip\7z.exe"
-Set-Alias -Scope global j "$Env:DROPBOX\jo.py"
 Set-Alias -Scope global fn $Env:Scripts\filternames.ps1
 Set-Alias -Scope global go goto.ps1
 switch ($env:COMPUTERNAME) {
@@ -712,14 +715,16 @@ function global:ydv {
     function VersionToAge ([string]$Version) {
         ConvertTo-NiceAge ((Get-Date).Date - (Get-Date $Version))
     }
-    $local = yd --version
+    $local = youtube-dl.exe --version
     [PSCustomObject]@{
+        Program='youtube-dl'
         Type='Local'
         Version=$local
         Age=VersionToAge $local
     }
     $latest = LatestVersion
     [PSCustomObject]@{
+        Program='youtube-dl'
         Type='Latest'
         Version=$latest
         Age=VersionToAge $latest
@@ -831,16 +836,216 @@ function global:NiceDuration ([string]$Property = 'duration') {
 
 
 # Get YouTube video info.
-function global:ydj {
+function global:yvjson {
     param(
         [string]$Url,
         [switch]$Full  # do not strip verbose fields
     )
     $a = yd -ij -- $Url | ConvertFrom-Json
     if (-not $Full) {
-        $a = $a | select * -exclude formats,requested_formats,thumbnails
+        $a = $a | select * -exclude formats,requested_formats,thumbnails,urls,automatic_captions
     }
     return $a
+}
+
+
+# Get most relevant YouTube video info.
+function global:yvinfo {
+    param(
+        [string]$Url
+    )
+    yvjson -Url $Url | select @(
+        'id'
+        'title'
+        'uploader'
+        'upload_date'
+        'duration_string'
+        'channel_follower_count'
+        'view_count'
+        'age_limit'
+        'categories'
+        'tags'
+        'description'
+    )
+}
+
+
+# Get YouTube video auto-generated subtitles.
+function global:yvsubs {
+    <#param(
+        [string]$Url,
+        [string]$Language = 'en'
+    )
+
+    $tempPath = [System.IO.Path]::GetTempFileName()
+    if ($tempPath) {
+        # delete automatically created 0-length file; only path is needed
+        Remove-Item -LiteralPath $tempPath
+    } else {
+        return
+    }
+    
+    $args = @(
+        '-o', $tempPath
+        '--skip-download'
+        '--write-auto-subs'
+        '--sub-lang', $Language
+        '--sub-format', 'ttml'
+        '--'
+        $Url
+    )
+    yt-dlp.exe @args > $null
+    if ($?) {
+        $filePath = "$tempPath.$Language.ttml"
+        $x = [xml](Get-Content -LiteralPath $filePath -Encoding Utf8)
+        Remove-Item -LiteralPath $filePath
+        $x.tt.body.div.p
+    }#>
+    param(
+        [string]$Url,
+        [string]$Language = 'en',
+        [switch]$Raw,     # output unprocessed data (overrides -Simple)
+        [switch]$Simple,  # join multi-line entries
+        [switch]$List
+    )
+
+    function ListSubs ($Items, [string]$Type) {
+        $Items.PSObject.Properties.ForEach{
+            [PSCustomObject]@{
+                Type=$Type
+                Language=$_.name
+                Name=$_.value[0].name
+            }
+        }
+    }
+
+    function GetSub ($Info, [string]$Language, [string]$Format) {
+        $a = @(
+            $info.subtitles.$Language
+            $info.automatic_captions.$Language
+        ) | ? ext -eq $Format | select -first 1
+        if (-not $a) {
+            Write-Error "no subtitles match language ""$Language"" and format ""$Format"""
+            return
+        }
+        $xml = Invoke-RestMethod -Uri $a.url
+        $xml.tt.body.div.p
+    }
+
+    filter SingleLineOutput {
+        [PSCustomObject]@{
+            Time = $_.begin
+            Text = @($_.'#text') -join ' '
+        }
+    }
+
+    filter MultipleLineOutput {
+        $time = $_.begin
+        $first = $true
+        $_.'#text' | % {
+            [PSCustomObject]@{
+                Time = if ($first) { $time } else { $null }
+                Text = $_
+            }
+            $first = $false
+        }
+    }
+
+    $info = yd -j -- $Url | ConvertFrom-Json
+
+    if ($List) {
+        
+        ListSubs $info.subtitles 'subtitle'
+        ListSubs $info.automatic_captions 'automatic_caption'
+
+    } else {
+
+        $a = GetSub $info $Language 'ttml'
+        if ($Raw) {
+            $a
+        } elseif ($Simple) {
+            $a | SingleLineOutput
+        } else {
+            $a | MultipleLineOutput
+        }
+
+    }
+}
+
+
+# Calculate adapter usage from Network info of Task Manager.
+function global:NetSpeed ([int]$LinkSpeedMpbs, [float]$UtilizationPercentage) {
+    $speed = $UtilizationPercentage / 100 * $LinkSpeedMpbs * 1000000 / 8
+    echo "$(ConvertTo-NiceSize $speed)/s"
+}
+
+
+# Filter pipeline items besed on property value range.
+# Produces error if no object had a non-null value.
+function global:InRange {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]$InputObject,
+        [Parameter(Mandatory, Position=0)][string]$Property,
+        [Parameter(Mandatory, Position=1)]$Start,
+        [Parameter(Mandatory, Position=2)]$End,
+        [switch]$NoStart,
+        [switch]$NoEnd
+    )
+    begin {
+        if ($Start -gt $End) {
+            throw "InRange start value ($Start) cannot be greater than end value ($End)"
+        }
+        $propertyFound = $false
+        $startCheck = if ($NoStart) {
+            { $value -gt $Start }
+        } else {
+            { $value -ge $Start }
+        }
+        $endCheck = if ($NoEnd) {
+            { $value -lt $End }
+        } else {
+            { $value -le $End }
+        }
+    }
+    process {
+        $value = $_.$Property
+        if ($null -ne $value) {
+            $propertyFound = $true
+            if ($startCheck.Invoke($value) -and $endCheck.Invoke($value)) {
+                $_
+            }
+        }
+    }
+    end {
+        if (-not $propertyFound) {
+            Write-Error "The property ""$Property"" cannot be found in the input for any objects."
+        }
+    }
+}
+
+
+# Extract year from paths of the form: "...\title (year).ext".
+function global:GetReleaseYear {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, ValueFromPipelineByPropertyName)]
+        [Alias('FullName', 'PSPath')]
+        $Path
+    )
+    process {
+        if ($Path -match '\((\d{4})\)\.\w+$') {
+            $Matches[1] -as [int]
+        } else {
+            Write-Error "could not detect year: ""$Path"""
+        }
+    }
+}
+
+
+# Number of pipeline objects.
+function global:Count {
+    $Input | Measure-Object | % count
 }
 
 
@@ -864,6 +1069,8 @@ Set-Alias -Scope global mpc Start-Video
 Set-Alias -Scope global ts  'C:\Users\Elias\Desktop\stuff\assorted\torrent search\Search-Torrent.ps1'
 Set-Alias -Scope global eatlines D:\projects\eatlines.exe
 Set-Alias -Scope global ff Get-DiskSizeFudgeFactor
+Set-Alias -Scope global espeak 'C:\Program Files (x86)\eSpeak\command_line\espeak.exe'
+Set-Alias -Scope global nw ~\newwall.ps1
 
 
 $global:PromptPathPref = [PromptPath]::Tail
