@@ -35,6 +35,15 @@ function Get-OrderedSubset ([int]$Count) {
 }
 
 
+<# 
+function Get-UniqueByProperty ([string]$Name) {
+    begin {
+    }
+    process {
+    }
+}#>
+
+
 # ----------------------------------------------------------------
 
 
@@ -101,6 +110,95 @@ filter Get-AnyMatchProperty {
     }
 }
 
+
+# ----------------------------------------------------------------
+
+
+# Add numeric index to objects.
+function Add-IndexMember {
+    param(
+        [string]$Name = 'Index',
+        [int]$Start = 0,
+        [int]$Step = 1,
+        [switch]$PassThru
+    )
+    begin {
+        $i = $Start
+    }
+    process {
+        $_ | Add-Member -NotePropertyName $Name -NotePropertyValue $i -PassThru:$PassThru
+        $i += $Step
+    }
+}
+
+
+# ----------------------------------------------------------------
+
+<#
+# Seperate items based on delimiters.
+function Group-HeadTail {
+    #[CmdletBinding()]
+    param(
+        #[Parameter(Mandatory, ValueFromPipeline)]
+        #    $InputObject,
+        #[Parameter(Mandatory)]
+            [scriptblock] $Header,  # header identification test
+        [switch] $Flat  # generate flat arrays instead of objects
+    )
+    begin {
+        $head, $tail = @(), @()
+        function flush {
+            if ($head.Count) {
+                if ($Flat) {
+                    ,($head + $tail)
+                } else {
+                    [PSCustomObject]@{ Head = $head; Tail = $tail }
+                }
+            } elseif ($tail.Count) {
+                Write-Warning "missing header before items: $($tail -join ',')"
+            }
+        }
+    }
+    process {
+        Write-Host "process: `$_ = $_"
+        if (& $Header) {
+            flush
+            $head, $tail = @($_), @()
+        } else {
+            $tail += $_
+        }
+    }
+    end {
+        flush
+    }
+}#>
+
+
+<#function cc-cc {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+            $InputObject,
+        [scriptblock] $Code
+    )
+    process {
+        "  process block: $_"
+        "code evaluation: $(. $Code)"
+    }
+}#>
+function Test-Cc {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+            $InputObject,
+        [scriptblock] $Code
+    )
+    process {
+        "  process block: $InputObject"
+        "code evaluation: $(. $Code)"
+    }
+}
+#1..3 | cc-cc -x { $_ }
 
 # ----------------------------------------------------------------
 
