@@ -6,6 +6,7 @@ Import-Module $Env:Scripts\EFUtil.psm1
 Import-Module $Env:Scripts\NiceConvert.psm1
 Import-Module $Env:Scripts\WindowUtil.psm1
 Import-Module $Env:Scripts\PipelineUtil.psm1
+Import-Module $Env:Scripts\StringUtil.psm1
 
 Update-FormatData $Env:Scripts\EF.Format.ps1xml
 
@@ -318,6 +319,7 @@ if ($host.name -eq 'ConsoleHost') {
                 if ($newBg) { $bg = $newBg }
             }
         }
+        #Write-Host '|ADMIN|' -NoNewline -ForegroundColor white -BackgroundColor darkred
         Write-Host $s -NoNewline -ForegroundColor $fg -BackgroundColor $bg
         Write-Output ' '
     }
@@ -393,37 +395,6 @@ function global:HomeWan {
         throw 'no IP found in log tail'
     }
     $Matches[1]
-}
-
-
-# Count of characters in string.
-function global:CharCount {
-    param(
-        [Parameter(ValueFromPipeline)]
-        [string]$InputObject,
-        
-        [Parameter(Mandatory)]
-        [char]$Character,
-        
-        [switch]$CaseSensitive
-    )
-
-    $count = 0
-    if ($CaseSensitive) {
-        for ($i = 0; $i -lt $InputObject.Length; ++$i) {
-            if ($InputObject[$i] -ceq $Character) {
-                ++$count
-            }
-        }
-    }
-    else {
-        for ($i = 0; $i -lt $InputObject.Length; ++$i) {
-            if ($InputObject[$i] -ieq $Character) {
-                ++$count
-            }
-        }
-    }
-    $count
 }
 
 
@@ -644,38 +615,11 @@ function global:ShowConsole ([bool]$Mode) {
 }
 
 
-# Convert numeric value to string of chararacter flags.
-# Use '-' in $Chars to mark unused bits; these are not included in the output,
-# unless $Fixed is set.
-# Output LSB is right-justified, with unset bits set to '-'.
-function global:FlagString ([int]$Value, [string]$Chars, [switch]$Fixed) {
-    $length = $Chars.Length
-    $mask = 1 -shl ($length - 1)
-    $ret = ''
-    for ($i = 0; $i -lt $length; ++$i) {
-        $c = $Chars[$i]
-        if ($c -eq '-') {
-            if ($Fixed) {
-                $ret += '-'
-            }
-        } elseif ($Value -band $mask) {
-            $ret += $c
-        } else {
-            $ret += '-'
-        }
-        $mask = $mask -shr 1
-    }
-    $ret
-}
-
-
 # Edit text interactively.
 #
 # Return object properties:
 # - [bool]Changed: shows whether user saved text in editor UI
 # - [string]Value: resulting text, or original if user didn't save
-
-
 function global:Edit-String {
     param(
         [string]$Text
