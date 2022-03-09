@@ -465,32 +465,6 @@ function global:nd ([string]$Path) {
 
 function global:gvi { Get-VideoInfo.ps1 (Get-ChildItem -file) | Tee-Object -v a; $global:a = $a }
 
-<#
-Split array into sub-arrays, based on part size or count.
-Last part may contain less items than the rest.
-Based on:
-    https://gallery.technet.microsoft.com/scriptcenter/Split-an-array-into-parts-4357dcc1
-#>
-function global:SplitArray { 
-    param(
-        $Items,
-        [int]$Count,
-        [int]$Size
-    )
-    if ($Count -gt 0) {
-        $Size = [Math]::Ceiling($Items.Count / $Count)
-    } elseif ($Size -gt 0) {
-        $Count = [Math]::Ceiling($Items.Count / $Size)
-    } else {
-        $Count, $Size = 1, $Items.Count
-    }
-    for ($i = 0; $i -lt $Count; ++$i) {
-        $beg = $i * $Size
-        $end = [Math]::Min(($i + 1) * $Size, $Items.Count)
-        ,@($Items[$beg..($end - 1)])
-    }
-}
-
 
 # Perform web search using all passed args in a single query.
 function global:New-WebQuery {
@@ -921,51 +895,6 @@ function global:yvsubs {
 function global:NetSpeed ([int]$LinkSpeedMpbs, [float]$UtilizationPercentage) {
     $speed = $UtilizationPercentage / 100 * $LinkSpeedMpbs * 1000000 / 8
     echo "$(ConvertTo-NiceSize $speed)/s"
-}
-
-
-# Filter pipeline items besed on property value range.
-# Produces error if no object had a non-null value.
-function global:InRange {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory, ValueFromPipeline)]$InputObject,
-        [Parameter(Mandatory, Position=0)][string]$Property,
-        [Parameter(Mandatory, Position=1)]$Start,
-        [Parameter(Mandatory, Position=2)]$End,
-        [switch]$NoStart,
-        [switch]$NoEnd
-    )
-    begin {
-        if ($Start -gt $End) {
-            throw "InRange start value ($Start) cannot be greater than end value ($End)"
-        }
-        $propertyFound = $false
-        $startCheck = if ($NoStart) {
-            { $value -gt $Start }
-        } else {
-            { $value -ge $Start }
-        }
-        $endCheck = if ($NoEnd) {
-            { $value -lt $End }
-        } else {
-            { $value -le $End }
-        }
-    }
-    process {
-        $value = $_.$Property
-        if ($null -ne $value) {
-            $propertyFound = $true
-            if ($startCheck.Invoke($value) -and $endCheck.Invoke($value)) {
-                $_
-            }
-        }
-    }
-    end {
-        if (-not $propertyFound) {
-            Write-Error "The property ""$Property"" cannot be found in the input for any objects."
-        }
-    }
 }
 
 

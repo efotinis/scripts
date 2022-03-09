@@ -111,6 +111,52 @@ filter Get-AnyMatchProperty {
 }
 
 
+# Filter pipeline items besed on property value range.
+# Start/end values are included unless ExcludeStart/ExcludeEnd are specified.
+# Fails if all object properties are null.
+function Get-InRangeProperty {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]$InputObject,
+        [Parameter(Mandatory, Position=0)][string]$Property,
+        [Parameter(Mandatory, Position=1)]$Start,
+        [Parameter(Mandatory, Position=2)]$End,
+        [Alias('xs')][switch]$ExcludeStart,
+        [Alias('xe')][switch]$ExcludeEnd
+    )
+    begin {
+        if ($Start -gt $End) {
+            throw "start value ($Start) must be less than or equal to end value ($End)"
+        }
+        $propertyFound = $false
+        $startCheck = if ($ExcludeStart) {
+            { $value -gt $Start }
+        } else {
+            { $value -ge $Start }
+        }
+        $endCheck = if ($ExcludeEnd) {
+            { $value -lt $End }
+        } else {
+            { $value -le $End }
+        }
+    }
+    process {
+        $value = $_.$Property
+        if ($null -ne $value) {
+            $propertyFound = $true
+            if ($startCheck.Invoke($value) -and $endCheck.Invoke($value)) {
+                $_
+            }
+        }
+    }
+    end {
+        if (-not $propertyFound) {
+            Write-Error "The property ""$Property"" cannot be found in the input for any objects."
+        }
+    }
+}
+
+
 # ----------------------------------------------------------------
 
 
@@ -133,6 +179,69 @@ function Add-IndexMember {
 
 
 # ----------------------------------------------------------------
+
+
+<#
+Split collection into sub-arrays, depending on the specified parameter:
+- SubSize: Generate arrays of length SubSize, except the last may be smaller.
+- GroupCount: Generate no more than GroupCount arrays of equal size, except the
+  last may be smaller.
+- HeadSize: Produce two arrays, with the first containing no more than HeadSize
+  items and the second the rest.
+
+Based on:
+    https://gallery.technet.microsoft.com/scriptcenter/Split-an-array-into-parts-4357dcc1
+#>
+
+function Split-Array {
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [object[]]$InputObject,
+
+        [Parameter(Mandatory, ParameterSetName='SubSize')]
+        [ValidateRange(1, [int]::MaxValue)]
+        [int]$SubSize,
+        
+        [Parameter(Mandatory, ParameterSetName='GroupCount')]
+        [ValidateRange(1, [int]::MaxValue)]
+        [int]$GroupCount,
+        
+        [Parameter(Mandatory, ParameterSetName='HeadSize')]
+        [ValidateRange(0, [int]::MaxValue)]
+        [int]$HeadSize
+    )
+    begin {
+        $items = [System.Collections.ArrayList]::new()
+    }
+    process {
+        $items.AddRange($InputObject)
+    }
+    end {
+        $totalCount = $items.Count
+        switch ($PSCmdlet.ParameterSetName) {
+            'HeadSize' {
+                $HeadSize = [Math]::Min($HeadSize, $totalCount)
+                ,$items.GetRange(0, $HeadSize)
+                ,$items.GetRange($HeadSize, $totalCount - $HeadSize)
+                return
+            }
+            'GroupCount' {
+                $SubSize = [Math]::Ceiling($totalCount / $GroupCount)
+                $GroupCount = [Math]::Ceiling($totalCount / $SubSize)
+            }
+            'SubSize' {
+                $GroupCount = [Math]::Ceiling($totalCount / $SubSize)
+            }
+        }
+        for ($i = 0; $i -lt $GroupCount; ++$i) {
+            $beg = $i * $SubSize
+            $end = [Math]::Min(($i + 1) * $SubSize, $totalCount)
+            ,$Items.GetRange($beg, $end - $beg)
+        }
+    }
+    
+}
+
 
 <#
 # Seperate items based on delimiters.
