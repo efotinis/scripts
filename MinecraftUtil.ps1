@@ -113,23 +113,34 @@ function GetInstances {
 }
 
 
+function GetMoratorium {
+    $json = $Env:MINECRAFT_MORATORIUM
+    if ($json) {
+        $info = ConvertFrom-Json $json
+        $from = Get-Date $info.start
+        $span = [timespan]::new([double]$info.days, 0, 0, 0)
+        [PSCustomObject]@{
+            EndDate = $from + $span
+            Reason = $info.reason
+        }
+    }
+}
+
+
 Set-Alias -Name pssuspend -Value 'C:\tools\sysinternals\pssuspend.exe'
 
 
 if ($Play) {
 
-    <#
-    $MORATORIUM_START = Get-Date '2021-08-23 17:00'
-    $MORATORIUM_LENGTH = [timespan]::new(7, 0, 0, 0)
-    $now = Get-Date
-    if ($now - $MORATORIUM_START -lt $MORATORIUM_LENGTH) {
-        $end = $MORATORIUM_START + $MORATORIUM_LENGTH
-        $left = ConvertTo-NiceAge -DateOrSpan ($now - $end)
-        $msg = "playing is under moratorium until $($end.ToString()) (due $left) because you died a stupid death (fighting Endermen in the Nether above lava without a Fire potion); please be more careful"
-        Write-Error $msg
-        exit
+    $m = GetMoratorium
+    if ($m) {
+        $timeLeft = $m.EndDate - (Get-Date)
+        if ($timeLeft -gt 0) {
+            $time = ConvertTo-NiceAge $timeLeft -Simple
+            Write-Error "Moratorium in effect. Time remaining: $time. Reason: $($m.Reason)"
+            return
+        }
     }
-    #>
 
 <#----------------------------------------
 param(
@@ -170,8 +181,7 @@ $default = 2
 
     #GetInstances
 
-    #D:\games\MultiMC\MultiMC.exe -l $Env:MULTIMC_MAIN_INST
-    D:\games\MultiMC\MultiMC.exe -l '1.18'
+    D:\games\MultiMC\MultiMC.exe --launch $Env:MINECRAFT_MULTIMC_DEFAULT_INST
 
 } elseif ($Pause) {
 
