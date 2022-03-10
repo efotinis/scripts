@@ -78,6 +78,41 @@ function SetProcessRunningState ($Process, $Resumed) {
 }
 
 
+function GetInstances {
+
+    function InstanceTitle ($DirName) {
+        $path = "D:\games\MultiMC\instances\$_\instance.cfg"
+        $line = gc $path | sls 'name=(.*)' | select -first 1
+        if ($line) {
+            $line.matches.groups[1].value
+        } else {
+            $null
+        }
+    }
+    
+    function InstanceVersion ($DirName) {
+        $path = "D:\games\MultiMC\instances\$_\mmc-pack.json"
+        $info = gc $path | ConvertFrom-Json
+        $info.components | ? uid -eq net.minecraft | % version
+    }
+
+    $a = gc D:\games\MultiMC\instances\instgroups.json | ConvertFrom-Json
+    $a.groups.PSObject.Properties| % {
+        if (-not $_.Value.hidden) {
+            $groupName = $_.Name
+            $_.Value.instances | % {
+                [PSCustomObject]@{
+                    Version = InstanceVersion $_
+                    Group = $groupName
+                    Folder = $_
+                    Title = InstanceTitle $_
+                }
+            }
+        }
+    }
+}
+
+
 Set-Alias -Name pssuspend -Value 'C:\tools\sysinternals\pssuspend.exe'
 
 
@@ -96,8 +131,47 @@ if ($Play) {
     }
     #>
 
+<#----------------------------------------
+param(
+    [Parameter(Mandatory, ValueFromPipeline)]
+    [ref]
+    [System.Collections.ArrayList]
+    $items
+)
+
+$CD_t = [System.Management.Automation.Host.ChoiceDescription]
+$options = @(
+    $CD_t::new('&Play',     'Launch video stream.'),
+    $CD_t::new('Play (&HQ)', 'Launch in high-quality, if available.'),
+    $CD_t::new('&Skip',     'Remove from list.'),
+    $CD_t::new('&Retry',    'Leave in list and select another.'),
+    $CD_t::new('&Quit',     'Exit loop.')
+)
+$default = 2
+
+:mainloop for(;;) {
+    $x = $items.value | Get-Random
+    if ($x -eq $null) {
+        echo 'no more items'
+        break
+    }
+    echo ('{0,8} {1} {2}' -f (PrettyDuration $x.duration), $x.id, $x.title)
+    $prompt = "list size: $($items.value.Count)"
+    switch ($host.ui.PromptForChoice('', $prompt, $options, $default)) {
+        0 { $items.value.Remove($x); yps.ps1 -noinfo -format 18 $x.id; break }
+        1 { $items.value.Remove($x); yps.ps1 -noinfo -format 22/18 $x.id; break }
+        2 { $items.value.Remove($x); break }
+        3 { break }
+        4 { break mainloop }
+    }
+    d:\projects\eatlines 2
+}
+----------------------------------------#>
+
+    #GetInstances
+
     #D:\games\MultiMC\MultiMC.exe -l $Env:MULTIMC_MAIN_INST
-    D:\games\MultiMC\MultiMC.exe -l '1.17.1'
+    D:\games\MultiMC\MultiMC.exe -l '1.18'
 
 } elseif ($Pause) {
 
