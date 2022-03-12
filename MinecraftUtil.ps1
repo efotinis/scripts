@@ -2,6 +2,9 @@ param(
     [Parameter(ParameterSetName="Play", Position=0)]
     [switch]$Play,
 
+        [Parameter(ParameterSetName="Play", Position=1)]
+        [switch]$PromptForInstance,
+    
     [Parameter(ParameterSetName="Pause", Position=0)]
     [switch]$Pause,
 
@@ -103,8 +106,8 @@ function GetInstances {
             $_.Value.instances | % {
                 [PSCustomObject]@{
                     Version = InstanceVersion $_
-                    Group = $groupName
                     Folder = $_
+                    Group = $groupName
                     Title = InstanceTitle $_
                 }
             }
@@ -132,6 +135,33 @@ Set-Alias -Name pssuspend -Value 'C:\tools\sysinternals\pssuspend.exe'
 
 if ($Play) {
 
+    $playInstance = if ($PromptForInstance) {
+        $instances = GetInstances | Add-IndexMember -Start 1 -PassThru
+        for (;;) {
+            $instances | ft index,folder,version,group,title | Out-Host
+            $n = Read-Host "select instance index (1..$($instances.count))"
+            $n = $n.Trim()
+            if ($n -notmatch '^-?\d+$') {
+                Write-Error "invalid number: $n"
+                continue
+            }
+            $n = $n -as [int]
+            if ($null -eq $n) {
+                Write-Error "invalid number: $n"
+                continue
+            }
+            if ($n -lt 1 -or $n -gt $instances.count) {
+                Write-Error "instance index out of range: $n"
+                continue
+            }
+            break
+        }
+        $instances[$n - 1].Folder
+    } else {
+        $Env:MINECRAFT_MULTIMC_DEFAULT_INST
+    }
+    ">>> $playInstance <<<"
+    
     $m = GetMoratorium
     if ($m) {
         $timeLeft = $m.EndDate - (Get-Date)
@@ -142,46 +172,7 @@ if ($Play) {
         }
     }
 
-<#----------------------------------------
-param(
-    [Parameter(Mandatory, ValueFromPipeline)]
-    [ref]
-    [System.Collections.ArrayList]
-    $items
-)
-
-$CD_t = [System.Management.Automation.Host.ChoiceDescription]
-$options = @(
-    $CD_t::new('&Play',     'Launch video stream.'),
-    $CD_t::new('Play (&HQ)', 'Launch in high-quality, if available.'),
-    $CD_t::new('&Skip',     'Remove from list.'),
-    $CD_t::new('&Retry',    'Leave in list and select another.'),
-    $CD_t::new('&Quit',     'Exit loop.')
-)
-$default = 2
-
-:mainloop for(;;) {
-    $x = $items.value | Get-Random
-    if ($x -eq $null) {
-        echo 'no more items'
-        break
-    }
-    echo ('{0,8} {1} {2}' -f (PrettyDuration $x.duration), $x.id, $x.title)
-    $prompt = "list size: $($items.value.Count)"
-    switch ($host.ui.PromptForChoice('', $prompt, $options, $default)) {
-        0 { $items.value.Remove($x); yps.ps1 -noinfo -format 18 $x.id; break }
-        1 { $items.value.Remove($x); yps.ps1 -noinfo -format 22/18 $x.id; break }
-        2 { $items.value.Remove($x); break }
-        3 { break }
-        4 { break mainloop }
-    }
-    d:\projects\eatlines 2
-}
-----------------------------------------#>
-
-    #GetInstances
-
-    D:\games\MultiMC\MultiMC.exe --launch $Env:MINECRAFT_MULTIMC_DEFAULT_INST
+    D:\games\MultiMC\MultiMC.exe --launch $playInstance
 
 } elseif ($Pause) {
 
