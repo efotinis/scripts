@@ -29,8 +29,10 @@ function Get-ShuffleArray
 # Pick random items from the pipeline in their original order.
 function Get-OrderedSubset ([int]$Count) {
     $items = @($input)
-    0..($items.Count - 1) | Get-Random -Count $Count | Sort-Object | % {
-        $items[$_]
+    if ($items.length) {
+        0..($items.Count - 1) | Get-Random -Count $Count | Sort-Object | % {
+            $items[$_]
+        }
     }
 }
 
