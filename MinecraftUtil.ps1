@@ -50,6 +50,9 @@
 
 .PARAMETER Versions
     Run custom script to display game versions in the last 30 days.
+
+.PARAMETER List
+    Output MultiMC instances info.
 #>
 
 param(
@@ -102,7 +105,10 @@ param(
         [string]$Query,
     
     [Parameter(ParameterSetName="Versions", Position=0)]
-    [switch]$Versions
+    [switch]$Versions,
+    
+    [Parameter(ParameterSetName="List", Position=0)]
+    [switch]$List
     
 )
 
@@ -269,6 +275,10 @@ if ($Play) {
 } elseif ($Versions) {
 
     mcver.py -d30
+
+} elseif ($List) {
+
+    GetInstances
 
 } else {
 
