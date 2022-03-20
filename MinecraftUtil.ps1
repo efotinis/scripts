@@ -161,15 +161,15 @@ function GetInstances {
 
     $a = gc D:\games\MultiMC\instances\instgroups.json | ConvertFrom-Json
     $a.groups.PSObject.Properties| % {
-        if (-not $_.Value.hidden) {
-            $groupName = $_.Name
-            $_.Value.instances | % {
-                [PSCustomObject]@{
-                    Version = InstanceVersion $_
-                    Folder = $_
-                    Group = $groupName
-                    Title = InstanceTitle $_
-                }
+        $groupName = $_.Name
+        $hidden = $_.Value.hidden
+        $_.Value.instances | % {
+            [PSCustomObject]@{
+                Version = InstanceVersion $_
+                Folder = $_
+                Group = $groupName
+                Hidden = $hidden
+                Title = InstanceTitle $_
             }
         }
     }
