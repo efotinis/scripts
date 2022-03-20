@@ -141,18 +141,19 @@ function SetProcessRunningState ($Process, $Resumed) {
 }
 
 
+# Hashtable of CFG file containing "key=value" lines.
+function LoadCfg ($Path) {
+    $a = @{}
+    gc $Path | % {
+        $k, $v = $_ -split '=',2
+        $a.$k = $v
+    }
+    $a
+}
+
+
 function GetInstances {
 
-    function InstanceTitle ($DirName) {
-        $path = "D:\games\MultiMC\instances\$_\instance.cfg"
-        $line = gc $path | sls 'name=(.*)' | select -first 1
-        if ($line) {
-            $line.matches.groups[1].value
-        } else {
-            $null
-        }
-    }
-    
     function InstanceVersion ($DirName) {
         $path = "D:\games\MultiMC\instances\$_\mmc-pack.json"
         $info = gc $path | ConvertFrom-Json
@@ -160,20 +161,27 @@ function GetInstances {
     }
 
     $a = gc D:\games\MultiMC\instances\instgroups.json | ConvertFrom-Json
-    $a.groups.PSObject.Properties| % {
+    $a.groups.PSObject.Properties | % {
         $groupName = $_.Name
         $hidden = $_.Value.hidden
         $_.Value.instances | % {
+            $instInfo = LoadCfg "D:\games\MultiMC\instances\$_\instance.cfg"
             [PSCustomObject]@{
                 Version = InstanceVersion $_
                 Folder = $_
                 Group = $groupName
                 Hidden = $hidden
-                Title = InstanceTitle $_
+                Name = $instInfo.name
+                LastLaunch = ([datetime]::new(1970,1,1) + [timespan]::new([long]$instInfo.lastLaunchTime * 10000)).ToLocalTime()
+                TotalPlayed = [timespan]::new(0, 0, [int]$instInfo.totalTimePlayed)
+                LastPlayed = [timespan]::new(0, 0, [int]$instInfo.lastTimePlayed)
+                
             }
         }
     }
 }
+
+
 
 
 function GetMoratorium {
@@ -198,7 +206,7 @@ if ($Play) {
     $playInstance = if ($PromptForInstance) {
         $instances = GetInstances | Add-IndexMember -Start 1 -PassThru
         for (;;) {
-            $instances | ft index,folder,version,group,title | Out-Host
+            $instances | ft index,folder,version,group,name | Out-Host
             $n = Read-Host "select instance index (1..$($instances.count))"
             $n = $n.Trim()
             if ($n -notmatch '^-?\d+$') {
