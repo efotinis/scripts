@@ -36,17 +36,11 @@
 .PARAMETER World
     World ID (folder name).
 
-.PARAMETER Doc
-    Display file contents from personal game docs.
+.PARAMETER DocText
+    Display *.TXT file contents in personal game docs matching name pattern.
 
-.PARAMETER Item
-    Pattern of name. Only a single file must match.
-
-.PARAMETER Wiki
-    Perform search on minecraft.gamepedia.com.
-
-.PARAMETER Query
-    Search terms.
+.PARAMETER WikiSearch
+    Perform search on minecraft.gamepedia.com using specified terms.
 
 .PARAMETER Versions
     Run custom script to display game versions in the last 30 days.
@@ -56,22 +50,22 @@
 #>
 
 param(
-    [Parameter(ParameterSetName="Play", Position=0)]
+    [Parameter(ParameterSetName="Play", Mandatory)]
     [switch]$Play,
 
-        [Parameter(ParameterSetName="Play", Position=1)]
+        [Parameter(ParameterSetName="Play")]
         [switch]$PromptForInstance,
     
-    [Parameter(ParameterSetName="Pause", Position=0)]
+    [Parameter(ParameterSetName="Pause", Mandatory)]
     [switch]$Pause,
 
-    [Parameter(ParameterSetName="Resume", Position=0)]
+    [Parameter(ParameterSetName="Resume", Mandatory)]
     [switch]$Resume,
 
-    [Parameter(ParameterSetName="Backup", Position=0)]
+    [Parameter(ParameterSetName="Backup", Mandatory)]
     [switch]$Backup,
 
-    [Parameter(ParameterSetName="Restore", Position=0)]
+    [Parameter(ParameterSetName="Restore", Mandatory)]
     [switch]$Restore,
 
         # almost works, but doesn't quote values with spaces and doesn't take into account partially typed string...
@@ -84,30 +78,24 @@ param(
             $_ -in (Get-Content -LiteralPath D:\games\MultiMC\instances\instgroups.json | ConvertFrom-Json).groups.Vanilla.instances
         })]
         [Parameter(ParameterSetName="Play", Position=1)]#>
-        [Parameter(ParameterSetName="Backup", Position=1, Mandatory)]
-        [Parameter(ParameterSetName="Restore", Position=1, Mandatory)]
+        [Parameter(ParameterSetName="Backup", Position=0, Mandatory)]
+        [Parameter(ParameterSetName="Restore", Position=0, Mandatory)]
         [string]$Instance,
 
-        [Parameter(ParameterSetName="Backup", Position=2, Mandatory)]
-        [Parameter(ParameterSetName="Restore", Position=2, Mandatory)]
+        [Parameter(ParameterSetName="Backup", Position=1, Mandatory)]
+        [Parameter(ParameterSetName="Restore", Position=1, Mandatory)]
         [string]$World,
     
-    [Parameter(ParameterSetName="Doc", Position=0)]
-    [switch]$Doc,
-
-        [Parameter(ParameterSetName="Doc", Position=1, Mandatory)]
-        [string]$Item,
+    [Parameter(ParameterSetName="DocText", Mandatory)]
+    [string]$DocText,
     
-    [Parameter(ParameterSetName="Wiki", Position=0)]
-    [switch]$Wiki,
-
-        [Parameter(ParameterSetName="Wiki", Position=1, Mandatory)]
-        [string]$Query,
+    [Parameter(ParameterSetName="WikiSearch", Mandatory)]
+    [string]$WikiSearch,
     
-    [Parameter(ParameterSetName="Versions", Position=0)]
+    [Parameter(ParameterSetName="Versions", Mandatory)]
     [switch]$Versions,
     
-    [Parameter(ParameterSetName="List", Position=0)]
+    [Parameter(ParameterSetName="List", Mandatory)]
     [switch]$List
     
 )
@@ -204,6 +192,7 @@ function GetMoratorium {
     }
 }
 
+# TODO: use ParameterSetName instead of checking variables
 
 if ($Play) {
 
@@ -265,22 +254,25 @@ if ($Play) {
 
     backup.ps1 $Instance $World -RestoreLast
 
-} elseif ($Doc) {
-
-    $a = ls $LOCAL_DOCS_DIR\*.txt | ? name -like "*$Item*"
+} elseif ($DocText) {
+    $a = @(ls $LOCAL_DOCS_DIR\*.txt | ? name -like "*$DocText*")
     if (-not $a) {
-        Write-Error "no files match $Item"
-    } elseif ($a.Count -gt 1) {
-        $names = ($a | % { """$($_.BaseName)""" }) -join ', '
-        Write-Error "multiple files match ${Item}: $names"
+        Write-Warning "no files match $DocText"
     } else {
-        $a | cat
+        function Header ([string]$Text) {
+            $line = '=' * 8
+            "$line $Text $line"
+        }
+        $a | % {
+            Header $_.name
+            $_ | gc
+        }
     }
 
-} elseif ($Wiki) {
+} elseif ($WikiSearch) {
 
     $url = 'https://minecraft.gamepedia.com/index.php?search={0}' -f (
-        [uri]::EscapeDataString($Query)
+        [uri]::EscapeDataString($WikiSearch)
     )
     Start-Process $url
 
