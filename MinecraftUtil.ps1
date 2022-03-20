@@ -6,19 +6,19 @@
     Perform various Minecraft and MultiMC related functions.
 
 .PARAMETER Play
-    Launch game instance. A self-imposed moratorium is enforced if 
-    Env:MINECRAFT_MORATORIUM exists, which is a JSON string with the following 
+    Launch game instance. A self-imposed moratorium is enforced if
+    Env:MINECRAFT_MORATORIUM exists, which is a JSON string with the following
     properties:
     - start: the beginning datetime
     - days: the length (float)
     - reason: description
 
 .PARAMETER PromptForInstance
-    Allow user selection of the MulitMC instance. By default, the instance 
+    Allow user selection of the MulitMC instance. By default, the instance
     specified by Env:MINECRAFT_MULTIMC_DEFAULT_INST is used.
 
 .PARAMETER Pause
-    Pause the game, by forcibly suspending the Minecraft process. Requires 
+    Pause the game, by forcibly suspending the Minecraft process. Requires
     pssuspend.exe by SysInternals.
 
 .PARAMETER Resume
@@ -55,7 +55,7 @@ param(
 
         [Parameter(ParameterSetName="Play")]
         [switch]$PromptForInstance,
-    
+
     [Parameter(ParameterSetName="Pause", Mandatory)]
     [switch]$Pause,
 
@@ -85,19 +85,19 @@ param(
         [Parameter(ParameterSetName="Backup", Position=1, Mandatory)]
         [Parameter(ParameterSetName="Restore", Position=1, Mandatory)]
         [string]$World,
-    
+
     [Parameter(ParameterSetName="DocText", Mandatory)]
     [string]$DocText,
-    
+
     [Parameter(ParameterSetName="WikiSearch", Mandatory)]
     [string]$WikiSearch,
-    
+
     [Parameter(ParameterSetName="Versions", Mandatory)]
     [switch]$Versions,
-    
+
     [Parameter(ParameterSetName="List", Mandatory)]
     [switch]$List
-    
+
 )
 
 
@@ -172,10 +172,53 @@ function GetInstances {
                 LastLaunch = ([datetime]::new(1970,1,1) + [timespan]::new([long]$instInfo.lastLaunchTime * 10000)).ToLocalTime()
                 TotalPlayed = [timespan]::new(0, 0, [int]$instInfo.totalTimePlayed)
                 LastPlayed = [timespan]::new(0, 0, [int]$instInfo.lastTimePlayed)
-                
+
             }
         }
     }
+}
+
+
+function PrintDocs ([string]$Pattern) {
+    $a = @(ls $LOCAL_DOCS_DIR\*.txt | ? name -like "*$DocText*")
+    if (-not $a) {
+        Write-Warning "no files match $DocText"
+        return
+    }
+    function Header ([string]$Text) {
+        $line = '=' * 8
+        "$line $Text $line"
+    }
+    $a | % {
+        Header $_.name
+        $_ | gc
+    }
+}
+
+
+# Select instance ID interactively.
+function SelectInstancePrompt {
+    $instances = GetInstances | Add-IndexMember -Start 1 -PassThru
+    for (;;) {
+        $instances | ft index,folder,version,group,name | Out-Host
+        $n = Read-Host "select instance index (1..$($instances.count))"
+        $n = $n.Trim()
+        if ($n -notmatch '^-?\d+$') {
+            Write-Error "invalid number: $n"
+            continue
+        }
+        $n = $n -as [int]
+        if ($null -eq $n) {
+            Write-Error "invalid number: $n"
+            continue
+        }
+        if ($n -lt 1 -or $n -gt $instances.count) {
+            Write-Error "instance index out of range: $n"
+            continue
+        }
+        break
+    }
+    $instances[$n - 1].Folder
 }
 
 
@@ -192,100 +235,62 @@ function GetMoratorium {
     }
 }
 
-# TODO: use ParameterSetName instead of checking variables
 
-if ($Play) {
-
-    $playInstance = if ($PromptForInstance) {
-        $instances = GetInstances | Add-IndexMember -Start 1 -PassThru
-        for (;;) {
-            $instances | ft index,folder,version,group,name | Out-Host
-            $n = Read-Host "select instance index (1..$($instances.count))"
-            $n = $n.Trim()
-            if ($n -notmatch '^-?\d+$') {
-                Write-Error "invalid number: $n"
-                continue
-            }
-            $n = $n -as [int]
-            if ($null -eq $n) {
-                Write-Error "invalid number: $n"
-                continue
-            }
-            if ($n -lt 1 -or $n -gt $instances.count) {
-                Write-Error "instance index out of range: $n"
-                continue
-            }
-            break
-        }
-        $instances[$n - 1].Folder
-    } else {
-        $Env:MINECRAFT_MULTIMC_DEFAULT_INST
-    }
-    
+# Check moratorium and throw if it's in effect.
+function EnforceMoratorium {
     $m = GetMoratorium
     if ($m) {
         $timeLeft = $m.EndDate - (Get-Date)
         if ($timeLeft -gt 0) {
             $time = ConvertTo-NiceAge $timeLeft -Simple
-            Write-Error "Moratorium in effect. Time remaining: $time. Reason: $($m.Reason)"
-            return
+            throw "Moratorium in effect. Time remaining: $time. Reason: $($m.Reason)"
         }
     }
+}
 
-    MultiMC.exe --launch $playInstance
 
-} elseif ($Pause) {
-
-    if ($p = GetMinecraftProcess) {
-        SetProcessRunningState $p $false
-    }
-
-} elseif ($Resume) {
-
-    if ($p = GetMinecraftProcess) {
-        SetProcessRunningState $p $true
-    }
-
-} elseif ($Backup) {
-
-    backup.ps1 $Instance $World
-
-} elseif ($Restore) {
-
-    backup.ps1 $Instance $World -RestoreLast
-
-} elseif ($DocText) {
-    $a = @(ls $LOCAL_DOCS_DIR\*.txt | ? name -like "*$DocText*")
-    if (-not $a) {
-        Write-Warning "no files match $DocText"
-    } else {
-        function Header ([string]$Text) {
-            $line = '=' * 8
-            "$line $Text $line"
+switch ($PSCmdlet.ParameterSetName) {
+    'Play' {
+        $playInstance = if ($PromptForInstance) {
+            SelectInstancePrompt
+        } else {
+            $Env:MINECRAFT_MULTIMC_DEFAULT_INST
         }
-        $a | % {
-            Header $_.name
-            $_ | gc
+        EnforceMoratorium
+        MultiMC.exe --launch $playInstance
+    }
+    'Pause' {
+        if ($p = GetMinecraftProcess) {
+            SetProcessRunningState $p $false
         }
     }
-
-} elseif ($WikiSearch) {
-
-    $url = 'https://minecraft.gamepedia.com/index.php?search={0}' -f (
-        [uri]::EscapeDataString($WikiSearch)
-    )
-    Start-Process $url
-
-} elseif ($Versions) {
-
-    mcver.py -d30
-
-} elseif ($List) {
-
-    GetInstances
-
-} else {
-
-    Write-Error 'no param set specified'
-
+    'Resume' {
+        if ($p = GetMinecraftProcess) {
+            SetProcessRunningState $p $true
+        }
+    }
+    'Backup' {
+        backup.ps1 $Instance $World
+    }
+    'Restore' {
+        backup.ps1 $Instance $World -RestoreLast
+    }
+    'DocText' {
+        PrintDocs $DocText
+    }
+    'WikiSearch' {
+        $url = 'https://minecraft.gamepedia.com/index.php?search={0}' -f (
+            [uri]::EscapeDataString($WikiSearch)
+        )
+        Start-Process $url
+    }
+    'Versions' {
+        mcver.py -d30
+    }
+    'List' {
+        GetInstances
+    }
+    default {
+        Write-Error "unexpected parameter set: $_"
+    }
 }
