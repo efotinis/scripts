@@ -7,7 +7,7 @@
 
 .PARAMETER Play
     Launch game instance. A self-imposed moratorium is enforced if 
-    Env:MINECRAFT_MORATORIUM exists. which is a JSON string with the following 
+    Env:MINECRAFT_MORATORIUM exists, which is a JSON string with the following 
     properties:
     - start: the beginning datetime
     - days: the length (float)
@@ -37,7 +37,7 @@
     World ID (folder name).
 
 .PARAMETER Doc
-    Display file contents from D:\docs\games\pc\minecraft\*.txt.
+    Display file contents from personal game docs.
 
 .PARAMETER Item
     Pattern of name. Only a single file must match.
@@ -113,6 +113,15 @@ param(
 )
 
 
+# Requirements and environment.
+$MULTIMC_ROOT = 'D:\games\MultiMC'
+$LOCAL_DOCS_DIR = 'D:\docs\games\pc\minecraft'
+Set-Alias -Name MultiMC.exe   -Value "$MULTIMC_ROOT\MultiMC.exe"
+Set-Alias -Name pssuspend.exe -Value 'C:\tools\sysinternals\pssuspend.exe'
+Set-Alias -Name backup.ps1    -Value 'E:\backups\minecraft\backup.ps1'
+Set-Alias -Name mcver.py      -Value 'D:\docs\scripts\mcver.py'
+
+
 function GetMinecraftProcess {
     $proc = Get-Process javaw -ErrorAction Ignore |
         ? MainWindowTitle -like minecraft*
@@ -127,13 +136,13 @@ function GetMinecraftProcess {
 function SetProcessRunningState ($Process, $Resumed) {
     if ($Resumed) {
         if (-not $Process.Responding) {
-            pssuspend -nobanner -r $Process.id
+            pssuspend.exe -nobanner -r $Process.id
         } else {
             Write-Error 'process already resumed'
         }
     } else {
         if ($Process.Responding) {
-            pssuspend -nobanner $Process.id
+            pssuspend.exe -nobanner $Process.id
         } else {
             Write-Error 'process already suspended'
         }
@@ -155,17 +164,17 @@ function LoadCfg ($Path) {
 function GetInstances {
 
     function InstanceVersion ($DirName) {
-        $path = "D:\games\MultiMC\instances\$_\mmc-pack.json"
+        $path = "$MULTIMC_ROOT\instances\$_\mmc-pack.json"
         $info = gc $path | ConvertFrom-Json
         $info.components | ? uid -eq net.minecraft | % version
     }
 
-    $a = gc D:\games\MultiMC\instances\instgroups.json | ConvertFrom-Json
+    $a = gc "$MULTIMC_ROOT\instances\instgroups.json" | ConvertFrom-Json
     $a.groups.PSObject.Properties | % {
         $groupName = $_.Name
         $hidden = $_.Value.hidden
         $_.Value.instances | % {
-            $instInfo = LoadCfg "D:\games\MultiMC\instances\$_\instance.cfg"
+            $instInfo = LoadCfg "$MULTIMC_ROOT\instances\$_\instance.cfg"
             [PSCustomObject]@{
                 Version = InstanceVersion $_
                 Folder = $_
@@ -182,8 +191,6 @@ function GetInstances {
 }
 
 
-
-
 function GetMoratorium {
     $json = $Env:MINECRAFT_MORATORIUM
     if ($json) {
@@ -196,9 +203,6 @@ function GetMoratorium {
         }
     }
 }
-
-
-Set-Alias -Name pssuspend -Value 'C:\tools\sysinternals\pssuspend.exe'
 
 
 if ($Play) {
@@ -239,7 +243,7 @@ if ($Play) {
         }
     }
 
-    D:\games\MultiMC\MultiMC.exe --launch $playInstance
+    MultiMC.exe --launch $playInstance
 
 } elseif ($Pause) {
 
@@ -255,15 +259,15 @@ if ($Play) {
 
 } elseif ($Backup) {
 
-    E:\backups\minecraft\backup.ps1 $Instance $World
+    backup.ps1 $Instance $World
 
 } elseif ($Restore) {
 
-    E:\backups\minecraft\backup.ps1 $Instance $World -RestoreLast
+    backup.ps1 $Instance $World -RestoreLast
 
 } elseif ($Doc) {
 
-    $a = ls D:\docs\games\pc\minecraft\*.txt | ? name -like "*$Item*"
+    $a = ls $LOCAL_DOCS_DIR\*.txt | ? name -like "*$Item*"
     if (-not $a) {
         Write-Error "no files match $Item"
     } elseif ($a.Count -gt 1) {
