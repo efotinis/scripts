@@ -1,3 +1,57 @@
+<#
+.SYNOPSIS
+    Minecraft CLI tools.
+
+.DESCRIPTION
+    Perform various Minecraft and MultiMC related functions.
+
+.PARAMETER Play
+    Launch game instance. A self-imposed moratorium is enforced if 
+    Env:MINECRAFT_MORATORIUM exists. which is a JSON string with the following 
+    properties:
+    - start: the beginning datetime
+    - days: the length (float)
+    - reason: description
+
+.PARAMETER PromptForInstance
+    Allow user selection of the MulitMC instance. By default, the instance 
+    specified by Env:MINECRAFT_MULTIMC_DEFAULT_INST is used.
+
+.PARAMETER Pause
+    Pause the game, by forcibly suspending the Minecraft process. Requires 
+    pssuspend.exe by SysInternals.
+
+.PARAMETER Resume
+    Resume the game, if previously suspended by -Pause.
+
+.PARAMETER Backup
+    Backup an instance's world (custom script).
+
+.PARAMETER Restore
+    Restore an instance's world to the latest backup (custom script).
+
+.PARAMETER Instance
+    Instance ID (folder name).
+
+.PARAMETER World
+    World ID (folder name).
+
+.PARAMETER Doc
+    Display file contents from D:\docs\games\pc\minecraft\*.txt.
+
+.PARAMETER Item
+    Pattern of name. Only a single file must match.
+
+.PARAMETER Wiki
+    Perform search on minecraft.gamepedia.com.
+
+.PARAMETER Query
+    Search terms.
+
+.PARAMETER Versions
+    Run custom script to display game versions in the last 30 days.
+#>
+
 param(
     [Parameter(ParameterSetName="Play", Position=0)]
     [switch]$Play,
@@ -160,7 +214,6 @@ if ($Play) {
     } else {
         $Env:MINECRAFT_MULTIMC_DEFAULT_INST
     }
-    ">>> $playInstance <<<"
     
     $m = GetMoratorium
     if ($m) {
