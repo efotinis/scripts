@@ -6,16 +6,14 @@
     Perform various Minecraft and MultiMC related functions.
 
 .PARAMETER Play
-    Launch game instance. A self-imposed moratorium is enforced if
-    Env:MINECRAFT_MORATORIUM exists, which is a JSON string with the following
-    properties:
+    Launch game instance. If Instance is not specified, the last launched 
+    instance is used.
+    
+    A self-imposed moratorium is enforced if Env:MINECRAFT_MORATORIUM exists, 
+    which is a JSON string with the following properties:
     - start: the beginning datetime
     - days: the length (float)
     - reason: description
-
-.PARAMETER PromptForInstance
-    Allow user selection of the MulitMC instance. By default, the instance
-    specified by Env:MINECRAFT_MULTIMC_DEFAULT_INST is used.
 
 .PARAMETER Pause
     Pause the game, by forcibly suspending the Minecraft process. Requires
@@ -53,9 +51,6 @@ param(
     [Parameter(ParameterSetName="Play", Mandatory)]
     [switch]$Play,
 
-        [Parameter(ParameterSetName="Play")]
-        [switch]$PromptForInstance,
-
     [Parameter(ParameterSetName="Pause", Mandatory)]
     [switch]$Pause,
 
@@ -76,8 +71,8 @@ param(
         })]
         [ValidateScript({
             $_ -in (Get-Content -LiteralPath D:\games\MultiMC\instances\instgroups.json | ConvertFrom-Json).groups.Vanilla.instances
-        })]
-        [Parameter(ParameterSetName="Play", Position=1)]#>
+        })]#>
+        [Parameter(ParameterSetName="Play", Position=0)]
         [Parameter(ParameterSetName="Backup", Position=0, Mandatory)]
         [Parameter(ParameterSetName="Restore", Position=0, Mandatory)]
         [string]$Instance,
@@ -99,6 +94,41 @@ param(
     [switch]$List
 
 )
+
+
+# only needed once, but running it every time seems fine
+Update-FormatData -PrependPath "$Env:scripts\MinecraftUtil.Format.ps1xml"
+
+
+Add-Type -TypeDefinition @"
+    using int64 = System.Int64;
+    using datetime = System.DateTime;
+    using timespan = System.TimeSpan;
+    public struct MmcInstance
+    {
+        public string   Version;
+        public string   Folder;
+        public string   Group;
+        public string   Name;
+        public datetime LastLaunch;
+        public timespan TotalPlayed;
+        public timespan LastPlayed;
+
+        public MmcInstance(
+            string version, string folder, string group, string name, 
+            datetime lastLaunch, timespan totalPlayed, timespan lastPlayed) 
+        {
+            Version     = version;
+            Folder      = folder;
+            Group       = group;
+            Name        = name;
+            LastLaunch  = lastLaunch;
+            TotalPlayed = totalPlayed;
+            LastPlayed  = lastPlayed;
+        }
+    }
+"@
+
 
 
 # Requirements and environment.
@@ -160,20 +190,27 @@ function GetInstances {
     $a = gc "$MULTIMC_ROOT\instances\instgroups.json" | ConvertFrom-Json
     $a.groups.PSObject.Properties | % {
         $groupName = $_.Name
-        $hidden = $_.Value.hidden
         $_.Value.instances | % {
             $instInfo = LoadCfg "$MULTIMC_ROOT\instances\$_\instance.cfg"
-            [PSCustomObject]@{
-                Version = InstanceVersion $_
-                Folder = $_
-                Group = $groupName
-                Hidden = $hidden
-                Name = $instInfo.name
-                LastLaunch = ([datetime]::new(1970,1,1) + [timespan]::new([long]$instInfo.lastLaunchTime * 10000)).ToLocalTime()
-                TotalPlayed = [timespan]::new(0, 0, [int]$instInfo.totalTimePlayed)
-                LastPlayed = [timespan]::new(0, 0, [int]$instInfo.lastTimePlayed)
 
-            }
+            $version = InstanceVersion $_
+            $folder = $_
+            $group = $groupName
+            $name = $instInfo.name
+            $lastLaunch = ([datetime]::new(1970,1,1) + [timespan]::new([long]$instInfo.lastLaunchTime * 10000)).ToLocalTime()
+            $totalPlayed = [timespan]::new(0, 0, [int]$instInfo.totalTimePlayed)
+            $lastPlayed = [timespan]::new(0, 0, [int]$instInfo.lastTimePlayed)
+
+            [MmcInstance]::new(
+                $version,
+                $folder,
+                $group,
+               #$hidden,
+                $name,
+                $lastLaunch,
+                $totalPlayed,
+                $lastPlayed
+            )
         }
     }
 }
@@ -193,32 +230,6 @@ function PrintDocs ([string]$Pattern) {
         Header $_.name
         $_ | gc
     }
-}
-
-
-# Select instance ID interactively.
-function SelectInstancePrompt {
-    $instances = GetInstances | Add-IndexMember -Start 1 -PassThru
-    for (;;) {
-        $instances | ft index,folder,version,group,name | Out-Host
-        $n = Read-Host "select instance index (1..$($instances.count))"
-        $n = $n.Trim()
-        if ($n -notmatch '^-?\d+$') {
-            Write-Error "invalid number: $n"
-            continue
-        }
-        $n = $n -as [int]
-        if ($null -eq $n) {
-            Write-Error "invalid number: $n"
-            continue
-        }
-        if ($n -lt 1 -or $n -gt $instances.count) {
-            Write-Error "instance index out of range: $n"
-            continue
-        }
-        break
-    }
-    $instances[$n - 1].Folder
 }
 
 
@@ -251,10 +262,19 @@ function EnforceMoratorium {
 
 switch ($PSCmdlet.ParameterSetName) {
     'Play' {
-        $playInstance = if ($PromptForInstance) {
-            SelectInstancePrompt
+        $instances = GetInstances
+        if ($Instance) {
+            if (-not ($instances | ? Folder -eq $Instance)) {
+                Write-Error "instance does not exist: $Instance"
+                return
+            }
         } else {
-            $Env:MINECRAFT_MULTIMC_DEFAULT_INST
+            $last = GetInstances | sort LastLaunch | select -last 1 -exp Folder
+            if (-not $last) {
+                Write-Error 'no instance played previously'
+                return
+            }
+            $playInstance = $last
         }
         EnforceMoratorium
         MultiMC.exe --launch $playInstance

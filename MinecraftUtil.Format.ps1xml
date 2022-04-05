@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Configuration>
+    <ViewDefinitions>
+        <View>
+            <Name>DefaultView</Name>
+            <ViewSelectedBy>
+                <TypeName>MmcInstance</TypeName>
+                <!--TypeName>...</TypeName-->
+            </ViewSelectedBy>
+
+            <!--GroupBy>
+                <PropertyName>PSParentPath</PropertyName> 
+                <CustomControl>
+                    <CustomEntries>
+                        <CustomEntry>
+                            <CustomItem>
+                                <Frame>
+                                    <!- - NOTE: LeftIndent is ignored - ->
+                                    <LeftIndent>4</LeftIndent>
+                                    <CustomItem>
+                                        <Text AssemblyName="System.Management.Automation" BaseName="FileSystemProviderStrings" ResourceId="DirectoryDisplayGrouping"/>
+                                        <ExpressionBinding>
+                                          <ScriptBlock>
+                                              $_.PSParentPath.Replace("Microsoft.PowerShell.Core\FileSystem::", "")                                                  
+                                          </ScriptBlock>
+                                        </ExpressionBinding>
+                                        <!- -NewLine/- ->
+                                    </CustomItem> 
+                                </Frame>
+                            </CustomItem>
+                        </CustomEntry>
+                    </CustomEntries>
+                </CustomControl>
+            </GroupBy-->
+
+            <TableControl>
+                <TableHeaders>
+                    <TableColumnHeader><Label>Group</Label>			<Width>10</Width>	<Alignment>Left</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>Version</Label>		<Width>10</Width>	<Alignment>Left</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>LastRun</Label>		<Width>9</Width>	<Alignment>Left</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>LastTime</Label>		<Width>9</Width>	<Alignment>Left</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>TotalTime</Label>		<Width>9</Width>	<Alignment>Left</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>Folder/ID</Label>		<Width>10</Width>	<Alignment>Left</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>Name</Label>								<Alignment>Left</Alignment></TableColumnHeader>
+                </TableHeaders>
+                <TableRowEntries>
+                    <TableRowEntry>
+                        <Wrap/>
+                        <TableColumnItems>
+                            <TableColumnItem><PropertyName>Group</PropertyName></TableColumnItem>
+                            <TableColumnItem><PropertyName>Version</PropertyName></TableColumnItem>
+                            <TableColumnItem><ScriptBlock>ConvertTo-NiceAge -DateOrSpan $_.LastLaunch -Simple -Precision 2 -Joiner ':'</ScriptBlock></TableColumnItem>
+                            <TableColumnItem><ScriptBlock>ConvertTo-NiceAge -DateOrSpan $_.LastPlayed -Simple -Precision 2 -Joiner ':'</ScriptBlock></TableColumnItem>
+                            <TableColumnItem><ScriptBlock>ConvertTo-NiceAge -DateOrSpan $_.TotalPlayed -Simple -Precision 2 -Joiner ':'</ScriptBlock></TableColumnItem>
+                            <TableColumnItem><PropertyName>Folder</PropertyName></TableColumnItem>
+                            <TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+                        </TableColumnItems>
+                    </TableRowEntry>
+                </TableRowEntries>
+            </TableControl>
+
+        </View>
+    </ViewDefinitions>
+</Configuration>
