@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory, ValueFromPipeline)]
+    [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [Alias( <#'PSPath',#> 'FullName')]
     [string[]]$InputObject
 )
 
