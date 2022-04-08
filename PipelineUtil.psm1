@@ -37,13 +37,54 @@ function Get-OrderedSubset ([int]$Count) {
 }
 
 
-<# 
-function Get-UniqueByProperty ([string]$Name) {
+# Filter items with a unique property (first found wins).
+# The property can be specified either as a name (string) or be calculated 
+# with a scriptblock (with $_ representing the current item).
+# An error is generated if the specified property did not exist or was not 
+# calculated for some input objects.
+function Get-UniqueByProperty {
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+        $InputObject,
+        
+        [Parameter(Mandatory, Position=1)]
+        $Property  # name or scriptblock ()
+    )
     begin {
+        $seen = [System.Collections.Generic.HashSet[object]]@()
+        $missing = $false
     }
     process {
+        foreach ($item in $InputObject) {
+            if ($Property -is [scriptblock]) {
+                $values = $Property.InvokeWithContext(
+                    $null, 
+                    [psvariable]::new('_', $item)
+                )
+                if ($values.Count -eq 0) {
+                    $missing = $true
+                } elseif ($seen.Add($values[0])) {
+                    Write-Output $item
+                }
+            } elseif (Get-Member -InputObject $item -Name $Property) {
+                if ($seen.Add($item.$Property)) {
+                    Write-Output $item
+                }
+            } else {
+                $missing = $true
+            }
+        }
     }
-}#>
+    end {
+        if ($missing) {
+            if ($Property -is [scriptblock]) {
+                Write-Error "Scriptblock did not return value for some objects"
+            } else {
+                Write-Error "Named property not found in some objects: $Property"
+            }
+        }
+    }
+}
 
 
 # ----------------------------------------------------------------
