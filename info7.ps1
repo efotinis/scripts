@@ -96,8 +96,15 @@ if ($GetPassword) {
 $args = @(
     'l'
     '-slt'
+    '-sccutf-8'
     if ($Password) { '-p' + (GetSecureStringText $Password) }
     $Archive
 )
 
-7z @args | ZipInfo
+$enc = [Console]::OutputEncoding
+try {
+    [Console]::OutputEncoding = [Text.Encoding]::UTF8
+    7z @args | ZipInfo
+} finally {
+    [Console]::OutputEncoding = $enc
+}
