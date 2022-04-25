@@ -48,7 +48,7 @@ function Get-UniqueByProperty {
         $InputObject,
         
         [Parameter(Mandatory, Position=1)]
-        $Property  # name or scriptblock ()
+        $Property  # name or scriptblock
     )
     begin {
         $seen = [System.Collections.Generic.HashSet[object]]@()
@@ -156,7 +156,7 @@ filter Get-AnyMatchProperty {
 
 # Filter pipeline items besed on property value range.
 # Start/end values are included unless ExcludeStart/ExcludeEnd are specified.
-# Fails if all object properties are null.
+# An error is generated if the specified property did not exist for some input objects.
 function Get-InRangeProperty {
     [CmdletBinding()]
     param(
@@ -171,7 +171,7 @@ function Get-InRangeProperty {
         if ($Start -gt $End) {
             throw "start value ($Start) must be less than or equal to end value ($End)"
         }
-        $propertyFound = $false
+        $missing = $false
         $startCheck = if ($ExcludeStart) {
             { $value -gt $Start }
         } else {
@@ -185,16 +185,15 @@ function Get-InRangeProperty {
     }
     process {
         $value = $_.$Property
-        if ($null -ne $value) {
-            $propertyFound = $true
-            if ($startCheck.Invoke($value) -and $endCheck.Invoke($value)) {
-                $_
-            }
+        if ($null -eq $value) {
+            $missing = $true
+        } elseif ($startCheck.Invoke($value) -and $endCheck.Invoke($value)) {
+            $_
         }
     }
     end {
-        if (-not $propertyFound) {
-            Write-Error "The property ""$Property"" cannot be found in the input for any objects."
+        if ($missing) {
+            Write-Error "Named property not found in some objects: $Property"
         }
     }
 }
