@@ -7,6 +7,39 @@
 #>
 
 
+# Get an object property by name or by evaluating a scriptblock. 
+# In the case of a scriptblock, the object is available as $_ and 
+# if multiple values are returned, only the first one is used.
+# Returns $null on error or if missing.
+function CalculateProperty ($Object, $Property) {
+    if ($Property -is [scriptblock]) {
+        $values = $Property.InvokeWithContext(
+            $null, 
+            [psvariable]::new('_', $Object)
+        )
+        if ($values.Count -gt 0) {
+            return $values[0]
+        } else {
+            return $null
+        }
+    }
+    if (Get-Member -InputObject $Object -Name $Property) {
+        return $Object.$Property
+    } else {
+        return $null
+    }
+}
+
+
+function ReportPartiallyMissingProperty ($Property) {
+    if ($Property -is [scriptblock]) {
+        Write-Error "Scriptblock did not return value for some objects"
+    } else {
+        Write-Error "Named property not found in some objects: $Property"
+    }
+}
+
+
 # Reverse pipeline.
 function Get-ReverseArray
 {
@@ -56,32 +89,17 @@ function Get-UniqueByProperty {
     }
     process {
         foreach ($item in $InputObject) {
-            if ($Property -is [scriptblock]) {
-                $values = $Property.InvokeWithContext(
-                    $null, 
-                    [psvariable]::new('_', $item)
-                )
-                if ($values.Count -eq 0) {
-                    $missing = $true
-                } elseif ($seen.Add($values[0])) {
-                    Write-Output $item
-                }
-            } elseif (Get-Member -InputObject $item -Name $Property) {
-                if ($seen.Add($item.$Property)) {
-                    Write-Output $item
-                }
-            } else {
+            $value = CalculateProperty $item $Property
+            if ($null -eq $value) {
                 $missing = $true
+            } elseif ($seen.Add($value)) {
+                Write-Output $item
             }
         }
     }
     end {
         if ($missing) {
-            if ($Property -is [scriptblock]) {
-                Write-Error "Scriptblock did not return value for some objects"
-            } else {
-                Write-Error "Named property not found in some objects: $Property"
-            }
+            ReportPartiallyMissingProperty $Property
         }
     }
 }
@@ -155,15 +173,18 @@ filter Get-AnyMatchProperty {
 
 
 # Filter pipeline items besed on property value range.
+# The property can be specified either as a name (string) or be calculated 
+# with a scriptblock (with $_ representing the current item).
 # Start/end values are included unless ExcludeStart/ExcludeEnd are specified.
-# An error is generated if the specified property did not exist for some input objects.
+# An error is generated if the specified property did not exist or was not 
+# calculated for some input objects.
 function Get-InRangeProperty {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, ValueFromPipeline)]$InputObject,
-        [Parameter(Mandatory, Position=0)][string]$Property,
-        [Parameter(Mandatory, Position=1)]$Start,
-        [Parameter(Mandatory, Position=2)]$End,
+        [Parameter(Mandatory, Position=1)]$Property,  # name or scriptblock
+        [Parameter(Mandatory, Position=2)]$Start,
+        [Parameter(Mandatory, Position=3)]$End,
         [Alias('xs')][switch]$ExcludeStart,
         [Alias('xe')][switch]$ExcludeEnd
     )
@@ -184,16 +205,16 @@ function Get-InRangeProperty {
         }
     }
     process {
-        $value = $_.$Property
+        $value = CalculateProperty $_ $Property
         if ($null -eq $value) {
             $missing = $true
         } elseif ($startCheck.Invoke($value) -and $endCheck.Invoke($value)) {
-            $_
+            Write-Output $_
         }
     }
     end {
         if ($missing) {
-            Write-Error "Named property not found in some objects: $Property"
+            ReportPartiallyMissingProperty $Property
         }
     }
 }
