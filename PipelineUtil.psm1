@@ -172,36 +172,54 @@ filter Get-AnyMatchProperty {
 }
 
 
-# Filter pipeline items besed on property value range.
+# Filter pipeline items based on property value range.
 # The property can be specified either as a name (string) or be calculated 
 # with a scriptblock (with $_ representing the current item).
-# Start/end values are included unless ExcludeStart/ExcludeEnd are specified.
+# The range can be specified as either a start/end or with a center and radius.
+# Boundaries are included unless ExcludeStart/ExcludeEnd are specified.
 # An error is generated if the specified property did not exist or was not 
 # calculated for some input objects.
 function Get-InRangeProperty {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='StartEnd')]
     param(
         [Parameter(Mandatory, ValueFromPipeline)]$InputObject,
         [Parameter(Mandatory, Position=1)]$Property,  # name or scriptblock
-        [Parameter(Mandatory, Position=2)]$Start,
-        [Parameter(Mandatory, Position=3)]$End,
+        [Parameter(Mandatory, Position=2, ParameterSetName='StartEnd')]$Start,
+        [Parameter(Mandatory, Position=3, ParameterSetName='StartEnd')]$End,
+        [Parameter(Mandatory, Position=2, ParameterSetName='CenterRadius')]$Center,
+        [Parameter(Mandatory, Position=3, ParameterSetName='CenterRadius')]$Radius,
         [Alias('xs')][switch]$ExcludeStart,
         [Alias('xe')][switch]$ExcludeEnd
     )
     begin {
-        if ($Start -gt $End) {
-            throw "start value ($Start) must be less than or equal to end value ($End)"
+        switch ($PSCmdlet.ParameterSetName) {
+            'StartEnd' {
+                if ($Start -gt $End) {
+                    throw "start value ($Start) must be less than or equal to end value ($End)"
+                }
+                $minValue = $Start
+                $maxValue = $End
+            }
+            'CenterRadius' {
+                # NOTE: Radius must be to the right of operator to coerse
+                # to number, since a negative arg is bound as a string
+                if (0 -gt $Radius) {
+                    throw "radius value ($Radius) must be non-negative"
+                }
+                $minValue = $Center - $Radius
+                $maxValue = $Center + $Radius
+            }
         }
         $missing = $false
         $startCheck = if ($ExcludeStart) {
-            { $value -gt $Start }
+            { $value -gt $minValue }
         } else {
-            { $value -ge $Start }
+            { $value -ge $minValue }
         }
         $endCheck = if ($ExcludeEnd) {
-            { $value -lt $End }
+            { $value -lt $maxValue }
         } else {
-            { $value -le $End }
+            { $value -le $maxValue }
         }
     }
     process {
