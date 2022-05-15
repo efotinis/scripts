@@ -1,7 +1,6 @@
 #!python3
 # TODO: store scan errors and add a cmd for showing them
 # TODO: add a filter function (extensions, regexps, size/date ranges, attribs) to restrict operations
-# TODO: allow optional traversal of junctions and soft-linked dirs
 # TODO: allow command switches and replace "LO","DO","EO" with configurable default switches
 # TODO: replace single order flags with multiple flags (lowercase:ascending, uppercase:descensing)
 # TODO: detect hardlinks (no need to match; just use link count)
@@ -96,24 +95,26 @@ class File(Item):
 class Dir(Item):        
     """Directory item."""
     
-    def __init__(self, path, data, status=None):
+    def __init__(self, path, data, nolinks, status=None):
         Item.__init__(self, path, data)
         if status:
             status.update(path)
-        if self.attr & FILE_ATTRIBUTE_REPARSE_POINT:
+        if self.attr & FILE_ATTRIBUTE_REPARSE_POINT and nolinks:
             self.children = []
         else:
-            self.get_children(path, status)
+            self.get_children(path, nolinks, status)
         
-    def get_children(self, path, status=None):
+    def get_children(self, path, nolinks, status=None):
         self.children = []
         try:
             for data in winfiles.find(os.path.join(path, '*'), times='unix'):
                 if status:
                     status.update(path)
                 child_path = os.path.join(path, data.name)
-                factory = Dir if winfiles.is_dir(data.attr) else File
-                self.children += [factory(child_path, data, status)]
+                if winfiles.is_dir(data.attr):
+                    self.children += [Dir(child_path, data, nolinks, status)]
+                else:
+                    self.children += [File(child_path, data, status)]
         except WindowsError as x:
             msg = 'WARNING: could not list contents of "%s"; reason: %s' % (path, x.strerror)
             status.static_print(msg)
@@ -310,6 +311,7 @@ class State(object):
     def __init__(self):
         self.root = None            # root Dir object
         self.root_path = ''         # root dir path (must be unicode -> listdir bug)
+        self.no_links = False       # do not scan below junctions and dir symlinks
         self.rel_path = ''          # current relative dir path
         self.list_order = '*'       # list sorting
         self.dir_order = '*'        # dir sorting
@@ -566,7 +568,7 @@ def cmd_root(state, params):
         raise PathError('not a dir: "%s"' % new_root_path)
     with ScanStatus(new_root_path) as status:
         data = next(winfiles.find(new_root_path))
-        state.root = Dir(new_root_path, data, status)
+        state.root = Dir(new_root_path, data, state.no_links, status)
     state.root_path = new_root_path
     state.rel_path = ''
 
@@ -748,7 +750,7 @@ def cmd_scan(state, params):
     abs_path = os.path.join(state.root_path, rel_path)
     print('scanning "%s" ...' % os.path.join(state.root_path, abs_path))
     with ScanStatus(abs_path) as status:
-        dir.get_children(abs_path, status)
+        dir.get_children(abs_path, state.no_links, status)
 
 
 def cmd_go(state, params):
@@ -878,8 +880,20 @@ def cmd_quit(state, params):
 
 def parse_args():
     ap = argparse.ArgumentParser(description='interactive OverDisk CLI')
-    ap.add_argument('root', nargs='?', metavar='DIR', default='.',
-                    help='the initial root dir; default: "%(default)s"')
+    ap.add_argument(
+        'root', 
+        nargs='?', 
+        metavar='DIR', 
+        default='.',
+        help='the initial root dir; default: "%(default)s"'
+    )
+    ap.add_argument(
+        '-l',
+        '--no-links', 
+        action='store_true',
+        help='ignore directory symlinks and junctions; '
+             'container names are visible, but are not scanned for subitems'
+    )
     args = ap.parse_args()
     args.root = os.path.abspath(args.root)
     if not os.path.isdir(args.root):
@@ -909,12 +923,13 @@ def get_prompt(state):
 def main(args):
     state = State()
     state.root_path = args.root
+    state.no_links = args.no_links
     cmd_dispatcher = CmdDispatcher(state)
 
     print('scanning "%s" ...' % state.root_path)
     with ScanStatus(state.root_path) as status:
         data = next(winfiles.find(state.root_path))
-        state.root = Dir(state.root_path, data, status)
+        state.root = Dir(state.root_path, data, state.no_links, status)
 
     acmgr = AutoComplete.Manager()
 
