@@ -67,6 +67,7 @@ function Get-CrazyCaseString {
 function Get-CharacterCount {
     param(
         [Parameter(Mandatory, ValueFromPipeline)]
+        [AllowEmptyString()]
         [string]$InputObject,
         
         [Parameter(Mandatory)]
