@@ -703,13 +703,6 @@ function global:NiceDuration ([string]$Property = 'duration') {
 }
 
 
-# Calculate adapter usage from Network info of Task Manager.
-function global:NetSpeed ([int]$LinkSpeedMpbs, [float]$UtilizationPercentage) {
-    $speed = $UtilizationPercentage / 100 * $LinkSpeedMpbs * 1000000 / 8
-    echo "$(ConvertTo-NiceSize $speed)/s"
-}
-
-
 # Extract year from paths of the form: "...\title (year).ext".
 function global:GetReleaseYear {
     [CmdletBinding()]
@@ -731,6 +724,39 @@ function global:GetReleaseYear {
 # Number of pipeline objects.
 function global:Count {
     $Input | Measure-Object | % count
+}
+
+
+# Create DateTime representing some hours/minutes/seconds ago from now.
+function global:TimeAgo {
+    [CmdletBinding()]
+    param(
+        [int]$Hours,
+        [int]$Minutes,
+        [int]$Seconds
+    )
+    (Get-Date) - [timespan]::new($Hours, $Minutes, $Seconds)
+}
+
+
+# Create DateTime representing some years/months/days/weeks ago from now.
+function global:DateAgo {
+    [CmdletBinding()]
+    param(
+        [int]$Years,
+        [int]$Months,
+        [int]$Days,
+        [int]$Weeks
+    )
+    $d = Get-Date
+    $Days += $Weeks * 7
+    $d.AddYears(-$Years).AddMonths(-$Months).AddDays(-$Days)
+}
+
+
+# Select pipeline objects based on position.
+function global:nth ([int[]]$Index) {
+    $input | select -index $Index
 }
 
 
