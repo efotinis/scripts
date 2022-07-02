@@ -118,7 +118,8 @@ def countdown_bigecho(font, seconds, step=1.0, decimals=0, fmt='{}'):
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='simple countdown timer')
+        description='simple countdown timer; can cancel with Ctrl-C',
+        epilog='time display is erased on exit')
     _add = parser.add_argument
     _add('seconds', type=time_string, metavar='TIME', help='timer duration; examples: '
          '"10s", "1m10s", "5m:10s", "2.5h"')
@@ -126,6 +127,8 @@ def parse_args():
     _add('-b', dest='beeponce', action='store_true', help='beep once on completion')
     _add('-B', dest='beeploop', action='store_true', help='beep continuously after completion')
     _add('-d', dest='decimals', type=int, default=1, help='second fractional digits; default: %(default)s')
+    _add('-c', dest='cancelerror', action='store_true', help='exit with error if canceled prematurely')
+    _add('-f', dest='format', default='{}', help='formatting string to display timer with; default: %(default)s')
     args = parser.parse_args()
     args.decimals = min(max(args.decimals, 0), 3)
     return args
@@ -144,20 +147,20 @@ if __name__ == '__main__':
     args = parse_args()
     
     try:
-        timer_completed = False
         step = 10.0**(-args.decimals) / 2  # half the smallest displayable value
         step = min(max(step, 0.01), 1)  # not too small (CPU intensive) or too large (at least 1 sec accurate)
         if args.large:
             FULL_BLOCK = u'\u2588'
             bitmaps = bigecho.chars_from_string(BIG_FONT.replace('X', FULL_BLOCK), 3, 1)
             font = bigecho.Font('0123456789.:', bitmaps, 3, 5, weight=2)
-            countdown_bigecho(font, args.seconds, step, args.decimals)
+            countdown_bigecho(font, args.seconds, step, args.decimals, args.format)
         else:
-            countdown(args.seconds, step, args.decimals)
-        timer_completed = True
+            countdown(args.seconds, step, args.decimals, args.format)
     except KeyboardInterrupt:
-        if not timer_completed:
-            sys.exit('timer canceled by user')
+        if args.cancelerror:
+            sys.exit('timer canceled')
+        else:
+            sys.exit()
 
     if args.beeploop:
         try:
