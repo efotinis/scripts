@@ -120,12 +120,33 @@ function global:Edit-ScriptInVSCode ([string]$Name) {
 # -------------------------------------
 
 
-# get/set console title
-function global:WndTitle ($s) {
-    if ($null -eq $s) {
-        $Host.UI.RawUI.WindowTitle
-    } else {
-        $Host.UI.RawUI.WindowTitle = $s
+function global:ConTitleDefault {
+    "PowerShell $($PSVersionTable.PSVersion.Major).$($PSVersionTable.PSVersion.Minor)"
+}
+
+
+function global:ConTitle {
+    [CmdletBinding(DefaultParameterSetName='get')]
+    param(
+        [Parameter(ParameterSetName='get')]
+        [switch]$Get,
+
+        [Parameter(ParameterSetName='set', Position=0)]
+        [string]$Set,
+
+        [Parameter(ParameterSetName='reset')]
+        [switch]$Reset
+    )
+    switch ($PSCmdlet.ParameterSetName) {
+        'get' {
+            $Host.UI.RawUI.WindowTitle
+        }
+        'set' {
+            $Host.UI.RawUI.WindowTitle = $Set
+        }
+        'reset' {
+            $Host.UI.RawUI.WindowTitle = global:ConTitleDefault
+        }
     }
 }
 
@@ -795,3 +816,5 @@ $global:PromptColor = '*'
 
 
 & "$Env:scripts\SmartFileSystem.Format.ps1"
+
+global:ConTitle -Reset
