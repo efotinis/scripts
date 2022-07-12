@@ -95,16 +95,16 @@ class File(Item):
 class Dir(Item):        
     """Directory item."""
     
-    def __init__(self, path, data, nolinks, status=None):
+    def __init__(self, path, data, scanlinks, status=None):
         Item.__init__(self, path, data)
         if status:
             status.update(path)
-        if self.attr & FILE_ATTRIBUTE_REPARSE_POINT and nolinks:
+        if self.attr & FILE_ATTRIBUTE_REPARSE_POINT and not scanlinks:
             self.children = []
         else:
-            self.get_children(path, nolinks, status)
+            self.get_children(path, scanlinks, status)
         
-    def get_children(self, path, nolinks, status=None):
+    def get_children(self, path, scanlinks, status=None):
         self.children = []
         try:
             for data in winfiles.find(os.path.join(path, '*'), times='unix'):
@@ -112,7 +112,7 @@ class Dir(Item):
                     status.update(path)
                 child_path = os.path.join(path, data.name)
                 if winfiles.is_dir(data.attr):
-                    self.children += [Dir(child_path, data, nolinks, status)]
+                    self.children += [Dir(child_path, data, scanlinks, status)]
                 else:
                     self.children += [File(child_path, data, status)]
         except WindowsError as x:
@@ -311,7 +311,7 @@ class State(object):
     def __init__(self):
         self.root = None            # root Dir object
         self.root_path = ''         # root dir path (must be unicode -> listdir bug)
-        self.no_links = False       # do not scan below junctions and dir symlinks
+        self.scan_links = False     # scan into junctions and dir symlinks
         self.rel_path = ''          # current relative dir path
         self.list_order = '*'       # list sorting
         self.dir_order = '*'        # dir sorting
@@ -568,7 +568,7 @@ def cmd_root(state, params):
         raise PathError('not a dir: "%s"' % new_root_path)
     with ScanStatus(new_root_path) as status:
         data = next(winfiles.find(new_root_path))
-        state.root = Dir(new_root_path, data, state.no_links, status)
+        state.root = Dir(new_root_path, data, state.scan_links, status)
     state.root_path = new_root_path
     state.rel_path = ''
 
@@ -750,7 +750,7 @@ def cmd_scan(state, params):
     abs_path = os.path.join(state.root_path, rel_path)
     print('scanning "%s" ...' % os.path.join(state.root_path, abs_path))
     with ScanStatus(abs_path) as status:
-        dir.get_children(abs_path, state.no_links, status)
+        dir.get_children(abs_path, state.scan_links, status)
 
 
 def cmd_go(state, params):
@@ -889,9 +889,9 @@ def parse_args():
     )
     ap.add_argument(
         '-l',
-        '--no-links', 
+        '--scan-links', 
         action='store_true',
-        help='ignore directory symlinks and junctions; '
+        help='scan directory symlinks and junctions; unless specified, '
              'container names are visible, but are not scanned for subitems'
     )
     args = ap.parse_args()
@@ -923,13 +923,13 @@ def get_prompt(state):
 def main(args):
     state = State()
     state.root_path = args.root
-    state.no_links = args.no_links
+    state.scan_links = args.scan_links
     cmd_dispatcher = CmdDispatcher(state)
 
     print('scanning "%s" ...' % state.root_path)
     with ScanStatus(state.root_path) as status:
         data = next(winfiles.find(state.root_path))
-        state.root = Dir(state.root_path, data, state.no_links, status)
+        state.root = Dir(state.root_path, data, state.scan_links, status)
 
     acmgr = AutoComplete.Manager()
 
