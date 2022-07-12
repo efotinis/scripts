@@ -316,14 +316,11 @@ if ($host.name -eq 'ConsoleHost') {
                 if ($newBg) { $bg = $newBg }
             }
         }
-        #Write-Host '|ADMIN|' -NoNewline -ForegroundColor white -BackgroundColor darkred
+        if (IsAdmin) {
+            Write-Host 'Admin:' -NoNewline -Fore white -Back darkred
+        }
         Write-Host $s -NoNewline -ForegroundColor $fg -BackgroundColor $bg
         Write-Output ' '
-    }
-
-    if (IsAdmin) {
-        $host.UI.RawUI.BackgroundColor = 'darkred'
-        Clear-Host
     }
 
     # customize output stream colors
@@ -340,11 +337,6 @@ if ($host.name -eq 'ConsoleHost') {
     # colors and assuming a black background (e.g. pip)
     function global:MonoClr {
         if ([bool]$Env:MonoClr) {
-            if (IsAdmin) {
-                $host.UI.RawUI.BackgroundColor = 'darkred'
-            } else {
-                $host.UI.RawUI.BackgroundColor = 'darkblue'
-            }
             $Env:MonoClr = $null
         } else {
             $host.UI.RawUI.BackgroundColor = 'black'
