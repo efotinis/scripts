@@ -269,6 +269,8 @@ Split collection into sub-arrays, depending on the specified parameter:
   last may be smaller.
 - HeadSize: Produce two arrays, with the first containing no more than HeadSize
   items and the second the rest.
+- TailSize: Produce two arrays, with the second containing no more than TailSize
+  items and the first the rest.
 
 Based on:
     https://gallery.technet.microsoft.com/scriptcenter/Split-an-array-into-parts-4357dcc1
@@ -289,7 +291,11 @@ function Split-Array {
         
         [Parameter(Mandatory, ParameterSetName='HeadSize')]
         [ValidateRange(0, [int]::MaxValue)]
-        [int]$HeadSize
+        [int]$HeadSize,
+        
+        [Parameter(Mandatory, ParameterSetName='TailSize')]
+        [ValidateRange(0, [int]::MaxValue)]
+        [int]$TailSize
     )
     begin {
         $items = [System.Collections.ArrayList]::new()
@@ -304,6 +310,12 @@ function Split-Array {
                 $HeadSize = [Math]::Min($HeadSize, $totalCount)
                 ,$items.GetRange(0, $HeadSize)
                 ,$items.GetRange($HeadSize, $totalCount - $HeadSize)
+                return
+            }
+            'TailSize' {
+                $TailSize = [Math]::Min($TailSize, $totalCount)
+                ,$items.GetRange(0, $totalCount - $TailSize)
+                ,$items.GetRange($totalCount - $TailSize, $TailSize)
                 return
             }
             'GroupCount' {
