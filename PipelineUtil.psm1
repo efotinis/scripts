@@ -264,7 +264,7 @@ function Add-IndexMember {
 
 <#
 Split collection into sub-arrays, depending on the specified parameter:
-- SubSize: Generate arrays of length SubSize, except the last may be smaller.
+- GroupSize: Generate arrays of length GroupSize, except the last may be smaller.
 - GroupCount: Generate no more than GroupCount arrays of equal size, except the
   last may be smaller.
 - HeadSize: Produce two arrays, with the first containing no more than HeadSize
@@ -281,9 +281,9 @@ function Split-Array {
         [Parameter(Mandatory, ValueFromPipeline)]
         [object[]]$InputObject,
 
-        [Parameter(Mandatory, ParameterSetName='SubSize')]
+        [Parameter(Mandatory, ParameterSetName='GroupSize')]
         [ValidateRange(1, [int]::MaxValue)]
-        [int]$SubSize,
+        [int]$GroupSize,
         
         [Parameter(Mandatory, ParameterSetName='GroupCount')]
         [ValidateRange(1, [int]::MaxValue)]
@@ -308,28 +308,27 @@ function Split-Array {
         switch ($PSCmdlet.ParameterSetName) {
             'HeadSize' {
                 $HeadSize = [Math]::Min($HeadSize, $totalCount)
-                ,$items.GetRange(0, $HeadSize)
-                ,$items.GetRange($HeadSize, $totalCount - $HeadSize)
-                return
             }
             'TailSize' {
-                $TailSize = [Math]::Min($TailSize, $totalCount)
-                ,$items.GetRange(0, $totalCount - $TailSize)
-                ,$items.GetRange($totalCount - $TailSize, $TailSize)
-                return
+                $HeadSize = [Math]::Max(0, $totalCount - $TailSize)
             }
             'GroupCount' {
-                $SubSize = [Math]::Ceiling($totalCount / $GroupCount)
-                $GroupCount = [Math]::Ceiling($totalCount / $SubSize)
+                $GroupSize = [Math]::Ceiling($totalCount / $GroupCount)
+                $GroupCount = [Math]::Ceiling($totalCount / $GroupSize)
             }
-            'SubSize' {
-                $GroupCount = [Math]::Ceiling($totalCount / $SubSize)
+            'GroupSize' {
+                $GroupCount = [Math]::Ceiling($totalCount / $GroupSize)
             }
         }
-        for ($i = 0; $i -lt $GroupCount; ++$i) {
-            $beg = $i * $SubSize
-            $end = [Math]::Min(($i + 1) * $SubSize, $totalCount)
-            ,$Items.GetRange($beg, $end - $beg)
+        if ($PSCmdlet.ParameterSetName -in 'GroupCount','GroupSize') {
+            for ($i = 0; $i -lt $GroupCount; ++$i) {
+                $beg = $i * $GroupSize
+                $end = [Math]::Min(($i + 1) * $GroupSize, $totalCount)
+                Write-Output (,$Items.GetRange($beg, $end - $beg))
+            }
+        } else {
+            Write-Output (,$items.GetRange(0, $HeadSize))
+            Write-Output (,$items.GetRange($HeadSize, $totalCount - $HeadSize))
         }
     }
     
