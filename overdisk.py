@@ -10,6 +10,7 @@
 # TODO: option to display numbers/sizes as percentage of total
 # TODO: make commands case-sensitive
 # TODO: allow multiple dir params to commands that it make sense (e.g. extcnt, scan, and go)
+# FIXME: DIR cmd should sort dirs by size and probably also show the size
 
 import os
 import re
@@ -192,8 +193,9 @@ Commands:
   DIRORDER [dircol]
   LISTORDER [listcol]
   EXTORDER [extcol]
-                Set (or show) sort order for DIR, LIST and EXTCNT.
-  UNIT [unit]   Set (or show) size unit. One of "bkmgtpe*".
+                Set (or show) sort order for DIR, LIST and EXTCNT. Default:'s'.
+  UNIT [unit]   Set (or show) size unit. One of "bkmgtpe*". Default is '*', 
+                meaning per-item automatic selection.
   ALIAS [name[=[value]]]
                 Set (or show) one or more simply command aliases.
                 No params show all aliases, 'name' shows aliases starting
@@ -326,10 +328,10 @@ class State(object):
         self.scan_links = False     # scan into junctions and dir symlinks
         self.scan_errors = []       # list of accumulated ScanError objects
         self.rel_path = ''          # current relative dir path
-        self.list_order = '*'       # list sorting
-        self.dir_order = '*'        # dir sorting
-        self.ext_order = '*'        # extcnt sorting
-        self.unit = 'b'             # display size unit
+        self.list_order = 's'       # list sorting
+        self.dir_order = 's'        # dir sorting
+        self.ext_order = 's'        # extcnt sorting
+        self.unit = '*'             # display size unit
         self.filter = Filter(['*']) # filename filter
         self.tail_count = 0         # listing tail count
         self.aliases = {            # simple command aliases
