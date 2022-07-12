@@ -1,5 +1,4 @@
 #!python3
-# TODO: store scan errors and add a cmd for showing them
 # TODO: add a filter function (extensions, regexps, size/date ranges, attribs) to restrict operations
 # TODO: allow command switches and replace "LO","DO","EO" with configurable default switches
 # TODO: replace single order flags with multiple flags (lowercase:ascending, uppercase:descensing)
@@ -35,6 +34,9 @@ import winfiles
 STR_ALIGN = {'l': str.ljust, 'r': str.rjust, 'c': str.center, '': lambda s, n: s}
 
 FILE_ATTRIBUTE_REPARSE_POINT = 0x400
+
+
+ScanError = collections.namedtuple('ScanError', 'startpath messages')
 
 
 class PathError(Exception):
@@ -95,16 +97,16 @@ class File(Item):
 class Dir(Item):        
     """Directory item."""
     
-    def __init__(self, path, data, scanlinks, status=None):
+    def __init__(self, path, data, scanlinks, scanerrors, status=None):
         Item.__init__(self, path, data)
         if status:
             status.update(path)
         if self.attr & FILE_ATTRIBUTE_REPARSE_POINT and not scanlinks:
             self.children = []
         else:
-            self.get_children(path, scanlinks, status)
+            self.get_children(path, scanlinks, scanerrors, status)
         
-    def get_children(self, path, scanlinks, status=None):
+    def get_children(self, path, scanlinks, scanerrors, status=None):
         self.children = []
         try:
             for data in winfiles.find(os.path.join(path, '*'), times='unix'):
@@ -112,12 +114,13 @@ class Dir(Item):
                     status.update(path)
                 child_path = os.path.join(path, data.name)
                 if winfiles.is_dir(data.attr):
-                    self.children += [Dir(child_path, data, scanlinks, status)]
+                    self.children += [Dir(child_path, data, scanlinks, scanerrors, status)]
                 else:
                     self.children += [File(child_path, data, status)]
         except WindowsError as x:
             msg = 'WARNING: could not list contents of "%s"; reason: %s' % (path, x.strerror)
             status.static_print(msg)
+            scanerrors[-1].messages.append(msg)
             return
             
     def get_sub_dir(self, name):
@@ -169,6 +172,15 @@ Commands:
   LIST [dir]    Show directory entry statistics.
   EXTCNT [dir]  Show directory extension statistics (files only).
   SCAN [dir]    Rescan directory.
+  SCANERR [op]  Show accumulated errors for each scan operation. An additional
+                param 'op' can be used:
+                - N > 0: show the errors of the last N scans (may exceed count)
+                - N < 0: show the errors from the (-N)th last scan (must not 
+                  exceed count)
+                - "ALL": show all errors
+                - "COUNT": show error group count
+                - "CLEAR": purge all errors
+                'op' defaults to 1, i.e. showing the errors of the last scan.
   GO [dir]      Open directory in Explorer.
   FILTER [flt]  Set (or show) filename filter. Use "*" to include all.
                 Filtering affects DIR, LIST, and EXTCNT.
@@ -312,6 +324,7 @@ class State(object):
         self.root = None            # root Dir object
         self.root_path = ''         # root dir path (must be unicode -> listdir bug)
         self.scan_links = False     # scan into junctions and dir symlinks
+        self.scan_errors = []       # list of accumulated ScanError objects
         self.rel_path = ''          # current relative dir path
         self.list_order = '*'       # list sorting
         self.dir_order = '*'        # dir sorting
@@ -321,9 +334,9 @@ class State(object):
         self.tail_count = 0         # listing tail count
         self.aliases = {            # simple command aliases
             '?': 'help', 'cd': 'chdir', 'd': 'dir', 'l': 'list', 'e': 'extcnt',
-            'r': 'root', 's': 'scan', 'g': 'go', 'f': 'filter', 't': 'tail',
-            'lo': 'listorder', 'do': 'dirorder', 'eo': 'extorder', 'u': 'unit',
-            'cs': 'colsep', 
+            'r': 'root', 's': 'scan', 'se': 'scanerr', 'g': 'go', 'f': 'filter', 
+            't': 'tail', 'lo': 'listorder', 'do': 'dirorder', 'eo': 'extorder', 
+            'u': 'unit', 'cs': 'colsep', 
             'a': 'alias', 'q': 'quit'
         }
         self.colsep = '  '          # table column separator
@@ -344,6 +357,7 @@ class CmdDispatcher(object):
             'extcnt': cmd_extcnt,
             'root': cmd_root,
             'scan': cmd_scan,
+            'scanerr': cmd_scan_errors,
             'go': cmd_go,
             'filter': cmd_filter,
             'tail': cmd_tail,
@@ -566,9 +580,10 @@ def cmd_root(state, params):
     new_root_path = os.path.abspath(params[0])
     if not os.path.isdir(new_root_path):
         raise PathError('not a dir: "%s"' % new_root_path)
+    state.scan_errors.append(ScanError(startpath=new_root_path, messages=[]))
     with ScanStatus(new_root_path) as status:
         data = next(winfiles.find(new_root_path))
-        state.root = Dir(new_root_path, data, state.scan_links, status)
+        state.root = Dir(new_root_path, data, state.scan_links, state.scan_errors, status)
     state.root_path = new_root_path
     state.rel_path = ''
 
@@ -749,8 +764,41 @@ def cmd_scan(state, params):
     rel_path, dir = locate_dir(state, params[0] if params else '')
     abs_path = os.path.join(state.root_path, rel_path)
     print('scanning "%s" ...' % os.path.join(state.root_path, abs_path))
+    state.scan_errors.append(ScanError(startpath=abs_path, messages=[]))
     with ScanStatus(abs_path) as status:
-        dir.get_children(abs_path, state.scan_links, status)
+        dir.get_children(abs_path, state.scan_links, state.scan_errors, status)
+
+
+def cmd_scan_errors(state, params):
+    if len(params) > 1:
+        raise CmdError('at most one param required')
+    op = params[0] if len(params) > 0 else '1'
+
+    def print_scanerror_groups(a):
+        for se in a:
+            print(f'--- while scanning: {se.startpath}')
+            for msg in se.messages:
+                print(msg)
+
+    op = op.lower()
+    if op == 'clear':
+        state.scan_errors = []
+        print('scan errors cleared')
+    elif op == 'count':
+        print(f'stored scan error group count: {len(state.scan_errors)}')
+    elif op == 'all':
+        print_scanerror_groups(state.scan_errors)
+    else:
+        try:
+            n = int(op)
+        except ValueError:
+            raise CmdError(f'invalid param: {op}')
+        if n > 0:
+            print_scanerror_groups(state.scan_errors[-n:])
+        elif n < 0:
+            if (-n > len(state.scan_errors)):
+                raise CmdError('param exceeds number of scan error groups')
+            print_scanerror_groups([state.scan_errors[n]])
 
 
 def cmd_go(state, params):
@@ -927,9 +975,10 @@ def main(args):
     cmd_dispatcher = CmdDispatcher(state)
 
     print('scanning "%s" ...' % state.root_path)
+    state.scan_errors.append(ScanError(startpath=state.root_path, messages=[]))
     with ScanStatus(state.root_path) as status:
         data = next(winfiles.find(state.root_path))
-        state.root = Dir(state.root_path, data, state.scan_links, status)
+        state.root = Dir(state.root_path, data, state.scan_links, state.scan_errors, status)
 
     acmgr = AutoComplete.Manager()
 
