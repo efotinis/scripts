@@ -241,18 +241,33 @@ function global:Get-FileTotal
 
 # Measure total count and length of non-container FileSystemInfo objects grouped by extension.
 function global:Get-ExtensionInfo {
-    @($input) | 
-        Where-Object { -not $_.PSIsContainer } | 
-        Group-Object Extension | 
-        ForEach-Object {
-            $x = $_.Group | Get-FileTotal
-            [PSCustomObject]@{
-                Count=$_.count
-                Extension=$_.name
-                Length=$x.bytes
-                Size=$x.size 
+    # filter out directories and write warning if any were encountered
+    function NoDirs {
+        begin {
+            $dirCount = 0
+        }
+        process {
+            if ($_.PSIsContainer) {
+                $dirCount += 1
+            } else {
+                $_
             }
         }
+        end {
+            if ($dirCount -gt 0) {
+                Write-Warning "container objects ignored; count: $dirCount"
+            }
+        }
+    }
+    $input | NoDirs | Group-Object Extension | ForEach-Object {
+        $x = $_.Group | Get-FileTotal
+        [PSCustomObject]@{
+            Count=$_.count
+            Extension=$_.name
+            Length=$x.bytes
+            Size=$x.size 
+        }
+    }
 }
 
 
