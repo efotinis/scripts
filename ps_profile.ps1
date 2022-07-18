@@ -810,3 +810,17 @@ $global:PromptColor = '*'
 & "$Env:scripts\SmartFileSystem.Format.ps1"
 
 global:ConTitle -Reset
+
+
+# Enter on an empty: move to the next line and erase the previous prompt.
+Set-PSReadLineKeyHandler -Chord Enter -ScriptBlock {
+    $line, $cursor = $null, $null
+    [Microsoft.PowerShell.PSConsoleReadLine]::GetBufferState([ref]$line, [ref]$cursor)
+    [Microsoft.PowerShell.PSConsoleReadLine]::AcceptLine()
+    if ($line -eq '') {
+        $Host.UI.RawUI.CursorPosition = [System.Management.Automation.Host.Coordinates]::new(
+            0, $Host.UI.RawUI.CursorPosition.Y - 1
+        )
+        Write-Host -NoNewLine (' ' * $Host.UI.RawUI.BufferSize.Width)
+    }
+}
