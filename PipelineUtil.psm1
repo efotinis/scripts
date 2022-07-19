@@ -108,68 +108,164 @@ function Get-UniqueByProperty {
 # ----------------------------------------------------------------
 
 
-# Get objects whose named property matches all specified wildcard patterns.
-filter Get-AllLikeProperty {
-    param(
-        [string]$Name,
-        [string[]]$Pattern
-    )
-    $val = $_.$Name
+function AllLike ($Value, [string[]]$Pattern) {
     foreach ($p in $Pattern) {
-        if ($val -notlike $p) {
-            return
+        if ($Value -notlike $p) {
+            return $false
         }
     }
-    $_
+    return $true
 }
 
 
-# Get objects whose named property matches any specified wildcard patterns.
-filter Get-AnyLikeProperty {
-    param(
-        [string]$Name,
-        [string[]]$Pattern
-    )
-    $val = $_.$Name
+function AnyLike ($Value, [string[]]$Pattern) {
     foreach ($p in $Pattern) {
-        if ($val -like $p) {
-            $_
-            return
+        if ($Value -like $p) {
+            return $true
+        }
+    }
+    return $false
+}
+
+
+function AllMatch ($Value, [string[]]$Pattern) {
+    foreach ($p in $Pattern) {
+        if ($Value -notmatch $p) {
+            return $false
+        }
+    }
+    return $true
+}
+
+
+function AnyMatch ($Value, [string[]]$Pattern) {
+    foreach ($p in $Pattern) {
+        if ($Value -match $p) {
+            return $true
+        }
+    }
+    return $false
+}
+
+
+function Get-IfProperty {
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+        $InputObject,
+
+        [Parameter(Mandatory, Position = 0)]
+        [string]$Name,
+
+        [Parameter(Mandatory, ParameterSetName = 'Like')]
+        [string]$Like,
+
+        [Parameter(Mandatory, ParameterSetName = 'NotLike')]
+        [string]$NotLike,
+
+        [Parameter(Mandatory, ParameterSetName = 'LikeAny')]
+        [string[]]$LikeAny,
+
+        [Parameter(Mandatory, ParameterSetName = 'NotLikeAny')]
+        [string[]]$NotLikeAny,
+
+        [Parameter(Mandatory, ParameterSetName = 'LikeAll')]
+        [string[]]$LikeAll,
+
+        [Parameter(Mandatory, ParameterSetName = 'NotLikeAll')]
+        [string[]]$NotLikeAll,
+
+        [Parameter(Mandatory, ParameterSetName = 'Match')]
+        [string]$Match,
+
+        [Parameter(Mandatory, ParameterSetName = 'NotMatch')]
+        [string]$NotMatch,
+
+        [Parameter(Mandatory, ParameterSetName = 'MatchAny')]
+        [string[]]$MatchAny,
+
+        [Parameter(Mandatory, ParameterSetName = 'NotMatchAny')]
+        [string[]]$NotMatchAny,
+
+        [Parameter(Mandatory, ParameterSetName = 'MatchAll')]
+        [string[]]$MatchAll,
+
+        [Parameter(Mandatory, ParameterSetName = 'NotMatchAll')]
+        [string[]]$NotMatchAll
+
+        <#[ParameterSetName('Options')]
+        [hashtable]$Options#>
+    )
+    begin {
+        switch ($PSCmdLet.ParameterSetName) {
+            'Like' {
+                $pattern = @($Like)
+                $checker = Get-Item -LiteralPath Function:AnyLike
+                $invert = $false
+            }
+            'NotLike' {
+                $pattern = @($NotLike)
+                $checker = Get-Item -LiteralPath Function:AllLike
+                $invert = $true
+            }
+            'LikeAny' {
+                $pattern = $LikeAny
+                $checker = Get-Item -LiteralPath Function:AnyLike
+                $invert = $false
+            }
+            'NotLikeAny' {
+                $pattern = $NotLikeAny
+                $checker = Get-Item -LiteralPath Function:AllLike
+                $invert = $true
+            }
+            'LikeAll' {
+                $pattern = $LikeAll
+                $checker = Get-Item -LiteralPath Function:AllLike
+                $invert = $false
+            }
+            'NotLikeAll' {
+                $pattern = $NotLikeAll
+                $checker = Get-Item -LiteralPath Function:AnyLike
+                $invert = $true
+            }
+            'Match' {
+                $pattern = @($Match)
+                $checker = Get-Item -LiteralPath Function:AnyMatch
+                $invert = $false
+            }
+            'NotMatch' {
+                $pattern = @($NotMatch)
+                $checker = Get-Item -LiteralPath Function:AllMatch
+                $invert = $true
+            }
+            'MatchAny' {
+                $pattern = $MatchAny
+                $checker = Get-Item -LiteralPath Function:AnyMatch
+                $invert = $false
+            }
+            'NotMatchAny' {
+                $pattern = $NotMatchAny
+                $checker = Get-Item -LiteralPath Function:AllMatch
+                $invert = $true
+            }
+            'MatchAll' {
+                $pattern = $MatchAll
+                $checker = Get-Item -LiteralPath Function:AllMatch
+                $invert = $false
+            }
+            'NotMatchAll' {
+                $pattern = $NotMatchAll
+                $checker = Get-Item -LiteralPath Function:AnyMatch
+                $invert = $true
+            }
+        }
+    }
+    process {
+        if ((& $checker $_.$Name $pattern) -xor $invert) {
+            $InputObject
         }
     }
 }
 
-
-# Get objects whose named property matches all specified regex patterns.
-filter Get-AllMatchProperty {
-    param(
-        [string]$Name,
-        [string[]]$Pattern
-    )
-    $val = $_.$Name
-    foreach ($p in $Pattern) {
-        if ($val -notmatch $p) {
-            return
-        }
-    }
-    $_
-}
-
-
-# Get objects whose named property matches any specified regex patterns.
-filter Get-AnyMatchProperty {
-    param(
-        [string]$Name,
-        [string[]]$Pattern
-    )
-    $val = $_.$Name
-    foreach ($p in $Pattern) {
-        if ($val -match $p) {
-            $_
-            return
-        }
-    }
-}
 
 
 # Filter pipeline items based on property value range.

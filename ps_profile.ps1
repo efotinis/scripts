@@ -788,12 +788,7 @@ function global:nth ([int[]]$Index) {
 }
 
 
-Set-Alias -Scope global AllLike Get-AllLikeProperty
-Set-Alias -Scope global AnyLike Get-AnyLikeProperty
-Set-Alias -Scope global AllMatch Get-AllMatchProperty
-Set-Alias -Scope global AnyMatch Get-AnyMatchProperty
-
-
+Set-Alias -Scope global gip Get-IfProperty
 Set-Alias -Scope global ndd New-DateDirectory
 Set-Alias -Scope global gft Get-FileTotal
 Set-Alias -Scope global ext Get-ExtensionInfo
