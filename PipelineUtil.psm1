@@ -1,10 +1,4 @@
-<#
-.SYNOPSIS
-    Pipeline utilities.
-
-.DESCRIPTION
-    Various pipeline filters.
-#>
+# Pipeline/collection utilities.
 
 
 # Get an object property by name or by evaluating a scriptblock. 
@@ -31,6 +25,7 @@ function CalculateProperty ($Object, $Property) {
 }
 
 
+# Write error regarding missing property specifier (string or scriptblock).
 function ReportPartiallyMissingProperty ($Property) {
     if ($Property -is [scriptblock]) {
         Write-Error "Scriptblock did not return value for some objects"
@@ -40,7 +35,10 @@ function ReportPartiallyMissingProperty ($Property) {
 }
 
 
-# Reverse pipeline.
+<#
+.SYNOPSIS
+    Reverse the order of pipelined objects.
+#>
 function Get-ReverseArray
 {
     $items = @($input)
@@ -49,7 +47,10 @@ function Get-ReverseArray
 }
 
 
-# Shuffle pipeline.
+<#
+.SYNOPSIS
+    Randomize the order of pipelined objects.
+#>
 function Get-ShuffleArray
 {
     $items = @($input)
@@ -59,7 +60,13 @@ function Get-ShuffleArray
 }
 
 
-# Pick random items from the pipeline in their original order.
+<#
+.SYNOPSIS
+    Pick random items from a list in their original order.
+.PARAMETER Count
+    Number of items to get. Must be > 0. Specifying a number greater or equal 
+    to the input size is not an error and simply retuns the entire input as is.
+#>
 function Get-OrderedSubset ([int]$Count) {
     $items = @($input)
     if ($items.length) {
@@ -70,11 +77,22 @@ function Get-OrderedSubset ([int]$Count) {
 }
 
 
-# Filter items with a unique property (first found wins).
-# The property can be specified either as a name (string) or be calculated 
-# with a scriptblock (with $_ representing the current item).
-# An error is generated if the specified property did not exist or was not 
-# calculated for some input objects.
+<#
+.SYNOPSIS
+    Get items with a unique property.
+.DESCRIPTION
+    Select objects that have a unique property. If there are multiple equal 
+    input items, the first is selected.
+.PARAMETER InputObject
+    Input object. Can specify either a collection argument or pass via the 
+    pipeline.
+.PARAMETER Property
+    The property that designates uniqueness. Possible types:
+        - string: Property name.
+        - scriptblock: Accepts the current item as $_ and returns a value.
+    If the property was missing or not calculated for any input items, an error
+    is generated.
+#>
 function Get-UniqueByProperty {
     param(
         [Parameter(Mandatory, ValueFromPipeline)]
@@ -148,6 +166,48 @@ function AnyMatch ($Value, [string[]]$Pattern) {
 }
 
 
+<#
+.SYNOPSIS
+    Get objects whose property matches specified criteria.
+.DESCRIPTION
+    Perform wildcard or regex pattern checks on a specified property of input 
+    objects and return those that satisfy them.
+    
+    To get the inverse of a multi-pattern condition, use the following 
+    complementary option pairs:
+        - LikeAny / NotLikeAll
+        - LikeAll / NotLikeAny
+        - MatchAny / NotMatchAll
+        - MatchAll / NotMatchAny
+.PARAMETER InputObject
+    Input objects. Must be passed via the pipeline.
+.PARAMETER Name
+    The name of the property to test.
+.PARAMETER Like
+    A single wildcard pattern to match.
+.PARAMETER NotLike
+    A single wildcard pattern to not match.
+.PARAMETER LikeAny
+    Two or more wildcard patterns to match any of.
+.PARAMETER NotLikeAny
+    Two or more wildcard patterns to not match any of.
+.PARAMETER LikeAll
+    Two or more wildcard patterns to match all of.
+.PARAMETER NotLikeAll
+    Two or more wildcard patterns to not match all of.
+.PARAMETER Match
+    A single regex pattern to match.
+.PARAMETER NotMatch
+    A single regex pattern to not match.
+.PARAMETER MatchAny
+    Two or more regex patterns to match any of.
+.PARAMETER NotMatchAny
+    Two or more regex patterns to not match any of.
+.PARAMETER MatchAll
+    Two or more regex patterns to match all of.
+.PARAMETER NotMatchAll
+    Two or more regex patterns to not match all of.
+#>
 function Get-IfProperty {
     param(
         [Parameter(Mandatory, ValueFromPipeline)]
@@ -263,29 +323,67 @@ function Get-IfProperty {
         if ((& $checker $_.$Name $pattern) -xor $invert) {
             $InputObject
         }
+        # TODO: USe ReportPartiallyMissingProperty
     }
 }
 
 
+<#
+.SYNOPSIS
+    Get objects where a property is within a range.
+.DESCRIPTION
+    Filter pipeline objects based on a property value range. The property can 
+    be specified either as a name (string) or be calculated with a scriptblock.
 
-# Filter pipeline items based on property value range.
-# The property can be specified either as a name (string) or be calculated 
-# with a scriptblock (with $_ representing the current item).
-# The range can be specified as either a start/end or with a center and radius.
-# Boundaries are included unless ExcludeStart/ExcludeEnd are specified.
-# An error is generated if the specified property did not exist or was not 
-# calculated for some input objects.
+    The range can be specified as either a start/end or a center/radius.
+    Boundaries are included by default.
+
+    An error is generated if the specified property did not exist or was not 
+    calculated for some input objects.
+.PARAMETER InputObject
+    Input objects. Must use the pipeline to specify a collection.
+.PARAMETER Property
+    The name (string) of the property to test or a scriptblock to calculate
+    a value per object (with $_ representing the current object).
+.PARAMETER Start
+    The range start.
+.PARAMETER End
+    The range end.
+.PARAMETER Center
+    The range center.
+.PARAMETER Radius
+    The range radius.
+.PARAMETER ExcludeStart
+    Exclude the start of the range.
+.PARAMETER ExcludeEnd
+    Exclude the end of the range.
+#>
 function Get-InRangeProperty {
     [CmdletBinding(DefaultParameterSetName='StartEnd')]
     param(
-        [Parameter(Mandatory, ValueFromPipeline)]$InputObject,
-        [Parameter(Mandatory, Position=1)]$Property,  # name or scriptblock
-        [Parameter(Mandatory, Position=2, ParameterSetName='StartEnd')]$Start,
-        [Parameter(Mandatory, Position=3, ParameterSetName='StartEnd')]$End,
-        [Parameter(Mandatory, Position=2, ParameterSetName='CenterRadius')]$Center,
-        [Parameter(Mandatory, Position=3, ParameterSetName='CenterRadius')]$Radius,
-        [Alias('xs')][switch]$ExcludeStart,
-        [Alias('xe')][switch]$ExcludeEnd
+        [Parameter(Mandatory, ValueFromPipeline)]
+        $InputObject,
+
+        [Parameter(Mandatory, Position=1)]
+        $Property,
+
+        [Parameter(Mandatory, Position=2, ParameterSetName='StartEnd')]
+        $Start,
+
+        [Parameter(Mandatory, Position=3, ParameterSetName='StartEnd')]
+        $End,
+
+        [Parameter(Mandatory, Position=2, ParameterSetName='CenterRadius')]
+        $Center,
+
+        [Parameter(Mandatory, Position=3, ParameterSetName='CenterRadius')]
+        $Radius,
+
+        [Alias('xs')]
+        [switch]$ExcludeStart,
+
+        [Alias('xe')]
+        [switch]$ExcludeEnd
     )
     begin {
         switch ($PSCmdlet.ParameterSetName) {
@@ -337,7 +435,19 @@ function Get-InRangeProperty {
 # ----------------------------------------------------------------
 
 
-# Add numeric index to objects.
+<#
+.SYNOPSIS
+    Add numeric index member to objects passed via the pipeline.
+.PARAMETER Name
+    The name of the index member property to add. Default is 'Index'.
+.PARAMETER Start
+    The start of the index values. Default is 0.
+.PARAMETER Step
+    The step increment of the index values. Default is 1.
+.PARAMETER PassThru
+    Output the processed objects to the pipeline.
+#>
+
 function Add-IndexMember {
     param(
         [string]$Name = 'Index',
@@ -359,17 +469,23 @@ function Add-IndexMember {
 
 
 <#
-Split collection into sub-arrays, depending on the specified parameter:
-- GroupSize: Generate arrays of length GroupSize, except the last may be smaller.
-- GroupCount: Generate no more than GroupCount arrays of equal size, except the
-  last may be smaller.
-- HeadSize: Produce two arrays, with the first containing no more than HeadSize
-  items and the second the rest.
-- TailSize: Produce two arrays, with the second containing no more than TailSize
-  items and the first the rest.
-
-Based on:
-    https://gallery.technet.microsoft.com/scriptcenter/Split-an-array-into-parts-4357dcc1
+.SYNOPSIS
+    Split collection of objects to sub-arrays.
+.DESCRIPTION
+    Use to split input objects into groups or head/tail and rest.
+.PARAMETER InputObject
+    Input objects. Can either specify a collection or pass via the pipeline.
+.PARAMETER GroupSize
+    Evenly split into arrays of this size (>=1). The last array may be smaller.
+.PARAMETER GroupCount
+    Evenly split into this number (>=1) of arrays. The last array may be smaller.
+.PARAMETER HeadSize
+    Split into two arrays, with the first no bigger than specified (>=0).
+.PARAMETER TailSize
+    Split into two arrays, with the second no bigger than specified (>=0).
+.NOTES
+    Inspired by:
+        https://gallery.technet.microsoft.com/scriptcenter/Split-an-array-into-parts-4357dcc1
 #>
 
 function Split-Array {
@@ -470,32 +586,6 @@ function Group-HeadTail {
     }
 }#>
 
-
-<#function cc-cc {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory, ValueFromPipeline)]
-            $InputObject,
-        [scriptblock] $Code
-    )
-    process {
-        "  process block: $_"
-        "code evaluation: $(. $Code)"
-    }
-}#>
-function Test-Cc {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory, ValueFromPipeline)]
-            $InputObject,
-        [scriptblock] $Code
-    )
-    process {
-        "  process block: $InputObject"
-        "code evaluation: $(. $Code)"
-    }
-}
-#1..3 | cc-cc -x { $_ }
 
 # ----------------------------------------------------------------
 
