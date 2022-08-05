@@ -4,7 +4,9 @@ param(
     [IO.FileInfo]$File,
     
     [Parameter(Mandatory)]
-    [string]$Destination
+    [string]$Destination,
+    
+    [switch]$Force  # overwrite existing
 )
 begin {
     if (-not (Test-Path -LiteralPath $Destination -Type Container)) {
@@ -21,6 +23,6 @@ process {
         exit
     }
     $newPath = Join-Path $Destination $File.Name
-    #$File | New-Item -Type HardLink -Path $newPath
-    New-Item -Type HardLink -Path $newPath -Value (EscapeBrackets $File.FullName)
+    $escSrcPath = EscapeBrackets $File.FullName
+    New-Item -Type HardLink -Path $newPath -Value $escSrcPath -Force:$Force
 }
