@@ -101,18 +101,28 @@ function global:Get-CommandFile ($Name)
     Write-Error "command '$Name' does not seem to be a file"
 }
 
-function global:Edit-FileInNotepad ([string]$Path) {
-    & "$Env:windir\system32\notepad.exe" $Path
+function global:Edit-FileInNotepad {
+    param(
+        [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [Alias('FullName', 'Path')]
+        [string]$InputObject
+    )
+    & "$Env:windir\system32\notepad.exe" $InputObject
 }
-function global:Edit-FileInVSCode ([string]$Path) {
-    & "$Env:ProgramFiles\Microsoft VS Code\Code.exe" $Path > $null
+function global:Edit-FileInVSCode {
+    param(
+        [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [Alias('FullName', 'Path')]
+        [string]$InputObject
+    )
+    & "$Env:ProgramFiles\Microsoft VS Code\Code.exe" $InputObject > $null
 }
-function global:Edit-ScriptInNotepad ([string]$Name) {
-    $path = global:Get-CommandFile $Name
+function global:Edit-ScriptInNotepad ([string]$InputObject) {
+    $path = global:Get-CommandFile $InputObject
     if ($path) { global:Edit-FileInNotepad $path }
 }
-function global:Edit-ScriptInVSCode ([string]$Name) {
-    $path = global:Get-CommandFile $Name
+function global:Edit-ScriptInVSCode ([string]$InputObject) {
+    $path = global:Get-CommandFile $InputObject
     if ($path) { global:Edit-FileInVSCode $path }
 }
 
