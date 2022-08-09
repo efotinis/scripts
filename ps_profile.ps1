@@ -798,6 +798,13 @@ function global:nth ([int[]]$Index) {
 }
 
 
+# Timestamp in filename-safe format.
+function global:Get-FileNameSafeTimestamp ([switch]$Utc) {
+    $fmt = if ($Utc) { 'FileDateTimeUniversal' } else { 'FileDateTime' }
+    Get-Date -Format $fmt
+}
+
+
 Set-Alias -Scope global gip Get-IfProperty
 Set-Alias -Scope global ndd New-DateDirectory
 Set-Alias -Scope global gft Get-FileTotal
@@ -815,6 +822,7 @@ Set-Alias -Scope global eatlines D:\projects\eatlines.exe
 Set-Alias -Scope global ff Get-DiskSizeFudgeFactor
 Set-Alias -Scope global espeak 'C:\Program Files (x86)\eSpeak\command_line\espeak.exe'
 Set-Alias -Scope global nw ~\newwall.ps1
+Set-Alias -Scope global fst Get-FileNameSafeTimestamp
 
 
 $global:PromptPathPref = [PromptPath]::Tail
