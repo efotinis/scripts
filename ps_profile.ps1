@@ -105,17 +105,31 @@ function global:Edit-FileInNotepad {
     param(
         [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'Path')]
-        [string]$InputObject
+        [SupportsWildcards()]
+        [string[]]$InputObject
     )
-    & "$Env:windir\system32\notepad.exe" $InputObject
+    process {
+        foreach ($patt in $InputObject) {
+            Get-Item -Path $patt | % {
+                & "$Env:windir\system32\notepad.exe" $_.FullName
+            }
+        }
+    }
 }
 function global:Edit-FileInVSCode {
     param(
         [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'Path')]
+        [SupportsWildcards()]
         [string]$InputObject
     )
-    & "$Env:ProgramFiles\Microsoft VS Code\Code.exe" $InputObject > $null
+    process {
+        foreach ($patt in $InputObject) {
+            Get-Item -Path $patt | % {
+                & "$Env:ProgramFiles\Microsoft VS Code\Code.exe" $_.FullName > $null
+            }
+        }
+    }
 }
 function global:Edit-ScriptInNotepad ([string]$InputObject) {
     $path = global:Get-CommandFile $InputObject
