@@ -74,9 +74,9 @@ begin {
    #Register 'binary:code'
    #Register 'binary:generic'
     Register 'text'    ('txt ini cfg conf htm html css js vbs json srt inf nfo ps1 psm1 ps1xml cue ' + 
-                        'c h cpp hpp py pyw log url csv md markdown xml bas bat cmd awk m3u theme ' + 
-                        'xsl lua php diz yml gitignore hgignore')
-    Register 'generic'  'bak'
+                        'c h cpp hpp py pyw log url csv md markdown xml bas bat cmd awk m3u m3u8 pls theme ' + 
+                        'xsl lua php diz yml gitignore hgignore diff vtt')
+    Register 'generic'  'bak res'
    #Register 'text:code'    py, cpp, ps1
    #Register 'text:data'    ini, cfg, cue, xml
    #Register 'text:generic' txt, md
@@ -84,7 +84,7 @@ begin {
     $knownExtType[''] = 'generic'
    
    # jar,rtf,doc,mdf,par,aspx,swf,wri
-
+   
     $unknownExts = [System.Collections.Generic.Hashset[string]]@()  # NOTE: lowercase keys
 }
 process {
