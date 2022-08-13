@@ -819,6 +819,23 @@ function global:Get-FileNameSafeTimestamp ([switch]$Utc) {
 }
 
 
+# Generate time/value objects of pipeline contents.
+# Useful for timing program output. If non-output streams (e.g. error) are also
+# needed, they should be merged with stdout beforehand (i.e. 2>&1).
+function global:Get-TimedOutput {
+    begin {
+        $t = [System.Diagnostics.Stopwatch]::new()
+        $t.Start()
+    }
+    process {
+        [PSCustomObject]@{
+            Elapsed = $t.Elapsed
+            Object = $_
+        }
+    }
+}
+
+
 Set-Alias -Scope global gip Get-IfProperty
 Set-Alias -Scope global ndd New-DateDirectory
 Set-Alias -Scope global gft Get-FileTotal
