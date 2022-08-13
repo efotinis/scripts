@@ -101,6 +101,24 @@ function global:Get-CommandFile ($Name)
     Write-Error "command '$Name' does not seem to be a file"
 }
 
+# Expand patterns containing wildcard characters to full paths 
+# and output non-wildcard containing patterns as-is.
+# Writes warning for any patterns that did not match anything.
+function global:Get-ResolvedWildcardOrLiteral ([string[]]$Pattern) {
+    foreach ($p in $Pattern) {
+        if ($p -match '[*?[\]]') {
+            $a = @(Resolve-Path -Path $p)
+            if ($a.Count -eq 0) {
+                Write-Warning "No items match pattern: $p"
+            } else {
+                Write-Output $a.Path
+            }
+        } else {
+            Write-Output $p
+        }
+    }
+}
+
 function global:Edit-FileInNotepad {
     param(
         [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
@@ -109,10 +127,8 @@ function global:Edit-FileInNotepad {
         [string[]]$InputObject
     )
     process {
-        foreach ($patt in $InputObject) {
-            Get-Item -Path $patt | % {
-                & "$Env:windir\system32\notepad.exe" $_.FullName
-            }
+        global:Get-ResolvedWildcardOrLiteral $InputObject | % {
+            & "$Env:windir\system32\notepad.exe" $_
         }
     }
 }
@@ -124,10 +140,8 @@ function global:Edit-FileInVSCode {
         [string]$InputObject
     )
     process {
-        foreach ($patt in $InputObject) {
-            Get-Item -Path $patt | % {
-                & "$Env:ProgramFiles\Microsoft VS Code\Code.exe" $_.FullName > $null
-            }
+        global:Get-ResolvedWildcardOrLiteral $InputObject | % {
+            & "$Env:ProgramFiles\Microsoft VS Code\Code.exe" $_ > $null
         }
     }
 }
