@@ -121,10 +121,11 @@ function global:Get-ResolvedWildcardOrLiteral ([string[]]$Pattern) {
 
 function global:Edit-FileInNotepad {
     param(
-        [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'Path')]
         [SupportsWildcards()]
-        [string[]]$InputObject
+        [AllowEmptyString()]
+        [string[]]$InputObject = ''
     )
     process {
         global:Get-ResolvedWildcardOrLiteral $InputObject | % {
@@ -134,10 +135,11 @@ function global:Edit-FileInNotepad {
 }
 function global:Edit-FileInVSCode {
     param(
-        [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'Path')]
         [SupportsWildcards()]
-        [string]$InputObject
+        [AllowEmptyString()]
+        [string[]]$InputObject = ''
     )
     process {
         global:Get-ResolvedWildcardOrLiteral $InputObject | % {
