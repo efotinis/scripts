@@ -852,6 +852,20 @@ function global:Get-TimedOutput {
 }
 
 
+# Filter to add objects to clipboard and also send down the pipeline.
+function global:tcb ([switch]$Append) {
+    begin {
+        if (-not $Append) {
+            scb $null
+        }
+    }
+    process {
+        Write-Output $_
+        scb $_ -Append
+    }
+}
+
+
 Set-Alias -Scope global gip Get-IfProperty
 Set-Alias -Scope global ndd New-DateDirectory
 Set-Alias -Scope global gft Get-FileTotal
