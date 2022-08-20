@@ -40,7 +40,25 @@ function global:m ($i, $b, $c) {
         monctl -m $i -b $b -c $c
     }
 }
-Function global:x { exit }
+function global:x {
+    function HasNoJobs {
+        return $null -eq (Get-Job -HasMoreData:$true)
+    }
+    function ConfirmExit {
+        $T = [System.Management.Automation.Host.ChoiceDescription]
+        $options = @(
+            $T::new('&Yes', 'Exit session and abort existing jobs.')
+            $T::new('&No', 'Cancel and return to session.')
+        )
+        msgbeep.py w
+        $msg = 'Abort running jobs and discard collected data?'
+        $res = $Host.UI.PromptForChoice('Exit session', $msg, $options, 1)
+        return $res -eq 0
+    }
+    if ((HasNoJobs) -or (ConfirmExit)) {
+        exit
+    }
+}
 function global:z ($time) { & $Env:Scripts\suspend.py -l $time }
 Function global:.. { Set-Location .. }
 Function global:... { Set-Location ..\.. }
