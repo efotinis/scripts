@@ -6,10 +6,10 @@
     Perform various Minecraft and MultiMC related functions.
 
 .PARAMETER Play
-    Launch game instance. If Instance is not specified, the last launched 
+    Launch game instance. If Instance is not specified, the last launched
     instance is used.
-    
-    A self-imposed moratorium is enforced if Env:MINECRAFT_MORATORIUM exists, 
+
+    A self-imposed moratorium is enforced if Env:MINECRAFT_MORATORIUM exists,
     which is a JSON string with the following properties:
     - start: the beginning datetime
     - days: the length (float)
@@ -40,8 +40,9 @@
 .PARAMETER WikiSearch
     Perform search on minecraft.gamepedia.com using specified terms.
 
-.PARAMETER Versions
-    Run custom script to display game versions in the last 30 days.
+.PARAMETER VersionManifest
+    Get version manifest from mojang.com, i.e. latest release/snapshot ID 
+    and a list of all published versions.
 
 .PARAMETER List
     Output MultiMC instances info.
@@ -87,8 +88,8 @@ param(
     [Parameter(ParameterSetName="WikiSearch", Mandatory)]
     [string]$WikiSearch,
 
-    [Parameter(ParameterSetName="Versions", Mandatory)]
-    [switch]$Versions,
+    [Parameter(ParameterSetName="VersionManifest", Mandatory)]
+    [switch]$VersionManifest,
 
     [Parameter(ParameterSetName="List", Mandatory)]
     [switch]$List
@@ -115,8 +116,8 @@ Add-Type -TypeDefinition @"
         public timespan LastPlayed;
 
         public MmcInstance(
-            string version, string folder, string group, string name, 
-            datetime lastLaunch, timespan totalPlayed, timespan lastPlayed) 
+            string version, string folder, string group, string name,
+            datetime lastLaunch, timespan totalPlayed, timespan lastPlayed)
         {
             Version     = version;
             Folder      = folder;
@@ -304,8 +305,20 @@ switch ($PSCmdlet.ParameterSetName) {
         )
         Start-Process $url
     }
-    'Versions' {
-        mcver.py -d30
+    'VersionManifest' {
+        $url = 'https://launchermeta.mojang.com/mc/game/version_manifest.json'
+        $props = @(
+            'id'
+            'type'
+            @{ Name = 'releaseTime'; Expr = { Get-Date -Date $_.releaseTime } }
+            @{ Name = 'time'; Expr = { Get-Date -Date $_.time } }
+            'url'
+        )
+        $info = Invoke-RestMethod -Uri $Url
+        $info.versions = $info.versions |
+            Select-Object -Property $props |
+            Sort-Object -Property releaseTime
+        Write-Output $info
     }
     'List' {
         GetInstances
