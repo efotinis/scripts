@@ -15,6 +15,9 @@
     - days: the length (float)
     - reason: description
 
+.PARAMETER Offline
+    Play in offline mode with specified name.
+
 .PARAMETER Pause
     Pause the game, by forcibly suspending the Minecraft process. Requires
     pssuspend.exe by SysInternals.
@@ -51,6 +54,9 @@
 param(
     [Parameter(ParameterSetName="Play", Mandatory)]
     [switch]$Play,
+
+    [Parameter(ParameterSetName="Play")]
+    [string]$Offline,
 
     [Parameter(ParameterSetName="Pause", Mandatory)]
     [switch]$Pause,
@@ -278,7 +284,14 @@ switch ($PSCmdlet.ParameterSetName) {
             $playInstance = $last
         }
         EnforceMoratorium
-        MultiMC.exe --launch $playInstance
+        $opt = @(
+            '--launch', $playInstance
+            if ($Offline) {
+                '--offline'
+                '--name', $Offline
+            }
+        )
+        MultiMC.exe @opt
     }
     'Pause' {
         if ($p = GetMinecraftProcess) {
