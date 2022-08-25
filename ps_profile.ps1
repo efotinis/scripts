@@ -67,9 +67,6 @@ function global:glc { Get-Location | % Path | Set-Clipboard }
 Function global:?? ($Cmd) { help $Cmd -Full }
 function global:cdef ([string]$Name) { gcm $Name | % Definition }
 if ($Env:COMPUTERNAME -eq 'CORE') {
-
-    Set-Alias -Scope Global mc MinecraftUtil.ps1
-
     # backup/list main Firefox profile
     function global:fxb { E:\backups\firefox\backup.ps1 kgfe1h9i.default-1510666418771 }
     function global:fxl { E:\backups\firefox\list_file_age.ps1 kgfe1h9i.default-1510666418771 }
@@ -90,6 +87,7 @@ Set-Alias -Scope global minf C:\tools\MediaInfo\MediaInfo.exe
 Set-Alias -Scope global 7z "$Env:ProgramFiles\7-Zip\7z.exe"
 Set-Alias -Scope global fn $Env:Scripts\filternames.ps1
 Set-Alias -Scope global go goto.ps1
+Set-Alias -Scope Global mc MinecraftUtil.ps1
 switch ($env:COMPUTERNAME) {
     'core' {
         Set-Alias -Scope global srip 'C:\Program Files (x86)\Streamripper\streamripper.exe'
