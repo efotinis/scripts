@@ -127,7 +127,24 @@ Add-Type -TypeDefinition @"
             TotalPlayed = totalPlayed;
             LastPlayed  = lastPlayed;
         }
-    }
+    };
+    public struct MinecraftVersion {
+        public string Id;
+        public string Type;
+        public datetime Released;
+        public datetime Updated;
+        public string Url;
+        
+        public MinecraftVersion(
+            string id, string type, datetime released, datetime updated, string url)
+        {
+            Id       = id;
+            Type     = type;
+            Released = released;
+            Updated  = updated;
+            Url      = url;
+        }
+    };
 "@
 
 
@@ -307,17 +324,17 @@ switch ($PSCmdlet.ParameterSetName) {
     }
     'VersionManifest' {
         $url = 'https://launchermeta.mojang.com/mc/game/version_manifest.json'
-        $props = @(
-            'id'
-            'type'
-            @{ Name = 'releaseTime'; Expr = { Get-Date -Date $_.releaseTime } }
-            @{ Name = 'time'; Expr = { Get-Date -Date $_.time } }
-            'url'
-        )
         $info = Invoke-RestMethod -Uri $Url
-        $info.versions = $info.versions |
-            Select-Object -Property $props |
-            Sort-Object -Property releaseTime
+        filter Conv {
+            [MinecraftVersion]::new(
+                $_.id,
+                $_.type,
+                (Get-Date -Date $_.releaseTime),
+                (Get-Date -Date $_.time),
+                $_.url
+            )
+        }
+        $info.versions = $info.versions | Conv | Sort-Object -Property Released
         Write-Output $info
     }
     'List' {

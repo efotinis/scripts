@@ -5,34 +5,7 @@
             <Name>DefaultView</Name>
             <ViewSelectedBy>
                 <TypeName>MmcInstance</TypeName>
-                <!--TypeName>...</TypeName-->
             </ViewSelectedBy>
-
-            <!--GroupBy>
-                <PropertyName>PSParentPath</PropertyName> 
-                <CustomControl>
-                    <CustomEntries>
-                        <CustomEntry>
-                            <CustomItem>
-                                <Frame>
-                                    <!- - NOTE: LeftIndent is ignored - ->
-                                    <LeftIndent>4</LeftIndent>
-                                    <CustomItem>
-                                        <Text AssemblyName="System.Management.Automation" BaseName="FileSystemProviderStrings" ResourceId="DirectoryDisplayGrouping"/>
-                                        <ExpressionBinding>
-                                          <ScriptBlock>
-                                              $_.PSParentPath.Replace("Microsoft.PowerShell.Core\FileSystem::", "")                                                  
-                                          </ScriptBlock>
-                                        </ExpressionBinding>
-                                        <!- -NewLine/- ->
-                                    </CustomItem> 
-                                </Frame>
-                            </CustomItem>
-                        </CustomEntry>
-                    </CustomEntries>
-                </CustomControl>
-            </GroupBy-->
-
             <TableControl>
                 <TableHeaders>
                     <TableColumnHeader><Label>Group</Label>			<Width>10</Width>	<Alignment>Left</Alignment></TableColumnHeader>
@@ -58,7 +31,41 @@
                     </TableRowEntry>
                 </TableRowEntries>
             </TableControl>
-
+        </View>
+        <View>
+            <Name>DefaultView</Name>
+            <ViewSelectedBy>
+                <TypeName>MinecraftVersion</TypeName>
+            </ViewSelectedBy>
+            <TableControl>
+                <TableHeaders>
+                    <TableColumnHeader><Label>Id</Label>		<Width>15</Width>	<Alignment>Left</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>Type</Label>		<Width>10</Width>	<Alignment>Left</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>Released</Label>	<Width>20</Width>	<Alignment>Left</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>Updated</Label>	<Width>20</Width>	<Alignment>Left</Alignment></TableColumnHeader>
+                </TableHeaders>
+                <TableRowEntries>
+                    <TableRowEntry>
+                        <!-- Wrap/ -->
+                        <TableColumnItems>
+                            <TableColumnItem><PropertyName>Id</PropertyName></TableColumnItem>
+                            <TableColumnItem><PropertyName>Type</PropertyName></TableColumnItem>
+                            <TableColumnItem><ScriptBlock>
+                                '{0} {1}' -f @(
+                                    Get-Date -Date $_.Released -Format d
+                                    ConvertTo-NiceAge -DateOrSpan $_.Released -Simple -Precision 2 -Joiner ','
+                                )
+                            </ScriptBlock></TableColumnItem>
+                            <TableColumnItem><ScriptBlock>
+                                '{0} {1}' -f @(
+                                    Get-Date -Date $_.Updated -Format d
+                                    ConvertTo-NiceAge -DateOrSpan $_.Updated -Simple -Precision 2 -Joiner ','
+                                )
+                            </ScriptBlock></TableColumnItem>
+                        </TableColumnItems>
+                    </TableRowEntry>
+                </TableRowEntries>
+            </TableControl>
         </View>
     </ViewDefinitions>
 </Configuration>
