@@ -750,6 +750,56 @@ function global:Start-Video {
 }
 
 
+function global:fb2k {
+    param(
+        [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [Alias('FullName', 'Path')]
+        [string[]]$InputObject,
+        
+        [switch]$Add,  # add instead of replace in current playlist
+        [switch]$Immediate,  # suppress file adding delay
+        [switch]$Play,
+        [switch]$Pause,
+        [switch]$Playpause,
+        [switch]$Prev,
+        [switch]$Next,
+        [switch]$Rand,
+        [switch]$Stop,
+        [switch]$Exit,
+        [switch]$Show,
+        [switch]$Hide,
+        [switch]$Config
+    )
+    begin {
+        $inputItems = [System.Collections.ArrayList]@()
+    }
+    process {
+        $inputItems += @($InputObject)
+    }
+    end {
+        $args = @(
+            if ($Add) { '/add' }
+            if ($Immediate) { '/immediate' }
+            if ($Play) { '/play' }
+            if ($Pause) { '/pause' }
+            if ($Playpause) { '/playpause' }
+            if ($Prev) { '/prev' }
+            if ($Next) { '/next' }
+            if ($Rand) { '/rand' }
+            if ($Stop) { '/stop' }
+            if ($Exit) { '/exit' }
+            if ($Show) { '/show' }
+            if ($Hide) { '/hide' }
+            if ($Config) { '/config' }
+            if ($inputItems.Count -gt 0) {
+                $inputItems
+            }
+        )
+        & 'C:\Program Files (x86)\foobar2000\foobar2000.exe' @args
+    }
+}
+
+
 # Storage unit fudge factors, i.e. number to multiply advertised capacity
 # (in decimal units) to get actual capacity (in binary units).
 # Use a unit prefix (k,m,g,...) for a single factor or -List for summary.
