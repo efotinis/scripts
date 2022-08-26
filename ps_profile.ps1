@@ -10,6 +10,7 @@ Import-Module $Env:Scripts\StringUtil.psm1
 Import-Module $Env:Scripts\YoutubeUtil.psm1
 
 Update-FormatData $Env:Scripts\EF.Format.ps1xml
+Update-FormatData $Env:Scripts\DataLength.Format.ps1xml
 
 
 # NOTE: this script is getting large; must break it up

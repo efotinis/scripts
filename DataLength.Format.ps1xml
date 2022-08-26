@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Configuration>
+  <ViewDefinitions>
+    <View>
+      <Name>DefaultView</Name>
+      <ViewSelectedBy>
+        <TypeName>FileDataLength</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader><Label>Flags</Label><Width>5</Width><Alignment>left</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>Logical</Label><Width>9</Width><Alignment>right</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>Delta</Label><Width>9</Width><Alignment>right</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>Path</Label><Alignment>left</Alignment></TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem><ScriptBlock>
+                #ConvertTo-FlagField -Value (((($_.IsComplete -shl 1) -bor $_.IsSparse) -shl 1) -bor $_.IsCompressed) -Characters 'kpc'
+                #ConvertTo-FlagField -Value (~\bits2int.ps1 $_.IsCompressed,$_.IsSparse,$_.IsComplete) -Characters 'kpc'
+                @(
+                    if ($_.IsCompressed) { 'c' } else { '-' }
+                    if ($_.IsSparse) { 'p' } else { '-' }
+                    if ($_.IsComplete) { 'k' } else { '-' }
+                ) -join ''
+              </ScriptBlock></TableColumnItem>
+              <TableColumnItem><ScriptBlock>PrettySize $_.Logical</ScriptBlock></TableColumnItem>
+              <TableColumnItem><ScriptBlock>PrettySize $_.Delta</ScriptBlock></TableColumnItem>
+              <TableColumnItem><PropertyName>Path</PropertyName></TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+  </ViewDefinitions>
+</Configuration>
