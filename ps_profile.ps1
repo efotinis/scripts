@@ -121,10 +121,30 @@ function global:Get-CommandFile ($Name)
 # Expand patterns containing wildcard characters to full paths 
 # and output non-wildcard containing patterns as-is.
 # Writes warning for any patterns that did not match anything.
-function global:Get-ResolvedWildcardOrLiteral ([string[]]$Pattern) {
+# Can optionally interpret brackets as literals, since they are traditionally
+# used verbatim in file names.
+function global:Get-ResolvedWildcardOrLiteral {
+    param(
+        [string[]]$Pattern,
+        [switch]$LiteralBrackets
+    )
+    function IsWildcard ([string]$Pattern, [switch]$LiteralBrackets) {
+        if ($LiteralBrackets) {
+            return $Pattern -match '[*?]'
+        } else {
+            return $Pattern -match '[*?[\]]'
+        }
+    }
+    function PrepareForUse ([string]$Pattern, [switch]$LiteralBrackets) {
+        if ($LiteralBrackets) {
+            return $Pattern -replace '([[\]])','`$1'
+        } else {
+            return $Pattern
+        }
+    }
     foreach ($p in $Pattern) {
-        if ($p -match '[*?[\]]') {
-            $a = @(Resolve-Path -Path $p)
+        if (IsWildcard $p -LiteralBrackets:$LiteralBrackets) {
+            $a = @(Resolve-Path -Path (PrepareForUse $p -LiteralBrackets:$LiteralBrackets))
             if ($a.Count -eq 0) {
                 Write-Warning "No items match pattern: $p"
             } else {
@@ -142,10 +162,12 @@ function global:Edit-FileInNotepad {
         [Alias('FullName', 'Path')]
         [SupportsWildcards()]
         [AllowEmptyString()]
-        [string[]]$InputObject = ''
+        [string[]]$InputObject = '',
+        
+        [switch]$LiteralBrackets
     )
     process {
-        global:Get-ResolvedWildcardOrLiteral $InputObject | % {
+        global:Get-ResolvedWildcardOrLiteral $InputObject -LiteralBrackets:$LiteralBrackets | % {
             & "$Env:windir\system32\notepad.exe" $_
         }
     }
@@ -156,10 +178,12 @@ function global:Edit-FileInVSCode {
         [Alias('FullName', 'Path')]
         [SupportsWildcards()]
         [AllowEmptyString()]
-        [string[]]$InputObject = ''
+        [string[]]$InputObject = '',
+        
+        [switch]$LiteralBrackets
     )
     process {
-        global:Get-ResolvedWildcardOrLiteral $InputObject | % {
+        global:Get-ResolvedWildcardOrLiteral $InputObject -LiteralBrackets:$LiteralBrackets | % {
             & "$Env:ProgramFiles\Microsoft VS Code\Code.exe" $_ > $null
         }
     }
