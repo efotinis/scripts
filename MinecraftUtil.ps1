@@ -114,7 +114,8 @@ Add-Type -TypeDefinition @"
     public struct MmcInstance
     {
         public string   Version;
-        public string   Folder;
+        public string   Path;
+        public string   Id;
         public string   Group;
         public string   Name;
         public datetime LastLaunch;
@@ -122,11 +123,12 @@ Add-Type -TypeDefinition @"
         public timespan LastPlayed;
 
         public MmcInstance(
-            string version, string folder, string group, string name,
+            string version, string path, string id, string group, string name,
             datetime lastLaunch, timespan totalPlayed, timespan lastPlayed)
         {
             Version     = version;
-            Folder      = folder;
+            Path        = path;
+            Id          = id;
             Group       = group;
             Name        = name;
             LastLaunch  = lastLaunch;
@@ -218,7 +220,8 @@ function GetInstances {
             $instInfo = LoadCfg "$MULTIMC_ROOT\instances\$_\instance.cfg"
 
             $version = InstanceVersion $_
-            $folder = $_
+            $path = "$MULTIMC_ROOT\instances\$_"
+            $id = $_
             $group = $groupName
             $name = $instInfo.name
             $lastLaunch = ([datetime]::new(1970,1,1) + [timespan]::new([long]$instInfo.lastLaunchTime * 10000)).ToLocalTime()
@@ -227,7 +230,8 @@ function GetInstances {
 
             [MmcInstance]::new(
                 $version,
-                $folder,
+                $path,
+                $id,
                 $group,
                #$hidden,
                 $name,
@@ -288,12 +292,12 @@ switch ($PSCmdlet.ParameterSetName) {
     'Play' {
         $instances = GetInstances
         if ($Instance) {
-            if (-not ($instances | ? Folder -eq $Instance)) {
+            if (-not ($instances | ? Id -eq $Instance)) {
                 Write-Error "instance does not exist: $Instance"
                 return
             }
         } else {
-            $last = GetInstances | sort LastLaunch | select -last 1 -exp Folder
+            $last = GetInstances | sort LastLaunch | select -last 1 -exp Id
             if (-not $last) {
                 Write-Error 'no instance played previously'
                 return

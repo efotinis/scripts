@@ -13,7 +13,7 @@
                     <TableColumnHeader><Label>LastRun</Label>		<Width>9</Width>	<Alignment>Left</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>LastTime</Label>		<Width>9</Width>	<Alignment>Left</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>TotalTime</Label>		<Width>9</Width>	<Alignment>Left</Alignment></TableColumnHeader>
-                    <TableColumnHeader><Label>Folder/ID</Label>		<Width>10</Width>	<Alignment>Left</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>Id</Label>		    <Width>10</Width>	<Alignment>Left</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>Name</Label>								<Alignment>Left</Alignment></TableColumnHeader>
                 </TableHeaders>
                 <TableRowEntries>
@@ -25,7 +25,7 @@
                             <TableColumnItem><ScriptBlock>ConvertTo-NiceAge -DateOrSpan $_.LastLaunch -Simple -Precision 2 -Joiner ':'</ScriptBlock></TableColumnItem>
                             <TableColumnItem><ScriptBlock>ConvertTo-NiceAge -DateOrSpan $_.LastPlayed -Simple -Precision 2 -Joiner ':'</ScriptBlock></TableColumnItem>
                             <TableColumnItem><ScriptBlock>ConvertTo-NiceAge -DateOrSpan $_.TotalPlayed -Simple -Precision 2 -Joiner ':'</ScriptBlock></TableColumnItem>
-                            <TableColumnItem><PropertyName>Folder</PropertyName></TableColumnItem>
+                            <TableColumnItem><PropertyName>Id</PropertyName></TableColumnItem>
                             <TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
                         </TableColumnItems>
                     </TableRowEntry>
