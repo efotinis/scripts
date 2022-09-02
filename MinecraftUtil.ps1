@@ -37,7 +37,9 @@
     "re:".
 
 .PARAMETER World
-    World ID (folder name).
+    World ID (folder name). When used with -ListWorld, this parameter is
+    a wildcard that defaults to "*" or a regular expression if it starts with
+    "re:".
 
 .PARAMETER DocText
     Display *.TXT file contents in personal game docs matching name pattern.
@@ -51,6 +53,9 @@
 
 .PARAMETER ListInstance
     Output MultiMC instances info.
+
+.PARAMETER ListWorld
+    Output MultiMC instance worlds info.
 #>
 
 param(
@@ -85,10 +90,12 @@ param(
         [Parameter(ParameterSetName="Backup", Position=0, Mandatory)]
         [Parameter(ParameterSetName="Restore", Position=0, Mandatory)]
         [Parameter(ParameterSetName="ListInstance", Position=0)]
+        [Parameter(ParameterSetName="ListWorld", Position=0, Mandatory)]
         [string]$Instance,
 
         [Parameter(ParameterSetName="Backup", Position=1, Mandatory)]
         [Parameter(ParameterSetName="Restore", Position=1, Mandatory)]
+        [Parameter(ParameterSetName="ListWorld", Position=0)]
         [string]$World,
 
     [Parameter(ParameterSetName="DocText", Mandatory)]
@@ -101,7 +108,10 @@ param(
     [switch]$VersionManifest,
 
     [Parameter(ParameterSetName="ListInstance", Mandatory)]
-    [switch]$ListInstance
+    [switch]$ListInstance,
+
+    [Parameter(ParameterSetName="ListWorld", Mandatory)]
+    [switch]$ListWorld
 
 )
 
@@ -139,6 +149,31 @@ Add-Type -TypeDefinition @"
             LastPlayed  = lastPlayed;
         }
     };
+    public struct MinecraftWorld {
+        public string Instance;
+        public string Path;
+        public string Id;
+        public double TimePlayed;
+        public double TimeLoaded;
+        public double DamageDealt;
+        public double DamageTaken;
+        public int Deaths;
+
+        public MinecraftWorld(
+            string instance, string path, string id, double timePlayed,
+            double timeLoaded, double damageDealt, double damageTaken,
+            int deaths)
+        {
+            Instance = instance;
+            Path = path;
+            Id = id;
+            TimePlayed = timePlayed;
+            TimeLoaded = timeLoaded;
+            DamageDealt = damageDealt;
+            DamageTaken = damageTaken;
+            Deaths = deaths;
+        }
+    };
     public struct MinecraftVersion {
         public string Id;
         public string Type;
@@ -157,7 +192,6 @@ Add-Type -TypeDefinition @"
         }
     };
 "@
-
 
 
 # Requirements and environment.
@@ -243,6 +277,24 @@ function GetInstances {
                 $lastPlayed
             )
         }
+    }
+}
+
+
+function GetWorlds ([string]$Instance) {
+    ls "$MULTIMC_ROOT\instances\$Instance\.minecraft\saves" | % {
+        $a = gc "$($_.FullName)\stats\5abf8770-8ace-47fc-856f-1ecefd98ddc3.json" | ConvertFrom-Json
+
+        [MinecraftWorld]::new(
+            ($Instance),
+            ($_.FullName),
+            ($_.Name),
+            (($a.stats.'minecraft:custom'.'minecraft:play_time' -as [int]) / 20),
+            (($a.stats.'minecraft:custom'.'minecraft:total_world_time' -as [int]) / 20),
+            (($a.stats.'minecraft:custom'.'minecraft:damage_dealt' -as [int]) / 10),
+            (($a.stats.'minecraft:custom'.'minecraft:damage_taken' -as [int]) / 10),
+            ($a.stats.'minecraft:custom'.'minecraft:deaths' -as [int])
+        )
     }
 }
 
@@ -365,6 +417,16 @@ switch ($PSCmdlet.ParameterSetName) {
             GetInstances | ? Id -match $Instance.Substring(3)
         } else {
             GetInstances | ? Id -like $Instance
+        }
+    }
+    'ListWorld' {
+        if ($World -eq '') {
+            $World = '*'
+        }
+        if ($World -like 're:*') {
+            GetWorlds $Instance | ? Id -match $World.Substring(3)
+        } else {
+            GetWorlds $Instance | ? Id -like $World
         }
     }
     default {

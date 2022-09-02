@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Configuration>
     <ViewDefinitions>
+
         <View>
             <Name>DefaultView</Name>
             <ViewSelectedBy>
@@ -32,6 +33,37 @@
                 </TableRowEntries>
             </TableControl>
         </View>
+
+        <View>
+            <Name>DefaultView</Name>
+            <ViewSelectedBy>
+                <TypeName>MinecraftWorld</TypeName>
+            </ViewSelectedBy>
+            <TableControl>
+                <TableHeaders>
+                    <TableColumnHeader><Label>Instance</Label>		<Width>10</Width>	<Alignment>Left</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>Id</Label>		    <Width>20</Width>	<Alignment>Left</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>TimePlayed</Label>	<Width>10</Width>	<Alignment>Right</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>DamageDealt</Label>	<Width>11</Width>	<Alignment>Right</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>DamageTaken</Label>	<Width>11</Width>	<Alignment>Right</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>Deaths</Label>		<Width>6</Width>	<Alignment>Right</Alignment></TableColumnHeader>
+                </TableHeaders>
+                <TableRowEntries>
+                    <TableRowEntry>
+                        <Wrap/>
+                        <TableColumnItems>
+                            <TableColumnItem><PropertyName>Instance</PropertyName></TableColumnItem>
+                            <TableColumnItem><PropertyName>Id</PropertyName></TableColumnItem>
+                            <TableColumnItem><ScriptBlock>ConvertTo-NiceAge -DateOrSpan ([timespan]::new(0, 0, $_.TimePlayed)) -Simple -Precision 2 -Joiner ':'</ScriptBlock></TableColumnItem>
+                            <TableColumnItem><PropertyName>DamageDealt</PropertyName></TableColumnItem>
+                            <TableColumnItem><PropertyName>DamageTaken</PropertyName></TableColumnItem>
+                            <TableColumnItem><PropertyName>Deaths</PropertyName></TableColumnItem>
+                        </TableColumnItems>
+                    </TableRowEntry>
+                </TableRowEntries>
+            </TableControl>
+        </View>
+
         <View>
             <Name>DefaultView</Name>
             <ViewSelectedBy>
