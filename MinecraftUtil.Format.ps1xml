@@ -43,6 +43,7 @@
                 <TableHeaders>
                     <TableColumnHeader><Label>Instance</Label>		<Width>10</Width>	<Alignment>Left</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>Id</Label>		    <Width>20</Width>	<Alignment>Left</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>CreationTime</Label>  <Width>16</Width>	<Alignment>Left</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>TimePlayed</Label>	<Width>10</Width>	<Alignment>Right</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>DamageDealt</Label>	<Width>11</Width>	<Alignment>Right</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>DamageTaken</Label>	<Width>11</Width>	<Alignment>Right</Alignment></TableColumnHeader>
@@ -54,6 +55,7 @@
                         <TableColumnItems>
                             <TableColumnItem><PropertyName>Instance</PropertyName></TableColumnItem>
                             <TableColumnItem><PropertyName>Id</PropertyName></TableColumnItem>
+                            <TableColumnItem><ScriptBlock>$_.CreationTime | Get-Date -Format g</ScriptBlock></TableColumnItem>
                             <TableColumnItem><ScriptBlock>ConvertTo-NiceAge -DateOrSpan ([timespan]::new(0, 0, $_.TimePlayed)) -Simple -Precision 2 -Joiner ':'</ScriptBlock></TableColumnItem>
                             <TableColumnItem><PropertyName>DamageDealt</PropertyName></TableColumnItem>
                             <TableColumnItem><PropertyName>DamageTaken</PropertyName></TableColumnItem>

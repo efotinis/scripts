@@ -160,22 +160,24 @@ Add-Type -TypeDefinition @"
 
     public struct MinecraftWorld {
         public MinecraftWorld(
-            string instance, string path, string id, double timePlayed,
-            double timeLoaded, double damageDealt, double damageTaken,
-            int deaths)
+            string instance, string path, string id, datetime creationTime,
+            double timePlayed, double timeLoaded, double damageDealt,
+            double damageTaken, int deaths)
         {
-            Instance    = instance;
-            Path        = path;
-            Id          = id;
-            TimePlayed  = timePlayed;
-            TimeLoaded  = timeLoaded;
-            DamageDealt = damageDealt;
-            DamageTaken = damageTaken;
-            Deaths      = deaths;
+            Instance     = instance;
+            Path         = path;
+            Id           = id;
+            CreationTime = creationTime;
+            TimePlayed   = timePlayed;
+            TimeLoaded   = timeLoaded;
+            DamageDealt  = damageDealt;
+            DamageTaken  = damageTaken;
+            Deaths       = deaths;
         }
         public string Instance;
         public string Path;
         public string Id;
+        public datetime CreationTime;
         public double TimePlayed;
         public double TimeLoaded;
         public double DamageDealt;
@@ -298,6 +300,7 @@ function GetWorlds ([string]$Instance) {
             ($Instance),
             ($_.FullName),
             ($_.Name),
+            (Get-Item -LiteralPath $_.FullName | % CreationTime),
             (($a.stats.'minecraft:custom'.'minecraft:play_time' -as [int]) / 20),
             (($a.stats.'minecraft:custom'.'minecraft:total_world_time' -as [int]) / 20),
             (($a.stats.'minecraft:custom'.'minecraft:damage_dealt' -as [int]) / 10),
