@@ -54,6 +54,9 @@
 .PARAMETER ListInstance
     Output MultiMC instances info.
 
+.PARAMETER MostRecent
+    Select only the most-recently run MultiMC instance of those matched.
+
 .PARAMETER ListWorld
     Output MultiMC instance worlds info.
 #>
@@ -110,6 +113,9 @@ param(
 
     [Parameter(ParameterSetName="ListInstance", Mandatory)]
     [switch]$ListInstance,
+
+        [Parameter(ParameterSetName="ListInstance")]
+        [switch]$MostRecent,
 
     [Parameter(ParameterSetName="ListWorld", Mandatory)]
     [switch]$ListWorld
@@ -417,10 +423,14 @@ switch ($PSCmdlet.ParameterSetName) {
             $Instance = '*'
         }
         if ($Instance -like 're:*') {
-            GetInstances | ? Id -match $Instance.Substring(3)
+            $instances = GetInstances | ? Id -match $Instance.Substring(3)
         } else {
-            GetInstances | ? Id -like $Instance
+            $instances = GetInstances | ? Id -like $Instance
         }
+        if ($MostRecent) {
+            $instances = $instances | sort LastLaunch | select -last 1
+        }
+        Write-Output $instances
     }
     'ListWorld' {
         if ($World -eq '') {
