@@ -11,9 +11,9 @@
                 <TableHeaders>
                     <TableColumnHeader><Label>Group</Label>			<Width>10</Width>	<Alignment>Left</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>Version</Label>		<Width>10</Width>	<Alignment>Left</Alignment></TableColumnHeader>
-                    <TableColumnHeader><Label>LastRun</Label>		<Width>9</Width>	<Alignment>Left</Alignment></TableColumnHeader>
-                    <TableColumnHeader><Label>LastTime</Label>		<Width>9</Width>	<Alignment>Left</Alignment></TableColumnHeader>
-                    <TableColumnHeader><Label>TotalTime</Label>		<Width>9</Width>	<Alignment>Left</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>LastLaunch</Label>	<Width>11</Width>	<Alignment>Left</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>LastPlayed</Label>	<Width>11</Width>	<Alignment>Left</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>TotalPlayed</Label>	<Width>11</Width>	<Alignment>Left</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>Id</Label>		    <Width>10</Width>	<Alignment>Left</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>Name</Label>								<Alignment>Left</Alignment></TableColumnHeader>
                 </TableHeaders>
