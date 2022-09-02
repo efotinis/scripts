@@ -32,7 +32,9 @@
     Restore an instance's world to the latest backup (custom script).
 
 .PARAMETER Instance
-    Instance ID (folder name).
+    Instance ID (folder name). When used with -ListInstance, this parameter is
+    a wildcard that defaults to "*" or a regular expression if it starts with
+    "re:".
 
 .PARAMETER World
     World ID (folder name).
@@ -44,10 +46,10 @@
     Perform search on minecraft.gamepedia.com using specified terms.
 
 .PARAMETER VersionManifest
-    Get version manifest from mojang.com, i.e. latest release/snapshot ID 
+    Get version manifest from mojang.com, i.e. latest release/snapshot ID
     and a list of all published versions.
 
-.PARAMETER List
+.PARAMETER ListInstance
     Output MultiMC instances info.
 #>
 
@@ -82,6 +84,7 @@ param(
         [Parameter(ParameterSetName="Play", Position=0)]
         [Parameter(ParameterSetName="Backup", Position=0, Mandatory)]
         [Parameter(ParameterSetName="Restore", Position=0, Mandatory)]
+        [Parameter(ParameterSetName="ListInstance", Position=0)]
         [string]$Instance,
 
         [Parameter(ParameterSetName="Backup", Position=1, Mandatory)]
@@ -97,8 +100,8 @@ param(
     [Parameter(ParameterSetName="VersionManifest", Mandatory)]
     [switch]$VersionManifest,
 
-    [Parameter(ParameterSetName="List", Mandatory)]
-    [switch]$List
+    [Parameter(ParameterSetName="ListInstance", Mandatory)]
+    [switch]$ListInstance
 
 )
 
@@ -142,7 +145,7 @@ Add-Type -TypeDefinition @"
         public datetime Released;
         public datetime Updated;
         public string Url;
-        
+
         public MinecraftVersion(
             string id, string type, datetime released, datetime updated, string url)
         {
@@ -354,8 +357,15 @@ switch ($PSCmdlet.ParameterSetName) {
         $info.versions = $info.versions | Conv | Sort-Object -Property Released
         Write-Output $info
     }
-    'List' {
-        GetInstances
+    'ListInstance' {
+        if ($Instance -eq '') {
+            $Instance = '*'
+        }
+        if ($Instance -like 're:*') {
+            GetInstances | ? Id -match $Instance.Substring(3)
+        } else {
+            GetInstances | ? Id -like $Instance
+        }
     }
     default {
         Write-Error "unexpected parameter set: $_"
