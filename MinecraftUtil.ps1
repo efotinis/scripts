@@ -34,7 +34,7 @@
 .PARAMETER Instance
     Instance ID (folder name). When used with -ListInstance, this parameter is
     a wildcard that defaults to "*" or a regular expression if it starts with
-    "re:".
+    "re:". Can be specified via the pipeline (alias: "Id").
 
 .PARAMETER World
     World ID (folder name). When used with -ListWorld, this parameter is
@@ -90,7 +90,8 @@ param(
         [Parameter(ParameterSetName="Backup", Position=0, Mandatory)]
         [Parameter(ParameterSetName="Restore", Position=0, Mandatory)]
         [Parameter(ParameterSetName="ListInstance", Position=0)]
-        [Parameter(ParameterSetName="ListWorld", Position=0, Mandatory)]
+        [Parameter(ParameterSetName="ListWorld", Position=0, valueFromPipelineByPropertyName, Mandatory)]
+        [Alias('Id')]
         [string]$Instance,
 
         [Parameter(ParameterSetName="Backup", Position=1, Mandatory)]
