@@ -129,30 +129,36 @@ Update-FormatData -PrependPath "$Env:scripts\MinecraftUtil.Format.ps1xml"
 
 Add-Type -TypeDefinition @"
 
-    using int64    = System.Int64;
+    using int64 = System.Int64;
     using datetime = System.DateTime;
     using timespan = System.TimeSpan;
 
     public struct MmcInstance
     {
         public MmcInstance(
-            string version, string path, string id, string group, string name,
-            datetime lastLaunch, timespan totalPlayed, timespan lastPlayed)
+            string version,
+            string path,
+            string id,
+            string group,
+            string name,
+            datetime lastLaunch,
+            timespan totalPlayed,
+            timespan lastPlayed)
         {
-            Version     = version;
-            Path        = path;
-            Id          = id;
-            Group       = group;
-            Name        = name;
-            LastLaunch  = lastLaunch;
+            Version = version;
+            Path = path;
+            Id = id;
+            Group = group;
+            Name = name;
+            LastLaunch = lastLaunch;
             TotalPlayed = totalPlayed;
-            LastPlayed  = lastPlayed;
+            LastPlayed = lastPlayed;
         }
-        public string   Version;
-        public string   Path;
-        public string   Id;
-        public string   Group;
-        public string   Name;
+        public string Version;
+        public string Path;
+        public string Id;
+        public string Group;
+        public string Name;
         public datetime LastLaunch;
         public timespan TotalPlayed;
         public timespan LastPlayed;
@@ -160,19 +166,25 @@ Add-Type -TypeDefinition @"
 
     public struct MinecraftWorld {
         public MinecraftWorld(
-            string instance, string path, string id, datetime creationTime,
-            double timePlayed, double timeLoaded, double damageDealt,
-            double damageTaken, int deaths)
+            string instance,
+            string path,
+            string id,
+            datetime creationTime,
+            double timePlayed,
+            double timeLoaded,
+            double damageDealt,
+            double damageTaken,
+            int deaths)
         {
-            Instance     = instance;
-            Path         = path;
-            Id           = id;
+            Instance = instance;
+            Path = path;
+            Id = id;
             CreationTime = creationTime;
-            TimePlayed   = timePlayed;
-            TimeLoaded   = timeLoaded;
-            DamageDealt  = damageDealt;
-            DamageTaken  = damageTaken;
-            Deaths       = deaths;
+            TimePlayed = timePlayed;
+            TimeLoaded = timeLoaded;
+            DamageDealt = damageDealt;
+            DamageTaken = damageTaken;
+            Deaths = deaths;
         }
         public string Instance;
         public string Path;
@@ -187,19 +199,23 @@ Add-Type -TypeDefinition @"
 
     public struct MinecraftVersion {
         public MinecraftVersion(
-            string id, string type, datetime released, datetime updated, string url)
+            string id,
+            string type,
+            datetime released,
+            datetime updated,
+            string url)
         {
-            Id       = id;
-            Type     = type;
+            Id = id;
+            Type = type;
             Released = released;
-            Updated  = updated;
-            Url      = url;
+            Updated = updated;
+            Url = url;
         }
-        public string   Id;
-        public string   Type;
+        public string Id;
+        public string Type;
         public datetime Released;
         public datetime Updated;
-        public string   Url;
+        public string Url;
     };
 
 "@
