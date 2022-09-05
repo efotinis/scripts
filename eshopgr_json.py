@@ -7,6 +7,7 @@ import json
 import logging
 import re
 import time
+import sys
 
 import requests
 
@@ -15,7 +16,6 @@ from urllib.parse import urlsplit, urlunsplit, parse_qs, urlencode
 from bs4 import BeautifulSoup
 
 
-# TODO: change fields to full names
 Item = collections.namedtuple(
     'Item',
     'name url id price discount type subtype manufacturer'
@@ -108,4 +108,7 @@ def main(args):
 
 
 if __name__ == '__main__':
-    main(parse_args())
+    try:
+        main(parse_args())
+    except Exception as x:
+        sys.exit(x)
