@@ -61,6 +61,8 @@
     Output MultiMC instance worlds info.
 #>
 
+[OutputType('MinecraftWorld', ParameterSetName="ListWorld")]
+[OutputType('MmcInstance', ParameterSetName="ListInstance")]
 param(
     [Parameter(ParameterSetName="Play", Mandatory)]
     [switch]$Play,
@@ -194,7 +196,7 @@ Add-Type -TypeDefinition @"
         public double TimeLoaded;
         public double DamageDealt;
         public double DamageTaken;
-        public int    Deaths;
+        public int Deaths;
     };
 
     public struct MinecraftVersion {
