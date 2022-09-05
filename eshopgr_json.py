@@ -34,6 +34,13 @@ def parse_args():
         help='list URL'
     )
     ap.add_argument(
+        '-d',
+        dest='delay',
+        type=float,
+        default=0.2,
+        help='delay between network calls in seconds; default: %(default)s'
+    )
+    ap.add_argument(
         '-v',
         dest='verbose',
         action='store_true',
@@ -86,7 +93,7 @@ def page_next(soup):
     return a['href'] if a else ''
 
 
-def listing(url, delay=0.2):
+def listing(url, delay):
     page_index = 1
     while url:
         time.sleep(delay)
@@ -99,7 +106,7 @@ def listing(url, delay=0.2):
 
 def main(args):
     for u in args.url:
-        for item in listing(u):
+        for item in listing(u, args.delay):
             # - replace Decimal price with string, since JSON can't handle it
             # - convert to plain dict, since _asdict() returns OrderedDict
             print(json.dumps(dict(item._replace(price=str(item.price))._asdict())))
