@@ -38,7 +38,7 @@
                     <TableColumnHeader><Label>Subtype</Label><Width>15</Width><Alignment>Left</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>Manufacturer</Label><Width>12</Width><Alignment>Left</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>Id</Label><Width>10</Width><Alignment>Left</Alignment></TableColumnHeader>
-                    <TableColumnHeader><Label>Price</Label><Width>6</Width><Alignment>Right</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>Price</Label><Width>8</Width><Alignment>Right</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>Name</Label><Alignment>left</Alignment></TableColumnHeader>
                 </TableHeaders>
                 <TableRowEntries>
@@ -48,7 +48,7 @@
                             <TableColumnItem><PropertyName>Subtype</PropertyName></TableColumnItem>
                             <TableColumnItem><PropertyName>Manufacturer</PropertyName></TableColumnItem>
                             <TableColumnItem><PropertyName>Id</PropertyName></TableColumnItem>
-                            <TableColumnItem><PropertyName>Price</PropertyName></TableColumnItem>
+                            <TableColumnItem><ScriptBlock>$_.Price.ToString('N2')</ScriptBlock></TableColumnItem>
                             <TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
                         </TableColumnItems>
                     </TableRowEntry>
