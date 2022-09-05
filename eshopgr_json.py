@@ -7,10 +7,12 @@ import json
 import logging
 import re
 import time
+
 from decimal import Decimal
 from urllib.parse import urlsplit, urlunsplit, parse_qs, urlencode
 
 import requests
+
 from bs4 import BeautifulSoup
 
 
@@ -41,18 +43,6 @@ def parse_args():
     if args.verbose:
         logging.basicConfig(level=logging.INFO)
     return args
-
-
-##def listing(url):
-##    parts = urlsplit(url)
-##    query = parse_qs(parts.query, encoding=QS_ENC)
-##    for offset in itertools.count(0, 10):
-##        if offset != 0:
-##            query['offset'] = offset
-##        elif 'offset' in query and NO_ZERO_OFFSET:
-##            del query['offset']
-##        yield urlunsplit(parts._replace(query=urlencode(
-##            query, doseq=True, encoding=QS_ENC)))
 
 
 def page_items(soup):
@@ -117,12 +107,3 @@ def main(args):
 
 if __name__ == '__main__':
     main(parse_args())
-
-
-##
-####    #URL = 'https://www.e-shop.gr/eidi-grafeiou-mpataries-list?table=ANA&category=%CC%D0%C1%D4%C1%D1%C9%C5%D3'
-####    # external hdds; Seagate
-####    URL = 'https://www.e-shop.gr/ypologistes-eksoterikoi-skliroi-diskoi-seagate-list?table=PER&category=%C5%CE%D9%D4%C5%D1%C9%CA%CF%C9+%C4%C9%D3%CA%CF%C9&filter-7145=1'
-##    # CPUs
-##    URL = 'https://www.e-shop.gr/ypologistes-epeksergastes-cpu-list?table=PER&category=%C5%D0%C5%CE%C5%D1%C3%C1%D3%D4%C7%D3+-+CPU'
-##    a = list(listing(URL))
