@@ -1,27 +1,25 @@
+# encoding: utf-8
 """"Scrape product listings from e-shop.gr in JSON format."""
 
 import argparse
 import collections
-import itertools
 import json
 import logging
 import re
 import time
 
-from decimal import Decimal
-from urllib.parse import urlsplit, urlunsplit, parse_qs, urlencode
-
 import requests
 
+from decimal import Decimal
+from urllib.parse import urlsplit, urlunsplit, parse_qs, urlencode
 from bs4 import BeautifulSoup
 
 
-QS_ENC = 'ISO-8859-7'  # query string encoding (may be Windows-1253)
-NO_ZERO_OFFSET = True  # omit 0 offset in queries, like site does (optional)
-
-
 # TODO: change fields to full names
-Item = collections.namedtuple('Item', 'title url pid price discount cat sub man')
+Item = collections.namedtuple(
+    'Item',
+    'title url pid price discount cat sub man'
+)
 
 
 def parse_args():
@@ -64,8 +62,7 @@ def page_items(soup):
         data['pid'] = font_elems[0].text.strip('()')
         data['discount'] = ''
         if len(font_elems) > 1:
-            # find 'EKPTOSI ...'
-            m = re.match(r'\u0395\u039a\u03a0\u03a4\u03a9\u03a3\u0397\s+(.+)', font_elems[1].text)
+            m = re.match(r'ΕΚΠΤΩΣΗ\s+(.+)', font_elems[1].text)
             if m:
                 data['discount'] = m.group(1)
 
@@ -75,7 +72,7 @@ def page_items(soup):
 
         td = cont.find('td', 'web-product-info')
         fields = {
-            'Κατηγορία:': 'cat', 
+            'Κατηγορία:': 'cat',
             'Υποκατηγορία:': 'sub',
             'Κατασκευαστής:': 'man'
         }
@@ -83,33 +80,31 @@ def page_items(soup):
         for b in td.find_all('b', recursive=False, limit=3):
             data[fields[b.text]] = b.next_sibling.strip()
 
-        #yield Item(title=title, url=url, pid=pid, price=price, discount=discount)
         yield Item(**data)
         item_index += 1
 
 
-def page_next(soup):
+def get_next_page_url_or_none(soup):
     a = soup.find('a', 'mobile_list_navigation_link', text='>')
-    return a['href'] if a else ''
+    return a['href'] if a else None
 
 
-def listing(url, delay):
+def get_products(url, delay):
     page_index = 1
     while url:
         time.sleep(delay)
         logging.info(f'processing page {page_index}')
         soup = BeautifulSoup(requests.get(url).text, 'lxml')
         yield from page_items(soup)
-        url = page_next(soup)
+        url = get_next_page_url_or_none(soup)
         page_index += 1
 
 
 def main(args):
     for u in args.url:
-        for item in listing(u, args.delay):
-            # - replace Decimal price with string, since JSON can't handle it
-            # - convert to plain dict, since _asdict() returns OrderedDict
-            print(json.dumps(dict(item._replace(price=str(item.price))._asdict())))
+        for item in get_products(u, args.delay):
+            item = item._replace(price=str(item.price))  # replace Decimal
+            print(json.dumps(item._asdict()))
 
 
 if __name__ == '__main__':
