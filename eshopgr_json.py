@@ -18,7 +18,7 @@ from bs4 import BeautifulSoup
 # TODO: change fields to full names
 Item = collections.namedtuple(
     'Item',
-    'title url pid price discount cat sub man'
+    'name url id price discount type subtype manufacturer'
 )
 
 
@@ -55,11 +55,11 @@ def page_items(soup):
     for cont in soup.find_all('table', 'web-product-container'):
         logging.info(f'processing item {item_index}')
         data = {}
-        data['title'] = cont.find('h2').text
+        data['name'] = cont.find('h2').text
         data['url'] = cont.find('a', 'web-title-link')['href']
 
         font_elems = cont.find_all('font', limit=2)
-        data['pid'] = font_elems[0].text.strip('()')
+        data['id'] = font_elems[0].text.strip('()')
         data['discount'] = ''
         if len(font_elems) > 1:
             m = re.match(r'ΕΚΠΤΩΣΗ\s+(.+)', font_elems[1].text)
@@ -72,9 +72,9 @@ def page_items(soup):
 
         td = cont.find('td', 'web-product-info')
         fields = {
-            'Κατηγορία:': 'cat',
-            'Υποκατηγορία:': 'sub',
-            'Κατασκευαστής:': 'man'
+            'Κατηγορία:': 'type',
+            'Υποκατηγορία:': 'subtype',
+            'Κατασκευαστής:': 'manufacturer'
         }
         data.update(dict.fromkeys(fields.values(), ''))
         for b in td.find_all('b', recursive=False, limit=3):
@@ -101,8 +101,8 @@ def get_products(url, delay):
 
 
 def main(args):
-    for u in args.url:
-        for item in get_products(u, args.delay):
+    for url in args.url:
+        for item in get_products(url, args.delay):
             item = item._replace(price=str(item.price))  # replace Decimal
             print(json.dumps(item._asdict()))
 
