@@ -15,6 +15,9 @@ Update-FormatData $Env:Scripts\DataLength.Format.ps1xml
 
 # NOTE: this script is getting large; must break it up
 
+if ($Env:COMPUTERNAME -eq 'VOID') {
+    chcp 65001  # Win10 can handle UTF-8
+}
 
 # shorthands and aliases
 function global:m ($i, $b, $c) {
