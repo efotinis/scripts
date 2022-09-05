@@ -104,7 +104,7 @@ def main(args):
     for url in args.url:
         for item in get_products(url, args.delay):
             item = item._replace(price=str(item.price))  # replace Decimal
-            print(json.dumps(item._asdict()))
+            print(json.dumps(item._asdict()), flush=True)
 
 
 if __name__ == '__main__':
