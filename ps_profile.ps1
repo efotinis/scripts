@@ -2,11 +2,12 @@ using module .\WindowUtil.psm1
 
 Set-StrictMode -Version Latest
 
+Import-Module $Env:Scripts\ConsoleTitle.psm1
 Import-Module $Env:Scripts\EFUtil.psm1
 Import-Module $Env:Scripts\NiceConvert.psm1
-Import-Module $Env:Scripts\WindowUtil.psm1
 Import-Module $Env:Scripts\PipelineUtil.psm1
 Import-Module $Env:Scripts\StringUtil.psm1
+Import-Module $Env:Scripts\WindowUtil.psm1
 Import-Module $Env:Scripts\YoutubeUtil.psm1
 
 Update-FormatData $Env:Scripts\EF.Format.ps1xml
@@ -204,34 +205,12 @@ function global:Edit-ScriptInVSCode ([string]$InputObject) {
 # -------------------------------------
 
 
-function global:ConTitleDefault {
-    "PowerShell $($PSVersionTable.PSVersion.Major).$($PSVersionTable.PSVersion.Minor)"
-}
-
-
-function global:ConTitle {
-    [CmdletBinding(DefaultParameterSetName='get')]
-    param(
-        [Parameter(ParameterSetName='get')]
-        [switch]$Get,
-
-        [Parameter(ParameterSetName='set', Position=0)]
-        [string]$Set,
-
-        [Parameter(ParameterSetName='reset')]
-        [switch]$Reset
-    )
-    switch ($PSCmdlet.ParameterSetName) {
-        'get' {
-            $Host.UI.RawUI.WindowTitle
-        }
-        'set' {
-            $Host.UI.RawUI.WindowTitle = $Set
-        }
-        'reset' {
-            $Host.UI.RawUI.WindowTitle = global:ConTitleDefault
-        }
-    }
+function global:Set-DefaultConsoleTitle {
+    Set-ConsoleTitle -Text (
+        'PowerShell {0}.{1}' -f @(
+            $PSVersionTable.PSVersion.Major
+            $PSVersionTable.PSVersion.Minor
+    ))
 }
 
 
@@ -992,8 +971,7 @@ $global:PromptColor = '*'
 
 & "$Env:scripts\SmartFileSystem.Format.ps1"
 
-global:ConTitle -Reset
-
+Set-DefaultConsoleTitle
 
 Set-PSReadLineKeyHandler `
     -Chord Enter `
