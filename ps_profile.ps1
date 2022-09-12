@@ -2,12 +2,11 @@ using module .\WindowUtil.psm1
 
 Set-StrictMode -Version Latest
 
-Import-Module $Env:Scripts\ConsoleTitle.psm1
+Import-Module $Env:Scripts\ConsoleUtil.psm1
 Import-Module $Env:Scripts\EFUtil.psm1
 Import-Module $Env:Scripts\NiceConvert.psm1
 Import-Module $Env:Scripts\PipelineUtil.psm1
 Import-Module $Env:Scripts\StringUtil.psm1
-Import-Module $Env:Scripts\WindowUtil.psm1
 Import-Module $Env:Scripts\YoutubeUtil.psm1
 
 Update-FormatData $Env:Scripts\EF.Format.ps1xml
@@ -634,25 +633,6 @@ function global:waitnet ([int]$WaitSeconds = 10, [switch]$Silent) {
     if (-not $Silent) {
         msgbeep.py ok
     }
-}
-
-
-# Set PowerShell console visibility.
-function global:ShowConsole ([bool]$Mode) {
-    # cache the handle, since MainWindowHandle is 0
-    # when the main window of a process is hidden
-    $hwnd = (Get-Process -Id $PID).MainWindowHandle
-    if ($hwnd -ne [IntPtr]::Zero) {
-        $global:_ShowConsole_hwnd = $hwnd
-    } else {
-        $hwnd = $global:_ShowConsole_hwnd
-    }
-
-    $cmd = switch ($Mode) {
-        $true { [ShowStatus]::Show }
-        $false { [ShowStatus]::Hide }
-    }
-    $null = [WinApi]::ShowWindow($hwnd, $cmd)
 }
 
 
