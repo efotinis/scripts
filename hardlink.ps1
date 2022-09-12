@@ -1,28 +1,53 @@
+<#
+.SYNOPSIS
+    Create file hardlinks.
+
+.DESCRIPTION
+    Creates hardlinks of all input files to the specified directory.
+
+.PARAMETER
+
+.PARAMETER Destination
+    Output directory. Must be specified and will be created if it does not
+    exist.
+
+.PARAMETER Force
+    Overwrite existing output files.
+
+.INPUTS
+    Existing file objects.
+
+.OUTPUTS
+    New file objects.
+#>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory, ValueFromPipeline)]
     [IO.FileInfo]$File,
-    
+
     [Parameter(Mandatory)]
     [string]$Destination,
-    
-    [switch]$Force  # overwrite existing
+
+    [switch]$Force
 )
 begin {
-    if (-not (Test-Path -LiteralPath $Destination -Type Container)) {
-        $outDir = New-Item -Path $Destination -Type Directory
-    } else {
-        $outDir = Get-Item -LiteralPath $Destination
+    try {
+        $destExists = Test-Path -LiteralPath $Destination -Type Container
+    } catch {
+        Write-Error "Destination path is invalid: $Destination"
+        exit
+    }
+    if (-not $destExists) {
+        if (-not (New-Item -Path $Destination -Type Directory)) {
+            exit
+        }
     }
     function EscapeBrackets ([string]$s) {
         $s -replace '([[\]])','`$1'
     }
 }
 process {
-    if (-not $outDir) {
-        exit
-    }
     $newPath = Join-Path $Destination $File.Name
-    $escSrcPath = EscapeBrackets $File.FullName
-    New-Item -Type HardLink -Path $newPath -Value $escSrcPath -Force:$Force
+    $srcPath = EscapeBrackets $File.FullName
+    New-Item -Type HardLink -Path $newPath -Value $srcPath -Force:$Force
 }
