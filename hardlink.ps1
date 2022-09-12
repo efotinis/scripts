@@ -5,25 +5,27 @@
 .DESCRIPTION
     Creates hardlinks of all input files to the specified directory.
 
-.PARAMETER
+.PARAMETER InputObject
+    Source file path. Can pass multiple values via the pipeline.
 
 .PARAMETER Destination
-    Output directory. Must be specified and will be created if it does not
-    exist.
+    Output directory. Will be created if it does not exist.
 
 .PARAMETER Force
     Overwrite existing output files.
 
 .INPUTS
-    Existing file objects.
+    Existing file path(s).
 
 .OUTPUTS
     New file objects.
+
 #>
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory, ValueFromPipeline)]
-    [IO.FileInfo]$File,
+    [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [Alias('FullName', 'Path')]
+    [string]$InputObject,
 
     [Parameter(Mandatory)]
     [string]$Destination,
@@ -47,7 +49,8 @@ begin {
     }
 }
 process {
-    $newPath = Join-Path $Destination $File.Name
-    $srcPath = EscapeBrackets $File.FullName
+    $name = Split-Path -Leaf -Path $InputObject
+    $newPath = Join-Path -Path $Destination -ChildPath $Name
+    $srcPath = EscapeBrackets $InputObject
     New-Item -Type HardLink -Path $newPath -Value $srcPath -Force:$Force
 }

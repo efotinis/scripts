@@ -938,6 +938,7 @@ Set-Alias -Scope global ff Get-DiskSizeFudgeFactor
 Set-Alias -Scope global espeak 'C:\Program Files (x86)\eSpeak\command_line\espeak.exe'
 Set-Alias -Scope global nw ~\newwall.ps1
 Set-Alias -Scope global fst Get-FileNameSafeTimestamp
+Set-Alias -Scope global drv Get-DiskDrive
 
 
 $global:PromptPathPref = [PromptPath]::Tail
