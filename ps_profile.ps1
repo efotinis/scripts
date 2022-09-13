@@ -720,7 +720,8 @@ Set-Alias -Scope Global eds Edit-ScriptInNotepad
 Set-Alias -Scope Global ecs Edit-ScriptInVSCode
 Set-Alias -Scope Global log ~\SimpleLog.ps1
 Set-Alias -Scope Global ?p  Show-CommandParameter.ps1
-Set-Alias -Scope global mpc Start-Video
+Set-Alias -Scope global mpc Invoke-MediaPlayerClassic
+Set-Alias -Scope global fb2k Invoke-Foobar2000
 Set-Alias -Scope global ts  'C:\Users\Elias\Desktop\stuff\assorted\torrent search\Search-Torrent.ps1'
 Set-Alias -Scope global eatlines D:\projects\eatlines.exe
 Set-Alias -Scope global ff Get-DiskSizeFudgeFactor

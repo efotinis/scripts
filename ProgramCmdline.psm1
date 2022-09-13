@@ -115,8 +115,8 @@ function global:Edit-ScriptInVSCode ([string]$InputObject) {
 }
 
 
-# start videos in MPC-HC
-function global:Start-Video {
+# Interafe with MPC-HC command line.
+function global:Invoke-MediaPlayerClassic {
     param(
         [Parameter(Mandatory, ValueFromPipeline<#, ValueFromPipelineByPropertyName#>)]
         #[Alias('FullName')]
@@ -179,7 +179,8 @@ function global:Start-Video {
 }
 
 
-function global:fb2k {
+# Interafe with foobar2000 command line.
+function global:Invoke-Foobar2000 {
     param(
         [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'Path')]
