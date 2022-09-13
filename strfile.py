@@ -81,7 +81,12 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
-    # TODO: handle options
+    # TODO: handle options:
+    #   - ignorecase
+    #   - sort
+    #   - randomize
+    #   - silent
+    #   - rot13
 
     HEADER = '>LLLLLc3s'
     HEADER_LEN = struct.calcsize(HEADER)
@@ -94,11 +99,19 @@ if __name__ == '__main__':
     minsize = 2**31
     maxsize = 0
 
+    delim_line = args.delim_line + '\n'
+
+    def is_comment_line(s, comments, delimiter):
+        return comments and s.startswith(delimiter * 2)
+
     curpos, lastpos = 0, 0
     fin = open(args.source, 'rt')
     for s in fin:
         curpos += len(s)
-        if s == '%\n':
+        # TODO: may need to rework size calc to account for comments
+        if is_comment_line(s, args.comments, args.delimiter):
+            continue
+        if s == delim_line:
             fout.write(struct.pack('>L', curpos))
             count += 1
             size = curpos - lastpos - 2
