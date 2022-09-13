@@ -85,7 +85,6 @@ if __name__ == '__main__':
     #   - ignorecase
     #   - sort
     #   - randomize
-    #   - silent
     #   - rot13
 
     HEADER = '>LLLLLc3s'
@@ -122,8 +121,6 @@ if __name__ == '__main__':
 
     assert fin.tell() == lastpos, 'file does not end with a delimiter'
 
-    print(minsize, maxsize)
-
     version = 1
     flags = 0
     delim = '%'
@@ -131,3 +128,10 @@ if __name__ == '__main__':
     hdr = struct.pack(HEADER, version, count, maxsize, minsize, flags, delim, padding)
     fout.seek(0)
     fout.write(hdr)
+
+    if not args.silent:
+        print('source:', args.source)
+        print('output:', args.ouput)
+        print('  entries: ', count)
+        print('  min size: ', minsize)
+        print('  max size: ', maxsize)
