@@ -186,9 +186,18 @@ function global:Edit-FileInVSCode {
         
         [switch]$LiteralBrackets
     )
+    begin {
+        $p1 = "$Env:ProgramFiles\Microsoft VS Code\Code.exe"
+        $p2 = "${Env:ProgramFiles(x86)}\Microsoft VS Code\Code.exe"
+        if (Test-Path -LiteralPath $p1) {
+            $exePath = $p1
+        } else {
+            $exePath = $p2
+        }
+    }
     process {
         global:Get-ResolvedWildcardOrLiteral $InputObject -LiteralBrackets:$LiteralBrackets | % {
-            & "$Env:ProgramFiles\Microsoft VS Code\Code.exe" $_ > $null
+            & $exePath $_ > $null
         }
     }
 }
