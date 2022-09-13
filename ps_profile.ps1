@@ -852,9 +852,18 @@ function global:GetReleaseYear {
 }
 
 
-# Number of pipeline objects.
+# Pipeline shorthands for count, first, last and indexed objects.
 function global:Count {
     $Input | Measure-Object | % count
+}
+function global:First ([int]$Count = 1) {
+    $Input | Select-Object -First $Count
+}
+function global:Last ([int]$Count = 1) {
+    $Input | Select-Object -Last $Count
+}
+function global:Nth ([int[]]$Index) {
+    $input | Select-Object -Index $Index
 }
 
 
@@ -882,12 +891,6 @@ function global:DateAgo {
     $d = Get-Date
     $Days += $Weeks * 7
     $d.AddYears(-$Years).AddMonths(-$Months).AddDays(-$Days)
-}
-
-
-# Select pipeline objects based on position.
-function global:nth ([int[]]$Index) {
-    $input | select -index $Index
 }
 
 
