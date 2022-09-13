@@ -242,12 +242,6 @@ function global:Speak (
 }
 
 
-Set-Alias -Scope global Reversed Get-ReverseArray
-Set-Alias -Scope global Reverse Get-ReverseArray
-Set-Alias -Scope global Shuffle Get-ShuffleArray
-Set-Alias -Scope global Pick Get-OrderedSubset
-
-
 # get elevation status
 function global:IsAdmin {
     ([Security.Principal.WindowsPrincipal] `
@@ -865,6 +859,10 @@ function global:Last ([int]$Count = 1) {
 function global:Nth ([int[]]$Index) {
     $input | Select-Object -Index $Index
 }
+Set-Alias -Scope global Reversed Get-ReverseArray
+Set-Alias -Scope global Reverse Get-ReverseArray
+Set-Alias -Scope global Shuffle Get-ShuffleArray
+Set-Alias -Scope global Pick Get-OrderedSubset
 
 
 # Create DateTime representing some hours/minutes/seconds ago from now.
