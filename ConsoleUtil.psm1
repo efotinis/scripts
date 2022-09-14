@@ -55,53 +55,28 @@ function Show-ConsoleWindow {
         Write-Error 'Console window is already visible.'
         return
     }
-    if ($script:WindowHideCount -eq 1) {
-        if (-not [WinApi]::ShowWindow($script:ConsoleWindowHandle, [ShowStatus]::Show)) {
-            Write-Error 'Could not show console window.'
-            return
-        }
+    --$script:WindowHideCount
+    if ($script:WindowHideCount -eq 0) {
+        [WinApi]::ShowWindow($script:ConsoleWindowHandle, [ShowStatus]::Show)
         $script:ConsoleWindowHandle = $null
     }
-    --$script:WindowHideCount
 }
 
 
 function Hide-ConsoleWindow {
     if ($script:WindowHideCount -eq 0) {
         $script:ConsoleWindowHandle = (Get-Process -Id $PID).MainWindowHandle
-        if (-not [WinApi]::ShowWindow($script:ConsoleWindowHandle, [ShowStatus]::Hide)) {
-            Write-Error 'Could not hide console window.'
-            return
-        }
     }
     ++$script:WindowHideCount
+    if ($script:WindowHideCount -eq 1) {
+        [WinApi]::ShowWindow($script:ConsoleWindowHandle, [ShowStatus]::Hide)
+    }
 }
 
 
-function Get-ConsoleWindowVisibility {
+function Get-ConsoleWindowHideDepth {
     return $script:WindowHideCount
 }
-
-
-<#
-# Set PowerShell console visibility.
-function global:ShowConsole ([bool]$Mode) {
-    # cache the handle, since MainWindowHandle is 0
-    # when the main window of a process is hidden
-    $hwnd = (Get-Process -Id $PID).MainWindowHandle
-    if ($hwnd -ne [IntPtr]::Zero) {
-        $global:_ShowConsole_hwnd = $hwnd
-    } else {
-        $hwnd = $global:_ShowConsole_hwnd
-    }
-
-    $cmd = switch ($Mode) {
-        $true { [ShowStatus]::Show }
-        $false { [ShowStatus]::Hide }
-    }
-    $null = [WinApi]::ShowWindow($hwnd, $cmd)
-}#>
-
 
 
 Export-ModuleMember *-*

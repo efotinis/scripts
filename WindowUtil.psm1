@@ -85,7 +85,8 @@ function Set-WindowRect ($HWnd, $Rect, $Redraw = $true) {
 
 
 function Set-WindowShow ($HWnd, $Status) {
-    [WinApi]::ShowWindow($HWnd, $Status)
+    # NOTE: Suppress the returned bool, since it is not a success indicator.
+    [void][WinApi]::ShowWindow($HWnd, $Status)
 }
 
 
