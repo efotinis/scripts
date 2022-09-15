@@ -49,6 +49,8 @@ begin {
         [int]$Count = 0
         [double]$Sum = 0.0
         [double]$SumSq = 0.0
+        [bool]$NullsFound = $false
+        [bool]$NonDoublesFound = $false
         
         Counter ($Property, [bool]$Sample) {
             $this.Property = $Property
@@ -58,13 +60,13 @@ begin {
         [void] Add ($Object) {
             $value = Get-ObjectValue -Prop $this.Property -Inp $Object
             if ($null -eq $value) {
-                Write-Error 'Property value is null.'
+                $this.NullsFound = $true
                 return
             }
             try {
                 $value = [double]$value
             } catch [InvalidCastException] {
-                Write-Error 'Property value cannot be converted to double.'
+                $this.NonDoublesFound = $true
                 return
             }
             $this.Count += 1
@@ -91,9 +93,14 @@ begin {
         }
 
         [object] GetResult () {
+            if ($this.NullsFound) {
+                Write-Warning "Property had null or missing: $($this.Property)"
+            }
+            if ($this.NonDoublesFound) {
+                Write-Warning "Property had non-double values: $($this.Property)."
+            }
             if ($this.Count -eq 0) {
-                Write-Error "No valid values for property: $($this.Property)"
-                return $null
+                throw "No valid values for property: $($this.Property)"
             }
             $var = $this.GetVariance()
             return [PsCustomObject]@{
@@ -121,6 +128,10 @@ process {
 }
 end {
     foreach ($c in $counters) {
-        $c.GetResult()
+        try {
+            $c.GetResult()
+        } catch [System.Management.Automation.RuntimeException] {
+            Write-Error $_.Exception.Message
+        }
     }
 }
