@@ -6,6 +6,7 @@ Import-Module $Env:Scripts\AnsiColor.psm1
 Import-Module $Env:Scripts\ConsoleUtil.psm1
 Import-Module $Env:Scripts\EFUtil.psm1
 Import-Module $Env:Scripts\MercurialUtil.psm1
+Import-Module $Env:Scripts\ModularPrompt.psm1
 Import-Module $Env:Scripts\NiceConvert.psm1
 Import-Module $Env:Scripts\PipelineUtil.psm1
 Import-Module $Env:Scripts\ProgramCmdline.psm1
@@ -225,78 +226,13 @@ function global:Get-ExtensionInfo {
             Count=$_.count
             Extension=$_.name
             Length=$x.bytes
-            Size=$x.size 
+            Size=$x.size
         }
     }
 }
 
 
 if ($host.name -eq 'ConsoleHost') {
-
-    enum PromptPath {
-        Full  # full path
-        Tail  # last component only
-        None  # no path
-    }
-
-    # invert prompt text color intensities; helps tell each command apart
-    function global:prompt {
-        # Get value of global variable or default.
-        function GetGlobal ($Name, $Def) {
-            try {
-                $var = Get-Variable -Name $Name -Scope Global -ErrorAction Ignore
-                $var.Value
-            } catch {
-                $Def
-            }
-        }
-        $pathPref = GetGlobal 'PromptPathPref' [PromptPath]::Full
-        $homeRepl = GetGlobal 'PromptHomeRepl' $false
-        # color options:
-        #   ''      normal
-        #   'i'     invert (swap fg and bg)
-        #   '*'     toggle fg and bg intensity
-        #   '*/'    toggle fg intensity
-        #   '/*'    toggle bg intensity
-        #   other   set to specified attrib, e.g. W/N, R+/G, etc.
-        $color = GetGlobal 'PromptColor' '/*'
-        $s = ''
-        if ($pathPref -ne [PromptPath]::None) {
-            $s = $ExecutionContext.SessionState.Path.CurrentLocation
-            if ($homeRepl) {
-                # replace home path with "~:"; since "~" alone is a valid
-                # directory name, an extra, invalid path char (colon) is used
-                $s = $s -replace ([RegEx]::Escape($HOME)+'(?:$|(?=\\))'),':~'
-            }
-            if ($pathPref -eq [PromptPath]::Tail) {
-                $s = Split-Path -Leaf $s
-            }
-        }
-        $jobs = @(Get-Job)
-        if ($jobs) {
-            $s += ':{0}j' -f $jobs.Count
-        }
-        $s += '>' * ($NestedPromptLevel + 1)
-        $fg = $host.UI.RawUI.ForegroundColor
-        $bg = $host.UI.RawUI.BackgroundColor
-        switch ($color) {
-            '' { break }
-            'i' { $fg, $bg = $bg, $fg; break }
-            '*' { $fg = $fg -bxor 8; $bg = $bg -bxor 8; break }
-            '*/' { $fg = $fg -bxor 8; break }
-            '/*' { $bg = $bg -bxor 8; break }
-            default {
-                $newFg, $newBg = global:Get-ColorAttribute $color
-                if ($newFg) { $fg = $newFg }
-                if ($newBg) { $bg = $newBg }
-            }
-        }
-        if (IsAdmin) {
-            Write-Host 'Admin:' -NoNewline -Fore white -Back darkred
-        }
-        Write-Host $s -NoNewline -ForegroundColor $fg -BackgroundColor $bg
-        Write-Output ' '
-    }
 
     # customize output stream colors
     function ConClr ($type, $fg, $bg = $host.UI.RawUI.BackgroundColor) {
@@ -578,7 +514,7 @@ function global:Get-DiskSizeFudgeFactor {
         [Parameter(ParameterSetName='unit', Position=0)]
         [ValidateSet('k','m','g','t','p','e','z','y')]
         [string]$Unit,
-        
+
         [Parameter(ParameterSetName='list')]
         [switch]$List
     )
@@ -730,11 +666,6 @@ Set-Alias -Scope global espeak 'C:\Program Files (x86)\eSpeak\command_line\espea
 Set-Alias -Scope global nw ~\newwall.ps1
 Set-Alias -Scope global fst Get-FileNameSafeTimestamp
 Set-Alias -Scope global drv Get-DiskDrive
-
-
-$global:PromptPathPref = [PromptPath]::Tail
-$global:PromptHomeRepl = $true
-$global:PromptColor = '*'
 
 
 # change default transfer protocols ("Ssl3, Tls"), both of which are insecure;
