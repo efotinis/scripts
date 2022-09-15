@@ -3,6 +3,8 @@
     Save web audio streams.
 .DESCRIPTION
     Uses Streamripper to record web radio.
+.PARAMETER Uri
+    Stream URI to record.
 .PARAMETER Destination
     Base output directory. Each station recording is saved in a subdirectory
     named after the station. Defaults to the value of the SROUT environment
@@ -15,6 +17,9 @@
 
 [CmdletBinding()]
 param(
+    [Parameter(Mandatory)]
+    [string]$Uri,
+
     [string]$Destination
 )
 
@@ -31,13 +36,7 @@ if (-not $isDestSpecified) {
 }
 
 $Agent = 'foobar2000/1.3.16'
-$CommonStations = (
-    ('PopTron', 'http://ice3.somafm.com/poptron-64-aac'),
-    ('1291AlternativeRock', 'http://listen.radionomy.com/1291AlternativeRock'),
-    ('Radio Swiss Pop', 'http://stream.srg-ssr.ch/m/rsp/aacp_96'),
-    ('Radio Paradise', 'http://stream-uk1.radioparadise.com/aac-64'),
-    ('Another Music Project', 'http://radio.anothermusicproject.com:8000/idm')
-)
+
 
 # Search for and return the path of streamripper.exe in the usual locations.
 function LocateExecutable {
@@ -57,29 +56,6 @@ if (-not $Ripper) {
     return
 }
 
-# Select from menu of common station or get custom URL.
-function SelectStream {
-    Write-Host 'common stations:'
-    $Index = 1
-    foreach ($Station in $CommonStations) {
-        Write-Host "  $Index. $($Station[0])"
-        $Index += 1
-    }
-    while ($true) {
-        $Resp = (Read-Host 'enter station number or custom URL').Trim()
-        if ($Resp -match '^\d+$') {
-            $Resp = [int]$Resp
-            if ($Resp -gt 0 -and $Resp -le $CommonStations.Count) {
-                return $CommonStations[$Resp - 1][1]
-            }
-            Write-Host 'invalid index'
-        }
-        elseif ($Resp) {
-            return $Resp
-        }
-    }
-}
-
 
 # Select number of minutes to split output or 0 for no splitting
 function SelectChunk {
@@ -97,11 +73,10 @@ function SelectChunk {
 }
 
 
-$Stream = SelectStream
 $ChunkMinutes = SelectChunk
 
 $Args = @(
-    $Stream
+    $Uri
     '-d', $Destination  # output directory
     '-a', '-A'  # output single file, suppress individual files
     '-r', '-R', '0'  # create relay server without connection count limit
