@@ -1,5 +1,5 @@
 # encoding: utf-8
-""""Scrape product listings from e-shop.gr in JSON format."""
+"""Scrape product listings from e-shop.gr in JSON format."""
 
 import argparse
 import collections
