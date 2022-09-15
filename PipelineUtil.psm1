@@ -1,26 +1,51 @@
 # Pipeline/collection utilities.
 
 
-# Get an object property by name or by evaluating a scriptblock. 
-# In the case of a scriptblock, the object is available as $_ and 
-# if multiple values are returned, only the first one is used.
-# Returns $null on error or if missing.
-function CalculateProperty ($Object, $Property) {
-    if ($Property -is [scriptblock]) {
-        $values = $Property.InvokeWithContext(
-            $null, 
-            [psvariable]::new('_', $Object)
-        )
-        if ($values.Count -gt 0) {
-            return $values[0]
+<#
+.SYNOPSIS
+    Get the value of an object property.
+.DESCRIPTION
+    Returns either the value of a property specified by name or a value
+    calculated by a scriptblock using the object as an argument.
+.PARAMETER InputObject
+    Input object. Can accept multiple values via the pipeline.
+.PARAMETER Property
+    The name of a property (string) or a scriptblock that accepts the current
+    object and returns a calculated value. If the property name does not exist
+    or the scriptblock does not return anything, $null is returned. If the
+    scriptblock returns multiple values, only the first is returned.
+.INPUTS
+    Any object.
+.OUTPUTS
+    Any object.
+#>
+function Get-ObjectValue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0)]
+        $Property,
+
+        [Parameter(Mandatory, Position = 1, ValueFromPipeline)]
+        $InputObject
+    )
+    process {
+        if ($Property -is [scriptblock]) {
+            $values = $Property.InvokeWithContext(
+                $null,
+                [psvariable]::new('_', $InputObject)
+            )
+            if ($values.Count -gt 0) {
+                Write-Output $values[0]
+            } else {
+                Write-Output $null
+            }
         } else {
-            return $null
+            if (Get-Member -InputObject $InputObject -Name $Property) {
+                Write-Output $InputObject.$Property
+            } else {
+                Write-Output $null
+            }
         }
-    }
-    if (Get-Member -InputObject $Object -Name $Property) {
-        return $Object.$Property
-    } else {
-        return $null
     }
 }
 
@@ -64,7 +89,7 @@ function Get-ShuffleArray
 .SYNOPSIS
     Pick random items from a list in their original order.
 .PARAMETER Count
-    Number of items to get. Must be > 0. Specifying a number greater or equal 
+    Number of items to get. Must be > 0. Specifying a number greater or equal
     to the input size is not an error and simply retuns the entire input as is.
 #>
 function Get-OrderedSubset ([int]$Count) {
@@ -81,10 +106,10 @@ function Get-OrderedSubset ([int]$Count) {
 .SYNOPSIS
     Get items with a unique property.
 .DESCRIPTION
-    Select objects that have a unique property. If there are multiple equal 
+    Select objects that have a unique property. If there are multiple equal
     input items, the first is selected.
 .PARAMETER InputObject
-    Input object. Can specify either a collection argument or pass via the 
+    Input object. Can specify either a collection argument or pass via the
     pipeline.
 .PARAMETER Property
     The property that designates uniqueness. Possible types:
@@ -97,7 +122,7 @@ function Get-UniqueByProperty {
     param(
         [Parameter(Mandatory, ValueFromPipeline)]
         $InputObject,
-        
+
         [Parameter(Mandatory, Position=1)]
         $Property  # name or scriptblock
     )
@@ -107,7 +132,7 @@ function Get-UniqueByProperty {
     }
     process {
         foreach ($item in $InputObject) {
-            $value = CalculateProperty $item $Property
+            $value = Get-ObjectValue $Property $item
             if ($null -eq $value) {
                 $missing = $true
             } elseif ($seen.Add($value)) {
@@ -170,10 +195,10 @@ function AnyMatch ($Value, [string[]]$Pattern) {
 .SYNOPSIS
     Get objects whose property matches specified criteria.
 .DESCRIPTION
-    Perform wildcard or regex pattern checks on a specified property of input 
+    Perform wildcard or regex pattern checks on a specified property of input
     objects and return those that satisfy them.
-    
-    To get the inverse of a multi-pattern condition, use the following 
+
+    To get the inverse of a multi-pattern condition, use the following
     complementary option pairs:
         - LikeAny / NotLikeAll
         - LikeAll / NotLikeAny
@@ -332,13 +357,13 @@ function Get-IfProperty {
 .SYNOPSIS
     Get objects where a property is within a range.
 .DESCRIPTION
-    Filter pipeline objects based on a property value range. The property can 
+    Filter pipeline objects based on a property value range. The property can
     be specified either as a name (string) or be calculated with a scriptblock.
 
     The range can be specified as either a start/end or a center/radius.
     Boundaries are included by default.
 
-    An error is generated if the specified property did not exist or was not 
+    An error is generated if the specified property did not exist or was not
     calculated for some input objects.
 .PARAMETER InputObject
     Input objects. Must use the pipeline to specify a collection.
@@ -417,7 +442,7 @@ function Get-InRangeProperty {
         }
     }
     process {
-        $value = CalculateProperty $_ $Property
+        $value = Get-ObjectValue $Property $_
         if ($null -eq $value) {
             $missing = $true
         } elseif ($startCheck.Invoke($value) -and $endCheck.Invoke($value)) {
@@ -496,15 +521,15 @@ function Split-Array {
         [Parameter(Mandatory, ParameterSetName='GroupSize')]
         [ValidateRange(1, [int]::MaxValue)]
         [int]$GroupSize,
-        
+
         [Parameter(Mandatory, ParameterSetName='GroupCount')]
         [ValidateRange(1, [int]::MaxValue)]
         [int]$GroupCount,
-        
+
         [Parameter(Mandatory, ParameterSetName='HeadSize')]
         [ValidateRange(0, [int]::MaxValue)]
         [int]$HeadSize,
-        
+
         [Parameter(Mandatory, ParameterSetName='TailSize')]
         [ValidateRange(0, [int]::MaxValue)]
         [int]$TailSize
@@ -543,7 +568,7 @@ function Split-Array {
             Write-Output (,$items.GetRange($HeadSize, $totalCount - $HeadSize))
         }
     }
-    
+
 }
 
 

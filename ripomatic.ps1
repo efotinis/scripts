@@ -1,73 +1,70 @@
-$Agent = 'foobar2000/1.3.16'
-$CommonStations = (
-    ('PopTron', 'http://ice3.somafm.com/poptron-64-aac'),
-    ('1291AlternativeRock', 'http://listen.radionomy.com/1291AlternativeRock'),
-    ('Radio Swiss Pop', 'http://stream.srg-ssr.ch/m/rsp/aacp_96'),
-    ('Radio Paradise', 'http://stream-uk1.radioparadise.com/aac-64'),
-    ('Another Music Project', 'http://radio.anothermusicproject.com:8000/idm')
+<#
+.SYNOPSIS
+    Save web audio streams.
+.DESCRIPTION
+    Uses Streamripper to record web radio.
+.PARAMETER Uri
+    Stream URI to record.
+.PARAMETER ChunkMinutes
+    Recording into parts of this length in minutes. Default is 0, which means
+    no splitting.
+.PARAMETER Destination
+    Base output directory. Each station recording is saved in a subdirectory
+    named after the station. Defaults to the value of the SROUT environment
+    variable (if it exists), otherwise to the current directory.
+.INPUTS
+    Nothing
+.OUTPUTS
+    Nothing
+#>
+
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory)]
+    [string]$Uri,
+    
+    [int]$ChunkMinutes = 0,
+
+    [string]$Destination
 )
-switch ($Env:ComputerName) {
-    'core' {
-        $Ripper = 'C:\Program Files (x86)\Streamripper\streamripper.exe'
-        $Outdir = 'E:\recs\streamripper'
-    }
-    'relic' {
-        $Ripper = 'C:\Program Files\Streamripper\streamripper.exe'
-        $Outdir = 'D:\sr'
-    }
-    default {
-        Write-Host "no config in script for current machine ($Env:ComputerName)"
-        return
+
+
+# assign default destination
+$isDestSpecified = $PSBoundParameters.ContainsKey('Destination')
+if (-not $isDestSpecified) {
+    $destEnv = Get-Item -LiteralPath Env:SROUT -ErrorAction Ignore
+    $Destination = if ($destEnv) {
+        $destEnv.Value
+    } else {
+        '.'
     }
 }
 
+$Agent = 'foobar2000/1.3.16'
 
-# Select from menu of common station or get custom URL.
-function SelectStream {
-    Write-Host 'common stations:'
-    $Index = 1
-    foreach ($Station in $CommonStations) {
-        Write-Host "  $Index. $($Station[0])"
-        $Index += 1
-    }
-    while ($true) {
-        $Resp = (Read-Host 'enter station number or custom URL').Trim()
-        if ($Resp -match '^\d+$') {
-            $Resp = [int]$Resp
-            if ($Resp -gt 0 -and $Resp -le $CommonStations.Count) {
-                return $CommonStations[$Resp - 1][1]
-            }
-            Write-Host 'invalid index'
-        }
-        elseif ($Resp) {
-            return $Resp
-        }
+
+# Search for and return the path of streamripper.exe in the usual locations.
+function LocateExecutable {
+    $path1 = "$Env:ProgramFiles\Streamripper\streamripper.exe"
+    $path2 = "${Env:ProgramFiles(x86)}\Streamripper\streamripper.exe"
+    if (Test-Path $path1) {
+        Write-Output $path1
+    } elseif (Test-Path $path2) {
+        Write-Output $path2
+    } else {
+        Write-Error 'Could not locate streamripper.exe.'
     }
 }
 
-
-# Select number of minutes to split output or 0 for no splitting
-function SelectChunk {
-    $Default = '180'
-    while ($true) {
-        $Resp = (Read-Host "enter chunk size in minutes (0 for continuous; default: $Default)").Trim()
-        if (-not $Resp) {
-            $Resp = $Default
-        }
-        if ($Resp -match '^\d+$') {
-            return [int]$Resp
-        }
-        Write-Host 'bad value'
-    }
+$Ripper = LocateExecutable
+if (-not $Ripper) {
+    return
 }
 
-
-$Stream = SelectStream
-$ChunkMinutes = SelectChunk
 
 $Args = @(
-    $Stream
-    '-d', $OutDir  # destination dir
+    $Uri
+    '-d', $Destination  # output directory
     '-a', '-A'  # output single file, suppress individual files
     '-r', '-R', '0'  # create relay server without connection count limit
     '-u', $Agent  # hide Streamripper's identity
@@ -76,7 +73,7 @@ $Args = @(
 
 if ($ChunkMinutes) {
     $Args += @(
-        '-l', ($ChunkMinutes*60)  # stop after specified minutes
+        '-l', ($ChunkMinutes * 60)  # stop after specified minutes
     )
     $RunNo = 1
     while ($true) {

@@ -5,6 +5,7 @@ Set-StrictMode -Version Latest
 Import-Module $Env:Scripts\AnsiColor.psm1
 Import-Module $Env:Scripts\ConsoleUtil.psm1
 Import-Module $Env:Scripts\EFUtil.psm1
+Import-Module $Env:Scripts\MercurialUtil.psm1
 Import-Module $Env:Scripts\NiceConvert.psm1
 Import-Module $Env:Scripts\PipelineUtil.psm1
 Import-Module $Env:Scripts\ProgramCmdline.psm1
