@@ -1,3 +1,21 @@
+[CmdletBinding()]
+param(
+    [Parameter()]
+    [string]$Destination
+)
+
+
+# assign default destination
+$isDestSpecified = $PSBoundParameters.ContainsKey('Destination')
+if (-not $isDestSpecified) {
+    $destEnv = Get-Item -LiteralPath Env:SROUT -ErrorAction Ignore
+    $Destination = if ($destEnv) {
+        $destEnv.Value
+    } else {
+        '.'
+    }
+}
+
 $Agent = 'foobar2000/1.3.16'
 $CommonStations = (
     ('PopTron', 'http://ice3.somafm.com/poptron-64-aac'),
@@ -13,7 +31,7 @@ function LocateExecutable {
     $path2 = "${Env:ProgramFiles(x86)}\Streamripper\streamripper.exe"
     if (Test-Path $path1) {
         Write-Output $path1
-    } else if (Test-Path $path2) {
+    } elseif (Test-Path $path2) {
         Write-Output $path2
     } else {
         Write-Error 'Could not locate streamripper.exe.'
@@ -24,20 +42,6 @@ $Ripper = LocateExecutable
 if (-not $Ripper) {
     return
 }
-
-switch ($Env:ComputerName) {
-    'core' {
-        $Outdir = 'E:\recs\streamripper'
-    }
-    'relic' {
-        $Outdir = 'D:\sr'
-    }
-    default {
-        Write-Host "no config in script for current machine ($Env:ComputerName)"
-        return
-    }
-}
-
 
 # Select from menu of common station or get custom URL.
 function SelectStream {
@@ -84,7 +88,7 @@ $ChunkMinutes = SelectChunk
 
 $Args = @(
     $Stream
-    '-d', $OutDir  # destination dir
+    '-d', $Destination  # output directory
     '-a', '-A'  # output single file, suppress individual files
     '-r', '-R', '0'  # create relay server without connection count limit
     '-u', $Agent  # hide Streamripper's identity
