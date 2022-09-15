@@ -15,7 +15,7 @@ $script:Options = @{
 }
 
 
-$script:Components = @()
+$script:Components = [System.Collections.ArrayList]::new()
 
 
 # TODO: Reimplement special color codes of original design?
@@ -72,22 +72,19 @@ function Get-ModPromptOption {
 
 
 
-<#
 # Get index of component with matching Id, or -1 if not found.
 function GetComponentIndex ([string]$Id) {
-    for (
-        $n = $script:Components.Count - 1;
-        $n -gt 0 -and $script:Components.Id -ne $Id;
-        --$n
-    ) {
+    for ($i = 0; $i -lt $script:Components.Count; ++$i) {
+        if ($script:Components[$i].Id -eq $Id) {
+            return $i
+        }
     }
-    return $n
+    return -1
 }
-#>
 
 
 function Add-ModPromptItem {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'Index')]
     param(
         [Parameter(Mandatory)]
         [string]$Id,
@@ -96,12 +93,86 @@ function Add-ModPromptItem {
         [string]$Color,
 
         [Parameter(Mandatory)]
-        [scriptblock]$Expression
+        [scriptblock]$Expression,
+
+        [Parameter(ParameterSetName = 'Index')]
+        [int]$Index = -1,
+
+        [Parameter(ParameterSetName = 'Before')]
+        [string]$Before,
+
+        [Parameter(ParameterSetName = 'After')]
+        [string]$After
     )
-    $script:Components += [PSCustomObject]@{
+    if ((script:GetComponentIndex $Id) -ge 0) {
+        Write-Error "Item Id already exists: $Id"
+        return
+    }
+    $compCount = $script:Components.Count
+    switch ($PSCmdlet.ParameterSetName) {
+        Index {
+            if ($Index -lt 0 -or $Index -gt $compCount) {
+                $Index = $compCount
+            }
+        }
+        Before {
+            $Index = script:GetComponentIndex $Before
+            if ($Index -lt 0) {
+                $Index = $compCount
+            }
+        }
+        After {
+            $Index = script:GetComponentIndex $After
+            if ($Index -lt 0) {
+                $Index = $compCount
+            } else {
+                ++$Index
+            }
+        }
+    }
+    $script:Components.Insert($Index, [PSCustomObject]@{
         Id = $Id
         Color = $Color
         Expression = $Expression
+    })
+}
+
+
+function Get-ModPromptItem {
+    [CmdletBinding(DefaultParameterSetName = 'Id')]
+    param(
+        [Parameter(ParameterSetName = 'Id', Position = 0)]
+        [string]$Id = '*',
+
+        [Parameter(ParameterSetName = 'Index', Position = 0)]
+        [int[]]$Index
+    )
+    switch ($PSCmdlet.ParameterSetName) {
+        Id {
+            $script:Components | ? Id -Like $Id
+        }
+        Index {
+            $script:Components | select -Index $Index
+        }
+    }
+}
+
+
+function Remove-ModPromptItem {
+    [CmdletBinding(DefaultParameterSetName = 'Id')]
+    param(
+        [Parameter(ParameterSetName = 'Id', Position = 0)]
+        [string]$Id = '*',
+
+        [Parameter(ParameterSetName = 'Index', Position = 0)]
+        [int[]]$Index
+    )
+    $ids = script:Get-ModPromptItem @PSBoundParameters | % Id
+    $ids | % {
+        $i = GetComponentIndex $_
+        if ($i -ge 0) {
+            $script:Components.RemoveAt($i)
+        }
     }
 }
 
