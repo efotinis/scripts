@@ -6,13 +6,30 @@ $CommonStations = (
     ('Radio Paradise', 'http://stream-uk1.radioparadise.com/aac-64'),
     ('Another Music Project', 'http://radio.anothermusicproject.com:8000/idm')
 )
+
+# Search for and return the path of streamripper.exe in the usual locations.
+function LocateExecutable {
+    $path1 = "$Env:ProgramFiles\Streamripper\streamripper.exe"
+    $path2 = "${Env:ProgramFiles(x86)}\Streamripper\streamripper.exe"
+    if (Test-Path $path1) {
+        Write-Output $path1
+    } else if (Test-Path $path2) {
+        Write-Output $path2
+    } else {
+        Write-Error 'Could not locate streamripper.exe.'
+    }
+}
+
+$Ripper = LocateExecutable
+if (-not $Ripper) {
+    return
+}
+
 switch ($Env:ComputerName) {
     'core' {
-        $Ripper = 'C:\Program Files (x86)\Streamripper\streamripper.exe'
         $Outdir = 'E:\recs\streamripper'
     }
     'relic' {
-        $Ripper = 'C:\Program Files\Streamripper\streamripper.exe'
         $Outdir = 'D:\sr'
     }
     default {
