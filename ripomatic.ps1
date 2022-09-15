@@ -1,6 +1,20 @@
+<#
+.SYNOPSIS
+    Save web audio streams.
+.DESCRIPTION
+    Uses Streamripper to record web radio.
+.PARAMETER Destination
+    Base output directory. Each station recording is saved in a subdirectory
+    named after the station. Defaults to the value of the SROUT environment
+    variable (if it exists), otherwise to the current directory.
+.INPUTS
+    Nothing
+.OUTPUTS
+    Nothing
+#>
+
 [CmdletBinding()]
 param(
-    [Parameter()]
     [string]$Destination
 )
 
