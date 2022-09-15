@@ -5,6 +5,9 @@
     Uses Streamripper to record web radio.
 .PARAMETER Uri
     Stream URI to record.
+.PARAMETER ChunkMinutes
+    Recording into parts of this length in minutes. Default is 0, which means
+    no splitting.
 .PARAMETER Destination
     Base output directory. Each station recording is saved in a subdirectory
     named after the station. Defaults to the value of the SROUT environment
@@ -19,6 +22,8 @@
 param(
     [Parameter(Mandatory)]
     [string]$Uri,
+    
+    [int]$ChunkMinutes = 0,
 
     [string]$Destination
 )
@@ -57,24 +62,6 @@ if (-not $Ripper) {
 }
 
 
-# Select number of minutes to split output or 0 for no splitting
-function SelectChunk {
-    $Default = '180'
-    while ($true) {
-        $Resp = (Read-Host "enter chunk size in minutes (0 for continuous; default: $Default)").Trim()
-        if (-not $Resp) {
-            $Resp = $Default
-        }
-        if ($Resp -match '^\d+$') {
-            return [int]$Resp
-        }
-        Write-Host 'bad value'
-    }
-}
-
-
-$ChunkMinutes = SelectChunk
-
 $Args = @(
     $Uri
     '-d', $Destination  # output directory
@@ -86,7 +73,7 @@ $Args = @(
 
 if ($ChunkMinutes) {
     $Args += @(
-        '-l', ($ChunkMinutes*60)  # stop after specified minutes
+        '-l', ($ChunkMinutes * 60)  # stop after specified minutes
     )
     $RunNo = 1
     while ($true) {
