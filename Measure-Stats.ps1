@@ -1,22 +1,29 @@
 <#
 .SYNOPSIS
-    Calculate statistics of objects or properties in the pipeline.
+    Calculate statistics.
 
 .DESCRIPTION
     Similar to Measure-Object, this script accepts objects from the pipeline
-    and calculates various statistical values, including mean (average),
-    variance and standard deviation (stdev).
+    and returns an object containing all the following statistical values:
+
+        - Count: number of items
+        - Sum: sum of values
+        - SumSq: sum of squares of values
+        - Mean: average
+        - Variance: variance
+        - Stdev: standard deviation
 
 .PARAMETER InputObject
-    The object to be measured. Note that, just like Measure-Object, collections
-    are treated as a single object, unless they are passed through the
-    pipeline.
+    The object to be measured. Note the collections must be passed via the
+    pipeline in order to be treated as mulitple items.
 
 .PARAMETER Property
-    An array of property names for which to calculate statistics. If omitted,
-    the whole object is used. When multiple properties are specified, a
-    separate result is returned for each one. The object/properties must be
-    convertible to double.
+    The property name of the object to use or a scriptblock to calculate a
+    value using the current object as its first parameter. The resulting values
+    must be convertible to double. If omitted, the whole object is used as-is.
+
+    Multiple properties can be specified, in which case a separate result
+    object is returned for each.
 
 .PARAMETER Sample
     Set if the input represents a portion of the measured values. By default,
@@ -28,108 +35,92 @@ param(
     $InputObject,
 
     [Parameter(Mandatory, Position = 0)]
-    [string[]]$Property,
-    
+    [object[]]$Property = { $_ },
+
     [switch]$Sample
 )
 begin {
     Set-StrictMode -Version Latest
 
-    class Info {
+    class Counter {
+    
+        [object]$Property
+        [bool]$Sample
         [int]$Count = 0
         [double]$Sum = 0.0
         [double]$SumSq = 0.0
-        [object]$Property = $null
         
-        [void] AddValue ([double]$Value) {
+        Counter ($Property, [bool]$Sample) {
+            $this.Property = $Property
+            $this.Sample = $Sample
+        }
+
+        [void] Add ($Object) {
+            $value = Get-ObjectValue -Prop $this.Property -Inp $Object
+            if ($null -eq $value) {
+                Write-Error 'Property value is null.'
+                return
+            }
+            try {
+                $value = [double]$value
+            } catch [InvalidCastException] {
+                Write-Error 'Property value cannot be converted to double.'
+                return
+            }
             $this.Count += 1
             $this.Sum += $value
             $this.SumSq += $value * $value
         }
         
-        [object] GetResult ([bool]$Sample) {
-            $numerator = $this.SumSq - ($this.Sum * $this.Sum) / $this.Count
-            $denominator = if ($Sample) {
+        [double] GetVariance () {
+            $numerator = if ($this.Count) {
+                $this.SumSq - ($this.Sum * $this.Sum) / $this.Count
+            } else {
+                0
+            }
+            $denominator = if ($this.Sample) {
                 $this.Count - 1
             } else {
                 $this.Count
             }
-            $variance = $numerator / $denominator
-            if ($this.Count -gt 0) {
-                return [PsCustomObject]@{
-                    Sample = $Sample
-                    Count = $this.Count
-                    Sum = $this.Sum
-                    SumSq = $this.SumSq
-                    Mean = $this.Sum / $this.Count
-                    Variance = $variance
-                    Stdev = [Math]::Sqrt($variance)
-                    Property = $this.Property
-                }
+            if ($denominator) {
+                return $numerator / $denominator
+            } else {
+                return 0
             }
-            throw ('no input object contained property "{0}"' -f $this.Property)
+        }
+
+        [object] GetResult () {
+            if ($this.Count -eq 0) {
+                Write-Error "No valid values for property: $($this.Property)"
+                return $null
+            }
+            $var = $this.GetVariance()
+            return [PsCustomObject]@{
+                Sample = $this.Sample
+                Count = $this.Count
+                Sum = $this.Sum
+                SumSq = $this.SumSq
+                Mean = $this.Sum / $this.Count
+                Variance = $var
+                Stdev = [Math]::Sqrt($var)
+                Property = $this.Property
+            }
         }
     }
     
-    class ObjectInfo : Info {
-
-        [void] Add ($Object) {
-            try {
-                [double]$value = $Object
-                $this.AddValue($value)
-            }
-            catch [InvalidCastException] {
-                Write-Error 'cannot convert object to [double]'
-            }
-        }
-
-    }
-    
-    class PropertyInfo : Info {
-
-        PropertyInfo ([string]$Name) {
-            $this.Property = $Name
-        }
-
-        [void] Add ($Object) {
-            try {
-                if (Get-Member $this.Property -InputObject $Object) {
-                    [double]$value = $Object.($this.Property)
-                    $this.AddValue($value)
-                }
-            }
-            catch [InvalidCastException] {
-                Write-Error 'cannot convert property to [double]'
-            }
-        }
-    }
-
-    $data = [System.Collections.Generic.List[Info]]::new()
-    if ($Property -eq $null) {
-        $data.Add([ObjectInfo]::new())
-    }
-    else {
-        $h = [System.Collections.Generic.HashSet[string]]::new()
-        foreach ($s in $Property) {
-            if (!$h.Contains($s)) {
-                $data.Add([PropertyInfo]::new($s))
-                [void]$h.Add($s)
-            }
-        }
+    $counters = @()
+    foreach ($prop in $Property) {
+        $counters += [Counter]::new($prop, $Sample)
     }
 }
 process {
-    foreach ($info in $data) {
-        $info.Add($InputObject)
+    foreach ($c in $counters) {
+        $c.Add($InputObject)
     }
 }
 end {
-    foreach ($info in $data) {
-        try {
-            $info.GetResult($Sample)
-        }
-        catch {
-            Write-Error $_
-        }
+    foreach ($c in $counters) {
+        $c.GetResult()
     }
 }
