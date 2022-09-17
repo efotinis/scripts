@@ -199,6 +199,53 @@ function Get-ModPromptItem {
 }
 
 
+function Set-ModPromptItem {
+    [CmdletBinding(DefaultParameterSetName = 'Index')]
+    param(
+        [Parameter(Mandatory, ValueFromPipelineByPropertyName)]
+        [string]$Id,
+
+        [string]$Color,
+
+        [scriptblock]$Expression,
+
+        [Parameter(ParameterSetName = 'Index')]
+        [int]$Index,
+
+        [Parameter(ParameterSetName = 'Before')]
+        [string]$Before,
+
+        [Parameter(ParameterSetName = 'After')]
+        [string]$After
+    )
+    $oldPos = script:GetComponentIndex $Id
+    if ($oldPos -eq -1) {
+        Write-Error "Item Id does not exists: $Id"
+        return
+    }
+    $psn = $PSCmdlet.ParameterSetName
+    if ($psn -eq 'Index' -and -not $PSBoundParameters.ContainsKey('Index')) {
+        $newPos = $oldPos
+    } else {
+        $newPos = CalculatePosition $psn $Index $Before $After
+    }
+    if ($newPos -ne $oldPos) {
+        $item = $script:Components[$oldPos]
+        $script:Components.RemoveAt($oldPos)
+        if ($newPos -gt $oldPos) {
+            --$newPos
+        }
+        $script:Components.Insert($newPos, $item)
+    }
+    if ($PSBoundParameters.ContainsKey('Color')) {
+        $script:Components[$newPos].Color = $Color
+    }
+    if ($PSBoundParameters.ContainsKey('Expression')) {
+        $script:Components[$newPos].Expression = $Expression
+    }
+}
+
+
 function Remove-ModPromptItem {
     [CmdletBinding(DefaultParameterSetName = 'Id')]
     param(
