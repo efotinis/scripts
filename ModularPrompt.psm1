@@ -149,6 +149,8 @@ function Add-ModPromptItem {
 
         [scriptblock]$Expression,
 
+        [string]$Description,
+
         [Parameter(ParameterSetName = 'Index')]
         [int]$Index = -1,
 
@@ -172,6 +174,11 @@ function Add-ModPromptItem {
         }
         Expression = if ($PSBoundParameters.ContainsKey('Expression')) {
             $Expression
+        } else {
+            $null
+        }
+        Description = if ($PSBoundParameters.ContainsKey('Description')) {
+            $Description
         } else {
             $null
         }
@@ -209,6 +216,8 @@ function Set-ModPromptItem {
 
         [scriptblock]$Expression,
 
+        [string]$Description,
+
         [Parameter(ParameterSetName = 'Index')]
         [int]$Index,
 
@@ -243,6 +252,9 @@ function Set-ModPromptItem {
     if ($PSBoundParameters.ContainsKey('Expression')) {
         $script:Components[$newPos].Expression = $Expression
     }
+    if ($PSBoundParameters.ContainsKey('Description')) {
+        $script:Components[$newPos].Description = $Description
+    }
 }
 
 
@@ -271,7 +283,7 @@ Add-ModPromptItem -Id 'Elevation' -Color 'w+/r' -Expression {
     } else {
         ''
     }
-}
+} -Description 'Elevated session indicator.'
 
 
 Add-ModPromptItem -Id 'JobCount' -Color 'w+/b' -Expression {
@@ -281,7 +293,7 @@ Add-ModPromptItem -Id 'JobCount' -Color 'w+/b' -Expression {
     } else {
         ''
     }
-}
+} -Description 'Number of background jobs, if any.'
 
 
 Add-ModPromptItem -Id 'Path' -Expression {
@@ -302,12 +314,12 @@ Add-ModPromptItem -Id 'Path' -Expression {
         }
     }
     $s
-}
+} -Description 'Current path. Configurable via PathDisplay and ReplaceHome.'
 
 
 Add-ModPromptItem -Id 'Nesting' -Expression {
     '>' * ($NestedPromptLevel + 1)
-}
+} -Description 'Prompt nesting level. Top level is ">".'
 
 
 Export-ModuleMember *-*
