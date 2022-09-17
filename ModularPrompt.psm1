@@ -102,10 +102,8 @@ function Add-ModPromptItem {
         [Parameter(Mandatory)]
         [string]$Id,
 
-        #[Parameter(Mandatory)]
         [string]$Color,
 
-        #[Parameter(Mandatory)]
         [scriptblock]$Expression,
 
         [Parameter(ParameterSetName = 'Index')]
@@ -130,13 +128,13 @@ function Add-ModPromptItem {
         }
         Before {
             $Index = script:GetComponentIndex $Before
-            if ($Index -lt 0) {
+            if ($Index -eq -1) {
                 $Index = $compCount
             }
         }
         After {
             $Index = script:GetComponentIndex $After
-            if ($Index -lt 0) {
+            if ($Index -eq -1) {
                 $Index = $compCount
             } else {
                 ++$Index
