@@ -3,6 +3,9 @@ Set-StrictMode -Version Latest
 
 $script:Options = @{
 
+    # Default for items that don't specify a color.
+    DefaultColor = 'w+/n+'
+
     # Part of current path to display:
     #   - 'Full': Whole path.
     #   - 'Tail': Last component.
@@ -26,19 +29,24 @@ $script:Components = [System.Collections.ArrayList]::new()
 
 
 function global:prompt {
+    $fgDef, $bgDef = global:Get-ColorAttribute $script:Options.DefaultColor
+    if ($null -eq $fgDef) {
+        $fgDef = [System.Console]::ForegroundColor
+    }
+    if ($null -eq $bgDef) {
+        $bgDef = [System.Console]::BackgroundColor
+    }
     foreach ($c in $script:Components) {
-        $fg, $bg = global:Get-ColorAttribute $c.Color
-        $args = @{
-            Object = & $c.Expression
-            NoNewLine = $true
+        if ($null -ne $c.Expression) {
+            $fg, $bg = global:Get-ColorAttribute $c.Color
+            $args = @{
+                Object = & $c.Expression
+                NoNewLine = $true
+                ForegroundColor = if ($null -ne $fg) { $fg } else { $fgDef }
+                BackgroundColor = if ($null -ne $bg) { $bg } else { $bgDef }
+            }
+            Write-Host @args
         }
-        if ($null -ne $fg) {
-            $args.ForegroundColor = $fg
-        }
-        if ($null -ne $bg) {
-            $args.BackgroundColor = $bg
-        }
-        Write-Host @args
     }
     # HACK: A non-empty value must be ouput, otherwise Write-Host is buffered,
     # no output is produced and the default, fallback prompt ("PS>") is used
@@ -50,11 +58,16 @@ function global:prompt {
 function Set-ModPromptOption {
     [CmdletBinding()]
     param(
+        [string]$DefaultColor,
+
         [ValidateSet('Full', 'Tail', 'None')]
         [string]$PathDisplay,
 
         [bool]$ReplaceHome
     )
+    if ($PSBoundParameters.ContainsKey('DefaultColor')) {
+        $script:Options.DefaultColor = $DefaultColor
+    }
     if ($PSBoundParameters.ContainsKey('PathDisplay')) {
         $script:Options.PathDisplay = $PathDisplay
     }
@@ -89,10 +102,10 @@ function Add-ModPromptItem {
         [Parameter(Mandatory)]
         [string]$Id,
 
-        [Parameter(Mandatory)]
+        #[Parameter(Mandatory)]
         [string]$Color,
 
-        [Parameter(Mandatory)]
+        #[Parameter(Mandatory)]
         [scriptblock]$Expression,
 
         [Parameter(ParameterSetName = 'Index')]
@@ -132,8 +145,16 @@ function Add-ModPromptItem {
     }
     $script:Components.Insert($Index, [PSCustomObject]@{
         Id = $Id
-        Color = $Color
-        Expression = $Expression
+        Color = if ($PSBoundParameters.ContainsKey('Color')) {
+            $Color
+        } else {
+            $null
+        }
+        Expression = if ($PSBoundParameters.ContainsKey('Expression')) {
+            $Expression
+        } else {
+            $null
+        }
     })
 }
 
@@ -196,7 +217,7 @@ Add-ModPromptItem -Id 'JobCount' -Color 'w+/b' -Expression {
 }
 
 
-Add-ModPromptItem -Id 'Path' -Color 'w+/n+' -Expression {
+Add-ModPromptItem -Id 'Path' -Expression {
     $s = ''
     if ($script:Options.PathDisplay -ne 'None') {
         # FIXME: home dir replacement should only
@@ -217,7 +238,7 @@ Add-ModPromptItem -Id 'Path' -Color 'w+/n+' -Expression {
 }
 
 
-Add-ModPromptItem -Id 'Nesting' -Color 'w+/n+' -Expression {
+Add-ModPromptItem -Id 'Nesting' -Expression {
     '>' * ($NestedPromptLevel + 1)
 }
 
