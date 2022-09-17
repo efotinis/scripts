@@ -277,7 +277,7 @@ function Remove-ModPromptItem {
 }
 
 
-Add-ModPromptItem -Id 'Elevation' -Color 'w+/r' -Expression {
+Add-ModPromptItem -Id 'Admin' -Color 'w+/r' -Expression {
     if (IsAdmin) {
         'ADMIN:'
     } else {
@@ -286,7 +286,7 @@ Add-ModPromptItem -Id 'Elevation' -Color 'w+/r' -Expression {
 } -Description 'Elevated session indicator.'
 
 
-Add-ModPromptItem -Id 'JobCount' -Color 'w+/b' -Expression {
+Add-ModPromptItem -Id 'Jobs' -Color 'w+/b' -Expression {
     $a = @(Get-Job)
     if ($a.Count -gt 0) {
         "{0}j:" -f $a.Count
@@ -317,7 +317,7 @@ Add-ModPromptItem -Id 'Path' -Expression {
 } -Description 'Current path. Configurable via PathDisplay and ReplaceHome.'
 
 
-Add-ModPromptItem -Id 'Nesting' -Expression {
+Add-ModPromptItem -Id 'Level' -Expression {
     '>' * ($NestedPromptLevel + 1)
 } -Description 'Prompt nesting level. Top level is ">".'
 
