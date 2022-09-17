@@ -96,6 +96,49 @@ function GetComponentIndex ([string]$Id) {
 }
 
 
+# Calculate position from Index, Before or After.
+# Only the parameter specified by How is used.
+# If Index is out of bounds or Before/After do not exist, the number of
+# components is returned, i.e. the end of the array.
+function CalculatePosition {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Index', 'Before', 'After')]
+        [string]$How,
+
+        [int]$Index,
+
+        [string]$Before,
+
+        [string]$After
+    )
+    $count = $script:Components.Count
+    switch ($How) {
+        'Index' {
+            if ($Index -lt 0 -or $Index -gt $count) {
+                $Index = $count
+            }
+        }
+        'Before' {
+            $Index = script:GetComponentIndex $Before
+            if ($Index -eq -1) {
+                $Index = $count
+            }
+        }
+        'After' {
+            $Index = script:GetComponentIndex $After
+            if ($Index -eq -1) {
+                $Index = $count
+            } else {
+                ++$Index
+            }
+        }
+    }
+    return $Index
+}
+
+
 function Add-ModPromptItem {
     [CmdletBinding(DefaultParameterSetName = 'Index')]
     param(
@@ -119,28 +162,7 @@ function Add-ModPromptItem {
         Write-Error "Item Id already exists: $Id"
         return
     }
-    $compCount = $script:Components.Count
-    switch ($PSCmdlet.ParameterSetName) {
-        Index {
-            if ($Index -lt 0 -or $Index -gt $compCount) {
-                $Index = $compCount
-            }
-        }
-        Before {
-            $Index = script:GetComponentIndex $Before
-            if ($Index -eq -1) {
-                $Index = $compCount
-            }
-        }
-        After {
-            $Index = script:GetComponentIndex $After
-            if ($Index -eq -1) {
-                $Index = $compCount
-            } else {
-                ++$Index
-            }
-        }
-    }
+    $Index = CalculatePosition $PSCmdlet.ParameterSetName $Index $Before $After
     $script:Components.Insert($Index, [PSCustomObject]@{
         Id = $Id
         Color = if ($PSBoundParameters.ContainsKey('Color')) {
