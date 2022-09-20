@@ -14,10 +14,26 @@
     vs code tips - Copy.txt           378 05/05/2020 21:22:00 C:\Users\Elias\Desktop
     New Text Document - Copy.txt     1864 05/05/2020 21:22:00 C:\Users\Elias\Desktop
     todotxt - Copy.txt                138 05/05/2020 21:22:00 C:\Users\Elias\Desktop
+.PARAMETER Property
+    Name set of properties to return. Use ListProperty for valid values.
+    Default set: 'Name', 'Size', 'Date deleted', 'Original location'.
+.PARAMETER Translatable
+    Handling of date and size values. Use on of:
+        - Original: Keep as-is (string). For sizes this means a number with
+          unit suffix and for dates a locale-specific string.
+        - Parsed: Try to interpret the original values. Sizes are converted to
+          64-bit int and dates to DatetTime objects. Note that sizes will not
+          be exact, since the formatted values have lost precision.
+.PARAMETER OriginalName
+    Use original property names in returned objects. If omitted, non-word
+    characters are removed.
+.PARAMETER ListProperty
+    List available properties.
 .INPUTS
-    --
+    None
 .OUTPUTS
-    [PSCustomObject[]], [string[]]
+    List of custom objects (ListProperty not set).
+    List of strings (ListProperty set).
 .NOTES
     Docs and refs:
         https://stackoverflow.com/questions/22816215/delete-old-files-in-recycle-bin-with-powershell
@@ -32,19 +48,20 @@
         https://docs.microsoft.com/en-us/windows/desktop/shell/folderitems
 #>
 
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'Info')]
 Param(
-    [string[]] $Property = @('Name', 'Size', 'Date deleted', 'Original location'),
+    [Parameter(ParameterSetName = 'Info', Position = 0)]
+    [string[]]$Property = @('Name', 'Size', 'Date deleted', 'Original location'),
 
-    # Handling of date/size strings.
+    [Parameter(ParameterSetName = 'Info')]
     [ValidateSet('parsed', 'original', 'both')]
-    [string] $Translatable = 'parsed',
+    [string]$Translatable = 'parsed',
 
-    # Do not convert property names to simple name indentifiers.
-    [switch] $KeepOriginalNames,
+    [Parameter(ParameterSetName = 'Info')]
+    [switch]$OriginalName,
 
-    # List available properties.
-    [switch] $ListProperty
+    [Parameter(ParameterSetName = 'List')]
+    [switch]$ListProperty
 )
 
 
@@ -86,8 +103,7 @@ function SelectPropertyByName([object[]]$Property, [string[]]$Name) {
 function ParseSize ($s) {
     if ($s -notmatch '[\d]+(\.[\d]+)? [bytes|KB|MB|GB|TB]') {
         0
-    }
-    else {
+    } else {
         $s = $s -replace ' bytes',''
         $s = $s -replace ' ',''
         (Invoke-Expression $s) -as [int64]
@@ -98,8 +114,7 @@ function ParseSize ($s) {
 function ParseDate ($s) {
     try {
         get-date ($s -replace '\u200f|\u200e','')
-    }
-    catch {
+    } catch {
         $null
     }
 }
@@ -123,7 +138,7 @@ function GetData ($Item, $Properties, $UseOriginalNames) {
         $name = $p.name
         $parser = GetParser $name
         if (-not $UseOriginalNames) {
-            $name = $name -replace '[^\w]',''
+            $name = $name -replace '\W+',''
         }
         if ($Translatable -ne 'parsed' -or -not $parser) {
             $a[$name] = $value
@@ -154,7 +169,7 @@ $items = $recycleBinFolder.Items()
 $total = $items.Count
 $count = 0
 foreach ($item in $items) {
-    GetData $item $reqProps $KeepOriginalNames
+    GetData $item $reqProps $OriginalName
     $count += 1
     if (($count % 100) -eq 0) {
         $progress.PercentComplete = $count / $total * 100
