@@ -34,21 +34,21 @@
 
 [CmdletBinding()]
 Param(
-    [string[]] $Column = @('Name', 'Size', 'Date deleted', 'Original location'),
+    [string[]] $Property = @('Name', 'Size', 'Date deleted', 'Original location'),
 
     # Handling of date/size strings.
     [ValidateSet('parsed', 'original', 'both')]
     [string] $Translatable = 'parsed',
 
-    # Do not Convert column names to simple name indentifiers.
+    # Do not convert property names to simple name indentifiers.
     [switch] $KeepOriginalNames,
 
-    # List index/name of available data columns, instead of returning any items.
-    [switch] $ListColumns
+    # List available properties.
+    [switch] $ListProperty
 )
 
 
-# Get the index and title of all available columns of a shell folder.
+# Get the index and title of all available shell folder columns/properties.
 function GetShellColumns ($Folder) {
     for ($index = 0; $index -lt 1000; ++$index) {
         $name = $Folder.GetDetailsOf($null, $index)
@@ -62,7 +62,7 @@ function GetShellColumns ($Folder) {
 }
 
 
-# Convert valid column names to shell view indexes.
+# Convert valid shell property names to indexes.
 function GetColumnIndexes ($Names, $AllNames) {
     $h = @{}
     $i = 0
@@ -70,10 +70,10 @@ function GetColumnIndexes ($Names, $AllNames) {
         $h[$c] = $i
         ++$i
     }
-    foreach ($s in $Column) {
+    foreach ($s in $Names) {
         $index = $h[$s]
         if ($null -eq $index) {
-            Write-Error "invalid column name: $s"
+            Write-Error "invalid property name: $s"
         }
         else {
             $index
@@ -105,7 +105,7 @@ function ParseDate ($s) {
 }
 
 
-# Select value parser function based on column name, or $null.
+# Select value parser function based on property name, or $null.
 function GetParser ($name) {
     switch -Wildcard ($name) {
         *date* { Get-Item Function:ParseDate }
@@ -138,15 +138,14 @@ function GetData ($Item, $Indexes, $Names, $UseOriginalNames) {
 
 $shellObj = New-Object -ComObject Shell.Application
 $recycleBinFolder = $shellObj.NameSpace(0xa)
-$columns = @(GetShellColumns($recycleBinFolder))
-$columnNames = $columns.Name
+$allProperties = @(GetShellColumns($recycleBinFolder))
 
-if ($ListColumns) {
-    $columns
+if ($ListProperty) {
+    Write-Output $allProperties
     return
 }
 
-$columnIndexes = GetColumnIndexes $Column $columnNames
+$columnIndexes = GetColumnIndexes $Property $allProperties.Name
 
 $progress = @{
     Activity='Retrieving Recycle Bin items'
@@ -155,7 +154,7 @@ $items = $recycleBinFolder.Items()
 $total = $items.Count
 $count = 0
 foreach ($item in $items) {
-    GetData $item $columnIndexes $columnNames $KeepOriginalNames
+    GetData $item $columnIndexes $allProperties.Name $KeepOriginalNames
     $count += 1
     if (($count % 100) -eq 0) {
         $progress.PercentComplete = $count / $total * 100
@@ -163,3 +162,4 @@ foreach ($item in $items) {
         Write-Progress @progress
     }
 }
+Write-Progress @progress -Completed
