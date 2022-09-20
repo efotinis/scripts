@@ -62,23 +62,23 @@ function GetShellColumns ($Folder) {
 }
 
 
-# Convert valid shell property names to indexes.
-function GetColumnIndexes ($Names, $AllNames) {
-    $h = @{}
-    $i = 0
-    foreach ($c in $AllNames) {
-        $h[$c] = $i
-        ++$i
+# Select properties in order of matching names.
+# Emits a single warning for all invalid names.
+function SelectPropertyByName([object[]]$Property, [string[]]$Name) {
+    $invalid = @()
+    $nameMap = @{}
+    foreach ($p in $Property) {
+        $nameMap[$p.Name] = $p
     }
-    foreach ($s in $Names) {
-        $index = $h[$s]
-        if ($null -eq $index) {
-            Write-Error "invalid property name: $s"
+    foreach ($s in $Name) {
+        if ($nameMap.ContainsKey($s)) {
+            Write-Output $nameMap[$s]
+        } else {
+            $invalid += $s
         }
-        else {
-            $index
-        }
-        
+    }
+    if ($invalid.Count -gt 0) {
+        Write-Warning "Invalid property names: $($invalid -join ', ')"
     }
 }
 
@@ -115,12 +115,12 @@ function GetParser ($name) {
 
 
 # Get shell item data.
-function GetData ($Item, $Indexes, $Names, $UseOriginalNames) {
+function GetData ($Item, $Properties, $UseOriginalNames) {
     $a = [ordered]@{}
     $Parent = $Item.Parent
-    foreach ($index in $Indexes) {
-        $value = $Parent.GetDetailsOf($Item, $index)
-        $name = $Names[$index]
+    foreach ($p in $Properties) {
+        $value = $Parent.GetDetailsOf($Item, $p.index)
+        $name = $p.name
         $parser = GetParser $name
         if (-not $UseOriginalNames) {
             $name = $name -replace '[^\w]',''
@@ -145,7 +145,7 @@ if ($ListProperty) {
     return
 }
 
-$columnIndexes = GetColumnIndexes $Property $allProperties.Name
+$reqProps = SelectPropertyByName -Property $allProperties -Name $Property
 
 $progress = @{
     Activity='Retrieving Recycle Bin items'
@@ -154,7 +154,7 @@ $items = $recycleBinFolder.Items()
 $total = $items.Count
 $count = 0
 foreach ($item in $items) {
-    GetData $item $columnIndexes $allProperties.Name $KeepOriginalNames
+    GetData $item $reqProps $KeepOriginalNames
     $count += 1
     if (($count % 100) -eq 0) {
         $progress.PercentComplete = $count / $total * 100
