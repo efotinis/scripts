@@ -17,16 +17,17 @@
 .PARAMETER Property
     Name set of properties to return. Use ListProperty for valid values.
     Default set: 'Name', 'Size', 'Date deleted', 'Original location'.
-.PARAMETER Translatable
-    Handling of date and size values. Use on of:
-        - Original: Keep as-is (string). For sizes this means a number with
-          unit suffix and for dates a locale-specific string.
-        - Parsed: Try to interpret the original values. Sizes are converted to
-          64-bit int and dates to DatetTime objects. Note that sizes will not
-          be exact, since the formatted values have lost precision.
 .PARAMETER OriginalName
     Use original property names in returned objects. If omitted, non-word
     characters are removed.
+.PARAMETER Raw
+    Do not convert property values.
+    If this is omitted the following conversions take place:
+        - Dates are stripped of Unicode directionality marks and converted to
+          DateTime objects.
+        - Sizes are converted to 64-bit integers. Note that results are not
+          exact, since the original values are approximations.
+    When a value is converted, the original is stored as a NoteProperty 'Raw'.
 .PARAMETER ListProperty
     List available properties.
 .INPUTS
@@ -54,11 +55,10 @@ Param(
     [string[]]$Property = @('Name', 'Size', 'Date deleted', 'Original location'),
 
     [Parameter(ParameterSetName = 'Info')]
-    [ValidateSet('parsed', 'original', 'both')]
-    [string]$Translatable = 'parsed',
+    [switch]$OriginalName,
 
     [Parameter(ParameterSetName = 'Info')]
-    [switch]$OriginalName,
+    [switch]$Raw,
 
     [Parameter(ParameterSetName = 'List')]
     [switch]$ListProperty
@@ -140,11 +140,11 @@ function GetData ($Item, $Properties, $UseOriginalNames) {
         if (-not $UseOriginalNames) {
             $name = $name -replace '\W+',''
         }
-        if ($Translatable -ne 'parsed' -or -not $parser) {
+        if ($Raw -or -not $parser) {
             $a[$name] = $value
-        }
-        if ($Translatable -ne 'original' -and $parser) {
-            $a[$name + '_'] = & $parser $value
+        } else {
+            $a[$name] = & $parser $value
+            $a[$name] | Add-Member -NotePropertyName Raw -NotePropertyValue $value
         }
     }
     [PSCustomObject]$a
