@@ -48,10 +48,16 @@ Param(
 )
 
 
-# Column titles of specified folder shell view.
-function GetColumnTitles ($Folder) {
-    for ($i = 0; $s = $Folder.GetDetailsOf($null, $i); $i += 1) {
-        $s
+# Get the index and title of all available columns of a shell folder.
+function GetShellColumns ($Folder) {
+    for ($index = 0; $index -lt 1000; ++$index) {
+        $name = $Folder.GetDetailsOf($null, $index)
+        if ($name) {
+            [PSCustomObject]@{
+                Index = $index
+                Name = $name
+            }
+        }
     }
 }
 
@@ -132,10 +138,11 @@ function GetData ($Item, $Indexes, $Names, $UseOriginalNames) {
 
 $shellObj = New-Object -ComObject Shell.Application
 $recycleBinFolder = $shellObj.NameSpace(0xa)
-$columnNames = GetColumnTitles($recycleBinFolder)
+$columns = @(GetShellColumns($recycleBinFolder))
+$columnNames = $columns.Name
 
 if ($ListColumns) {
-    $columnNames
+    $columns
     return
 }
 
