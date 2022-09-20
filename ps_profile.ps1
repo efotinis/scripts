@@ -646,6 +646,121 @@ function global:tcb ([switch]$Append) {
 }
 
 
+<#
+.SYNOPSIS
+    Pop random item(s) from collection.
+.DESCRIPTION
+    Removes and return one or more random items from the specified collection.
+    The collection size must not be fixed.
+.PARAMETER InputObject
+    Source collection. Cannot be passed via the pipeline.
+.PARAMETER Count
+    Number of items to return. A warning is issued if less items were available
+    than requested.
+.INPUTS
+    None.
+.OUTPUTS
+    Any object(s).
+.NOTES
+    If running in a loop, a check for an empty collection must be used as an
+    exit condition.
+#>
+function global:Pop-RandomItem {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        $InputObject,
+
+        [int]$Count = 1
+    )
+    for ($n = 0; $n -lt $Count; ++$n) {
+        if ($InputObject.Count -eq 0) {
+            Write-Warning "More items were requested than were available."
+            break
+        }
+        $i = Get-Random -Maximum $InputObject.Count
+        try {
+            $item = $InputObject.Item($i)
+            $InputObject.RemoveAt($i)
+            Write-Output $item
+        } catch {
+            throw  # make any error terminating
+        }
+    }
+}
+
+
+<#
+.SYNOPSIS
+    Manage system volume using nircmd.exe.
+.DESCRIPTION
+    ...
+.PARAMETER Level
+    Set the sound level. Can specify one value to set both the left and right
+    channels to the same level or two to set them individually.
+    Valid range is 0..100. If Relative is set, the range is -100..100.
+.PARAMETER Relative
+    Set the sound level relative to the current value.
+.PARAMETER Mute
+    Set the mute state. Available options: on, off, toggle.
+.PARAMETER Component
+    The sound component to modify. One of: master, waveout, synth, cd,
+    microphone, phone, aux, line, headphones, wavein.
+.PARAMETER DeviceIndex
+    Numeric index of sound device if there more than one installed. If omitted,
+    the default device is used.
+.INPUTS
+    None.
+.OUTPUTS
+    None.
+#>
+function global:Set-SystemVolume {
+    [CmdletBinding()]
+    param(
+        [Parameter(ParameterSetName = 'Level')]
+        [ValidateCount(1, 2)]
+        [ValidateRange(-100, 100)]
+        [int[]]$Level,
+
+        [Parameter(ParameterSetName = 'Level')]
+        [switch]$Relative,
+
+        [Parameter(ParameterSetName = 'Mute')]
+        [ValidateSet('on', 'off', 'toggle')]
+        [string]$Mute,
+
+        [ValidateSet('master', 'waveout', 'synth', 'cd', 'microphone', 'phone',
+            'aux', 'line', 'headphones', 'wavein')]
+        [string]$Component = 'master',
+
+        [int]$DeviceIndex
+    )
+    switch ($PSCmdlet.ParameterSetName) {
+        'Level' {
+            $cmdPfx = if ($Relative) { 'change' } else { 'set' }
+            $cmdSfx = if ($Level.Count -eq 1) { '' } else { '2' }
+            $args = @(
+                $cmdPfx + 'sysvolume' + $cmdSfx
+                $Level | % { [int]($_ / 100 * 65535) }
+            )
+        }
+        'Mute' {
+            $MUTEVAL = @{ 'off' = 0; 'on' = 1; 'toggle' = 2 }
+            $args = @(
+                'mutesysvolume'
+                $MUTEVAL[$Mute]
+            )
+        }
+    }
+    $args += $Component
+    if ($PSBoundParameters.ContainsKey('DeviceIndex')) {
+        $args += $DeviceIndex
+    }
+    nircmdc.exe @args
+}
+
+
+
 Set-Alias -Scope global gip Get-IfProperty
 Set-Alias -Scope global ndd New-DateDirectory
 Set-Alias -Scope global gft Get-FileTotal
