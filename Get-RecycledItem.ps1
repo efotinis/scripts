@@ -1,39 +1,49 @@
 <#
 .SYNOPSIS
     Get Recycle Bin item info.
+
 .DESCRIPTION
     ...
+
 .EXAMPLE
     PS C:\> Get-RecycledItem
-    Name                            Size_ DateDeleted_        OriginalLocation
-    ----                            ----- ------------        ----------------
-    backup - Copy.txt                 127 05/05/2020 21:22:00 C:\Users\Elias\Desktop
-    ps notes - Copy.txt              8100 05/05/2020 21:22:00 C:\Users\Elias\Desktop
-    bathroom faucet leak - Copy.txt    73 05/05/2020 21:22:00 C:\Users\Elias\Desktop
-    bookmarks review - Copy.txt       147 05/05/2020 21:22:00 C:\Users\Elias\Desktop
-    vs code tips - Copy.txt           378 05/05/2020 21:22:00 C:\Users\Elias\Desktop
-    New Text Document - Copy.txt     1864 05/05/2020 21:22:00 C:\Users\Elias\Desktop
-    todotxt - Copy.txt                138 05/05/2020 21:22:00 C:\Users\Elias\Desktop
+    Name                            Size DateDeleted        OriginalLocation
+    ----                            ---- ------------        ----------------
+    backup - Copy.txt                127 05/05/2020 21:22:00 C:\Users\Elias\Desktop
+    ps notes - Copy.txt             8100 05/05/2020 21:22:00 C:\Users\Elias\Desktop
+    bathroom faucet leak - Copy.txt   73 05/05/2020 21:22:00 C:\Users\Elias\Desktop
+    bookmarks review - Copy.txt      147 05/05/2020 21:22:00 C:\Users\Elias\Desktop
+    vs code tips - Copy.txt          378 05/05/2020 21:22:00 C:\Users\Elias\Desktop
+    New Text Document - Copy.txt    1864 05/05/2020 21:22:00 C:\Users\Elias\Desktop
+    todotxt - Copy.txt               138 05/05/2020 21:22:00 C:\Users\Elias\Desktop
+
 .PARAMETER Property
     Name set of properties to return. Use ListProperty for valid values.
     Default set: 'Name', 'Size', 'Date deleted', 'Original location'.
-.PARAMETER Translatable
-    Handling of date and size values. Use on of:
-        - Original: Keep as-is (string). For sizes this means a number with
-          unit suffix and for dates a locale-specific string.
-        - Parsed: Try to interpret the original values. Sizes are converted to
-          64-bit int and dates to DatetTime objects. Note that sizes will not
-          be exact, since the formatted values have lost precision.
+
 .PARAMETER OriginalName
     Use original property names in returned objects. If omitted, non-word
     characters are removed.
+
+.PARAMETER Raw
+    Do not convert property values.
+    If this is omitted the following conversions take place:
+        - Dates are stripped of Unicode directionality marks and converted to
+          DateTime objects.
+        - Sizes are converted to 64-bit integers. Note that results are not
+          exact, since the original values are approximations.
+    When a value is converted, the original is stored as a NoteProperty 'Raw'.
+
 .PARAMETER ListProperty
     List available properties.
+
 .INPUTS
     None
+
 .OUTPUTS
     List of custom objects (ListProperty not set).
     List of strings (ListProperty set).
+
 .NOTES
     Docs and refs:
         https://stackoverflow.com/questions/22816215/delete-old-files-in-recycle-bin-with-powershell
@@ -54,11 +64,10 @@ Param(
     [string[]]$Property = @('Name', 'Size', 'Date deleted', 'Original location'),
 
     [Parameter(ParameterSetName = 'Info')]
-    [ValidateSet('parsed', 'original', 'both')]
-    [string]$Translatable = 'parsed',
+    [switch]$OriginalName,
 
     [Parameter(ParameterSetName = 'Info')]
-    [switch]$OriginalName,
+    [switch]$Raw,
 
     [Parameter(ParameterSetName = 'List')]
     [switch]$ListProperty
@@ -140,11 +149,11 @@ function GetData ($Item, $Properties, $UseOriginalNames) {
         if (-not $UseOriginalNames) {
             $name = $name -replace '\W+',''
         }
-        if ($Translatable -ne 'parsed' -or -not $parser) {
+        if ($Raw -or -not $parser) {
             $a[$name] = $value
-        }
-        if ($Translatable -ne 'original' -and $parser) {
-            $a[$name + '_'] = & $parser $value
+        } else {
+            $a[$name] = & $parser $value
+            $a[$name] | Add-Member -NotePropertyName Raw -NotePropertyValue $value
         }
     }
     [PSCustomObject]$a
