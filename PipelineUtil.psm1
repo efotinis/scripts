@@ -422,6 +422,7 @@ function Get-InRangeProperty {
             'CenterRadius' {
                 # NOTE: Radius must be to the right of operator to coerse
                 # to number, since a negative arg is bound as a string
+                # FIXME: This however causes an error when Radius is a TimeSpan.
                 if (0 -gt $Radius) {
                     throw "radius value ($Radius) must be non-negative"
                 }
