@@ -1,14 +1,34 @@
-# GOG game launcher.
+<#
+.SYNOPSIS
+    GOG Galaxy game launcher.
+
+.DESCRIPTION
+    Displays all installed GOG games and launches the one selected.
+
+    The most recently selected games appear at the top of the list.
+    The rest are sorted alphabetically.
+
+.PARAMETER HideConsole
+    Temporarily hide console window while script is running.
+
+.INPUTS
+    None
+
+.OUTPUTS
+    None
+#>
 [CmdletBinding()]
 param(
     [switch]$HideConsole
 )
+
 
 $CLIENT_PATH = 'C:\Program Files (x86)\GOG Galaxy\GalaxyClient.exe'
 $GAMES_DIRS = @('D:\games')
 $RECENT_LOG = '~\goglaunch-recent.txt'
 $RECENT_MAX = 5
 $UI_TITLE = 'Launch GOG game'
+
 
 # Get id,name,path of games in specified directories.
 function GamesInfo ([string[]]$Directory) {
@@ -25,6 +45,7 @@ function GamesInfo ([string[]]$Directory) {
     }
 }
 
+
 # Sort objects with recent IDs to beginning of games array and add MRU index.
 function AddMruInfo ([object[]]$Games, [object[]]$RecentIds) {
     $mruIndexFromId = [hashtable]::new()
@@ -32,9 +53,6 @@ function AddMruInfo ([object[]]$Games, [object[]]$RecentIds) {
         $mruIndexFromId[$_] = $i++
     }
     $recent, $other = $Games.Where({ $_.Id -in $RecentIds}, 'split')
-    <#
-    $recent = $recent | sort -Property { $mruIndexFromId[$_.Id] }
-    #>
     $recent = $recent | select @(
         @{ name='MRU'; expr={ $mruIndexFromId[$_.Id] } }
         'Id', 'Name', 'Path'
@@ -46,25 +64,34 @@ function AddMruInfo ([object[]]$Games, [object[]]$RecentIds) {
     @($recent | sort -Property mru) + @($other)
 }
 
+
 # MRU list of game IDs.
 class RecentGames {
+
     [System.Collections.ArrayList] $Ids
-    RecentGames () {  # load, if any, up to max
+
+    # load, if any, up to max
+    RecentGames () {
         $this.Ids = @(
-            Get-Content -Path $script:RECENT_LOG -ErrorAction Ignore | 
+            Get-Content -Path $script:RECENT_LOG -ErrorAction Ignore |
                 select -first $script:RECENT_MAX
         )
     }
-    [void] Save () {  # save up to max
-        $this.Ids | 
-            select -first $script:RECENT_MAX | 
+
+    # save up to max
+    [void] Save () {
+        $this.Ids |
+            select -first $script:RECENT_MAX |
             Set-Content -Path $script:RECENT_LOG
     }
-    [void] Add ($Id) {  # add (or move if existing) to beginning
+
+    # add (or move if existing) to beginning
+    [void] Add ($Id) {
         $this.Ids.Remove($Id)
         $this.Ids.Insert(0, $Id)
     }
 }
+
 
 if ($HideConsole) {
     Hide-ConsoleWindow
@@ -82,7 +109,6 @@ try {
             '/command=runGame'
             '/path="' + $sel.Path + '"'
         )
-        #& 'C:\Program Files (x86)\Dell\Dell Display Manager\ddm.exe' /SetNamedPreset Game
         & $CLIENT_PATH @args
     }
 } finally {
