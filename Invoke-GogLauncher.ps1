@@ -1,4 +1,8 @@
 # GOG game launcher.
+[CmdletBinding()]
+param(
+    [switch]$HideConsole
+)
 
 $CLIENT_PATH = 'C:\Program Files (x86)\GOG Galaxy\GalaxyClient.exe'
 $GAMES_DIRS = @('D:\games')
@@ -62,7 +66,9 @@ class RecentGames {
     }
 }
 
-Hide-ConsoleWindow
+if ($HideConsole) {
+    Hide-ConsoleWindow
+}
 try {
     $recent = [RecentGames]::new()
     $games = AddMruInfo (GamesInfo $GAMES_DIRS) $recent.Ids
@@ -80,5 +86,7 @@ try {
         & $CLIENT_PATH @args
     }
 } finally {
-    Show-ConsoleWindow
+    if ($HideConsole) {
+        Show-ConsoleWindow
+    }
 }
