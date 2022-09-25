@@ -57,7 +57,7 @@ function Show-ConsoleWindow {
     }
     --$script:WindowHideCount
     if ($script:WindowHideCount -eq 0) {
-        [WinApi]::ShowWindow($script:ConsoleWindowHandle, [ShowStatus]::Show)
+        Set-WindowShow $script:ConsoleWindowHandle ([ShowStatus]::Show)
         $script:ConsoleWindowHandle = $null
     }
 }
@@ -69,13 +69,18 @@ function Hide-ConsoleWindow {
     }
     ++$script:WindowHideCount
     if ($script:WindowHideCount -eq 1) {
-        [WinApi]::ShowWindow($script:ConsoleWindowHandle, [ShowStatus]::Hide)
+        Set-WindowShow $script:ConsoleWindowHandle ([ShowStatus]::Hide)
     }
 }
 
 
 function Get-ConsoleWindowHideDepth {
     return $script:WindowHideCount
+}
+
+
+function Get-IsConsoleWindowVisible {
+    return (Get-Process -Id $PID).MainWindowHandle -ne 0
 }
 
 
