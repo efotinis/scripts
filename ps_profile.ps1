@@ -781,6 +781,7 @@ Set-Alias -Scope global espeak 'C:\Program Files (x86)\eSpeak\command_line\espea
 Set-Alias -Scope global nw ~\newwall.ps1
 Set-Alias -Scope global fst Get-FileNameSafeTimestamp
 Set-Alias -Scope global drv Get-DiskDrive
+Set-Alias -Scope global sd Invoke-ShellDelete
 
 
 # change default transfer protocols ("Ssl3, Tls"), both of which are insecure;
