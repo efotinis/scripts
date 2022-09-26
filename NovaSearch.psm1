@@ -176,27 +176,29 @@ if (Get-Command ConvertTo-NiceSize -ErrorAction Ignore) {
 }
 
 
-function ParseInt32OrSuffixed ([string]$Text) {
+function ParseCount ([string]$Text) {
     $n = 0
-    if ([Int32]::TryParse($Text, [ref]$n)) {
+    if ($Text -eq 'n/a') {
+        -1
+    } elseif ([Int32]::TryParse($Text, [ref]$n)) {
         $n
     } else {
         try {
             ConvertFrom-NiceSize $Text
         } catch {
-            Write-Error "Could not parse 32-bit integer (or suffixed float): $Text"
+            Write-Error "Could not parse count: $Text"
             0
         }
     }
 }
 
 
-function ParseInt64 ([string]$Text) {
+function ParseSize ([string]$Text) {
     $n = 0
     if ([Int64]::TryParse($Text, [ref]$n)) {
         $n
     } else {
-        Write-Error "Could not parse 64-bit integer: $Text"
+        Write-Error "Could not parse size: $Text"
         0
     }
 }
@@ -267,9 +269,9 @@ function Search-NovaTorrent {
         }
         $link = $parts[0]
         $name = $parts[1]
-        $size = ParseInt64 $parts[2]
-        $seeds = ParseInt32OrSuffixed $parts[3]
-        $leeches = ParseInt32OrSuffixed $parts[4]
+        $size = ParseSize $parts[2]
+        $seeds = ParseCount $parts[3]
+        $leeches = ParseCount $parts[4]
         $engineId = $script:ENGINE_URL_TO_ID[$parts[5]]
         $description = $parts[6]
         [TorrentResult]::new(
