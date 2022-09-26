@@ -1,7 +1,7 @@
 Update-FormatData -AppendPath "$PSScriptRoot\NovaSearch.Format.ps1xml"
 
 
-$script:NOVA_PATH = 'C:\Program Files\Python39\Scripts\nova6.exe'  # TODO: set dynamically
+$script:NOVA_PATH = $null
 $script:ENGINES_PATH = "$Env:LOCALAPPDATA\NovaSearch\engines"
 $script:ENGINE_URL_TO_ID = $null
 
@@ -40,6 +40,25 @@ function YesNoPrompt ([string]$Caption, [string]$Message) {
 }
 
 
+# Run nova search with specified arguments. The exe is located dynamically
+# and its location is cached the first time this is called.
+function RunNova ([string[]]$Arguments) {
+    if ($null -eq $script:NOVA_PATH) {
+        $basePath = py -c 'import sys; print(sys.exec_prefix)' 2> $null
+        if ($LASTEXITCODE) {
+            $script:NOVA_PATH = ''
+        } else {
+            $script:NOVA_PATH = Join-Path -Path $basePath -ChildPath 'Scripts\nova6.exe'
+        }
+    }
+    if (-not $script:NOVA_PATH) {
+        Write-Error "Could not locate nova6.exe."
+    } else {
+        & $script:NOVA_PATH $Arguments
+    }
+}
+
+
 <#
 .SYNOPSIS
     Initialize environment.
@@ -70,7 +89,7 @@ function Initialize-NovaSearch {
     }
 
     # search engines
-    $caption = 'Search engines not found at $script:ENGINES_PATH.'
+    $caption = "Search engines not found at $script:ENGINES_PATH."
     if (CheckEnginesDir) {
         Write-Verbose "Found search engines at $script:ENGINES_PATH."
     } elseif (YesNoPrompt $caption 'Downloaded from GitHub?') {
@@ -129,7 +148,7 @@ function Get-NovaEngine {
         '-d', $script:ENGINES_PATH
         '--capabilities'
     )
-    $info = [xml](& $script:NOVA_PATH @args)
+    $info = [xml](script:RunNova $args)
     foreach ($engine in $info.capabilities.ChildNodes) {
         [PSCustomObject]@{
             Id = $engine.LocalName
@@ -236,7 +255,7 @@ function Search-NovaTorrent {
         $Keyword
     )
     $count = 0
-    & $script:NOVA_PATH @novaArgs | % {
+    script:RunNova $novaArgs | % {
         if ($_.Trim() -eq '') {
             # ignore empty results
             return  # NOTE: this does not end the pipeline
