@@ -46,8 +46,11 @@ function Get-GogGame {
         [Parameter(ParameterSetName = 'Id')]
         [int[]]$Id,
 
-        [string[]]$Directory = 'D:\games'
+        [string[]]$Directory
     )
+    if (-not $PSBoundParameters.ContainsKey('Directory')) {
+        $Directory = (script:Get-GogOption).GameDirectory
+    }
     foreach ($path in $Directory) {
         # TODO: emit warning when $path is not a directory
         # use Force, since some info files are hidden (e.g. Far Cry 2)
