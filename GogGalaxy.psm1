@@ -1,4 +1,39 @@
-$script:CLIENT_PATH = 'C:\Program Files (x86)\GOG Galaxy\GalaxyClient.exe'
+$script:OPTIONS_PATH = "$Env:LOCALAPPDATA\goggalaxy.json"
+
+
+function Get-GogOption {
+    [CmdletBinding()]
+    param()
+    $args = @{
+        LiteralPath = $script:OPTIONS_PATH
+        Encoding = 'UTF8'
+        ErrorAction = 'Ignore'
+    }
+    $opt = Get-Content @args | ConvertFrom-Json
+    if ($null -eq $opt) {
+        @{}
+    } else {
+        $opt
+    }
+}
+
+
+function Set-GogOption {
+    [CmdletBinding()]
+    param(
+        [string[]]$GameDirectory,
+        [string]$ClientPath
+    )
+    $options = script:Get-GogOption
+    if ($PSBoundParameters.ContainsKey('GameDirectory')) {
+        $options.GameDirectory = $GameDirectory
+    }
+    if ($PSBoundParameters.ContainsKey('ClientPath')) {
+        $options.ClientPath = $ClientPath
+    }
+    $options | ConvertTo-Json |
+        Set-Content -LiteralPath $script:OPTIONS_PATH -Encoding UTF8
+}
 
 
 # Get id,name,path of games in specified directories.
@@ -7,13 +42,14 @@ function Get-GogGame {
     param(
         [Parameter(ParameterSetName = 'Name', Position = 0)]
         [string[]]$Name = '*',
-        
+
         [Parameter(ParameterSetName = 'Id')]
         [int[]]$Id,
-        
+
         [string[]]$Directory = 'D:\games'
     )
     foreach ($path in $Directory) {
+        # TODO: emit warning when $path is not a directory
         # use Force, since some info files are hidden (e.g. Far Cry 2)
         Get-ChildItem "$path\*\goggame*.info" -Force | ForEach-Object {
             $a = Get-Content $_ | ConvertFrom-Json
@@ -47,7 +83,7 @@ function Start-GogGame {
     param(
         [Parameter(Mandatory, ValueFromPipelineByPropertyName)]
         [string]$Path,
-        
+
         [Parameter(Mandatory, ValueFromPipelineByPropertyName)]
         [int]$Id
     )
@@ -56,5 +92,5 @@ function Start-GogGame {
         '/command=runGame'
         '/path="' + $Path + '"'
     )
-    & $script:CLIENT_PATH @args
+    & (script:Get-GogOption).ClientPath @args
 }
