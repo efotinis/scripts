@@ -7,10 +7,10 @@
     The input directories are scanned recursively and the files are stored
     uncompressed.
 
-.PARAMETER SourceDir
+.PARAMETER Source
     Source directory. Contains the input directories. Must exist.
 
-.PARAMETER DestDir
+.PARAMETER Destination
     Destination directory. Output archives are placed there. Must exist.
     Default is the source directory.
 
@@ -26,9 +26,9 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)]
-    [string]$SourceDir,
+    [string]$Source,
 
-    [string]$DestDir,
+    [string]$Destination,
 
     [string]$Filter = '',
 
@@ -40,22 +40,22 @@ param(
 Set-StrictMode -version latest
 
 
-if (!(Test-Path $SourceDir -Type Container)) {
-    Write-Error "source dir does not exist: $SourceDir"
+if (-not (Test-Path $Source -Type Container)) {
+    Write-Error "source dir does not exist: $Source"
     return
 }
 
-if (!$DestDir) {
-    $DestDir = $SourceDir
+if (-not $Destination) {
+    $Destination = $Source
 }
-if (!(Test-Path $DestDir -Type Container)) {
-    Write-Error "destination dir does not exist: $DestDir"
+if (-not (Test-Path $Destination -Type Container)) {
+    Write-Error "destination dir does not exist: $Destination"
     return
 }
 
 # convert to normalized, absolute path, since the current location is changed
 # when invoking 7-Zip
-$DestDir = [string](Resolve-Path $DestDir)
+$Destination = [string](Resolve-Path $Destination)
 
 if ($Cbz) {
     $archiveType = '-tzip'
@@ -65,9 +65,9 @@ if ($Cbz) {
     $archiveExt = '.7z'
 }
 
-$dirs = Get-ChildItem -Directory -Path $SourceDir -Filter $Filter
+$dirs = Get-ChildItem -Directory -Path $Source -Filter $Filter
 foreach ($dir in $dirs) {
-    $OutFile = Join-Path $DestDir ($dir.Name + $archiveExt)
+    $OutFile = Join-Path $Destination ($dir.Name + $archiveExt)
     try {
         Push-Location $dir.FullName
         Echo "creating archive: $OutFile"
