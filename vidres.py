@@ -1,8 +1,8 @@
 """List video resolutions."""
 
-from __future__ import division, print_function
 import argparse
 import fractions
+import json
 
 import windisplay
 
@@ -17,15 +17,14 @@ def parse_args():
         help='bare output (no header)')
     add('-m', dest='mpsort', action='store_true',
         help='sort by MP; default is by width,height')
+    add('-j', dest='json', action='store_true',
+        help='output in JSON')
     return ap.parse_args()
 
 
 def ratio(s):
     x, y = s.split(':')
-    try:
-        return fractions.Fraction(int(x), int(y))
-    except ArithmeticError:
-        raise ValueError
+    return fractions.Fraction(int(x), int(y))
 
 
 def ratio_str(r):
@@ -57,11 +56,21 @@ if __name__ == '__main__':
     else:
         modes_xy.sort()
 
-    if not args.bare:
+    if not args.bare and not args.json:
         print('horz vert    MP  ratio  x:y')
         print('---- ----  ----  -----  ---------')
     for x, y in modes_xy:
         ratio = fractions.Fraction(x, y)
         if args.ratios is None or ratio in args.ratios:
             mp = x*y/1000000
-            print('%4d %4d  %.2f  %.3f  %s' % (x, y, mp, x/y, ratio_str(ratio)))
+            if args.json:
+                d = {
+                    'Width': x,
+                    'Height': y,
+                    'Megapixel': mp,
+                    'Ratio': x/y,
+                    'IntRatio': [ratio.numerator, ratio.denominator]
+                }
+                print(json.dumps(d))
+            else:
+                print('%4d %4d  %.2f  %.3f  %s' % (x, y, mp, x/y, ratio_str(ratio)))
