@@ -1,22 +1,25 @@
 <#
 .SYNOPSIS
-    Convert directories into 7-Zip archives.
-    
+    Convert directories into uncompressed 7Z/CBZ files.
+
 .DESCRIPTION
-    Create 7-Zip archives from each directory under the source directory. 
-    The input directories are scanned recursively and the files are stored 
+    Create archives from each directory under the source directory.
+    The input directories are scanned recursively and the files are stored
     uncompressed.
 
 .PARAMETER SourceDir
     Source directory. Contains the input directories. Must exist.
 
 .PARAMETER DestDir
-    Destination directory. Output archives are placed there. Must exist. 
+    Destination directory. Output archives are placed there. Must exist.
     Default is the source directory.
 
 .PARAMETER Filter
     Optional wildcard filter for selecting input directories.
-    
+
+.PARAMETER Cbz
+    Create CBZ archive instead of 7Z.
+
 .PARAMETER Purge
     Remove source files if archive creation is succesful.
 #>
@@ -26,9 +29,11 @@ param(
     [string]$SourceDir,
 
     [string]$DestDir,
-    
+
     [string]$Filter = '',
-    
+
+    [switch]$Cbz,
+
     [switch]$Purge
 )
 
@@ -52,13 +57,21 @@ if (!(Test-Path $DestDir -Type Container)) {
 # when invoking 7-Zip
 $DestDir = [string](Resolve-Path $DestDir)
 
+if ($Cbz) {
+    $archiveType = '-tzip'
+    $archiveExt = '.cbz'
+} else {
+    $archiveType = '-t7z'
+    $archiveExt = '.7z'
+}
+
 $dirs = Get-ChildItem -Directory -Path $SourceDir -Filter $Filter
 foreach ($dir in $dirs) {
-    $OutFile = Join-Path $DestDir ($dir.Name + '.7z')
+    $OutFile = Join-Path $DestDir ($dir.Name + $archiveExt)
     try {
         Push-Location $dir.FullName
         Echo "creating archive: $OutFile"
-        7z a -mtc=on -mx=0 -r $OutFile * > $null
+        7z a $archiveType -mtc=on -mx=0 -r $OutFile * > $null
         $ok = $?
     }
     finally {
