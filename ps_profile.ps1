@@ -814,6 +814,75 @@ Set-PSReadLineKeyHandler `
         }
     }
 
+
+<#
+.SYNOPSIS
+    Get PSReadLine colors.
+.DESCRIPTION
+    Returns a hashset of the current PSReadLine colors in extended Clipper
+    color format. Note that the DefaultToken color is renamed as Default, to
+    match the color-setting parameter name.
+.INPUTS
+    None.
+.OUTPUTS
+    Hashset.
+#>
+function global:Get-PSReadLineColor {
+    [CmdletBinding()]
+    param()
+    $opt = Get-PSReadLineOption
+    $ret = [ordered]@{}
+    foreach ($s in ($opt | Get-Member *color | % Name)) {
+        $setKey = $s -replace 'color$',''
+        if ($setKey -eq 'DefaultToken') {
+            $setKey = 'Default'
+        }
+        $ret[$setKey] = ConvertFrom-AnsiColor $opt.$s
+    }
+    Write-Output $ret
+}
+
+
+<#
+.SYNOPSIS
+    Set PSReadLine colors.
+.DESCRIPTION
+    Set one or more PSReadLine colors using extended Clipper color format.
+.INPUTS
+    None.
+.OUTPUTS
+    None.
+#>
+function global:Set-PSReadLineColor {
+    [CmdletBinding()]
+    param(
+        [string]$Command,
+        [string]$Comment,
+        [string]$ContinuationPrompt,
+        [string]$Default,
+        [string]$Emphasis,
+        [string]$Error,
+        [string]$InlinePrediction,
+        [string]$Keyword,
+        [string]$ListPrediction,
+        [string]$ListPredictionSelected,
+        [string]$Member,
+        [string]$Number,
+        [string]$Operator,
+        [string]$Parameter,
+        [string]$Selection,
+        [string]$String,
+        [string]$Type,
+        [string]$Variable
+    )
+    $colors = @{}
+    foreach ($e in $PSBoundParameters.GetEnumerator()) {
+        $colors[$e.Key] = [string](ConvertTo-AnsiColor $e.Value)
+    }
+    Set-PSReadLineOption -Colors $colors
+}
+
+
 # Set error prompt to double exclamation mark.
 # NOTE: Ideally this should interface with ModularPrompt, but currently it just
 # uses the single space between the prompt and command line.
