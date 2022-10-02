@@ -39,6 +39,8 @@ param(
 
 Set-StrictMode -version latest
 
+# TODO: create destination if it does not exist
+# TODO: replace Source/Filter with InputObject (directory object)
 
 if (-not (Test-Path $Source -Type Container)) {
     Write-Error "source dir does not exist: $Source"
