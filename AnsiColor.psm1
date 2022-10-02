@@ -173,6 +173,7 @@ function ConvertTo-AnsiColor {
             if ($n -lt 0 -or $n -gt 255) {
                 throw "Element out of range: $name"
             }
+            return $n
         }
         function ParseColor ([string]$Spec, [bool]$Foreground) {
             switch -regex ($Spec) {
