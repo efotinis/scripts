@@ -5,6 +5,7 @@ Set-StrictMode -Version Latest
 Import-Module $Env:Scripts\AnsiColor.psm1
 Import-Module $Env:Scripts\ConsoleUtil.psm1
 Import-Module $Env:Scripts\EFUtil.psm1
+Import-Module $Env:Scripts\GogGalaxy.psm1
 Import-Module $Env:Scripts\MercurialUtil.psm1
 Import-Module $Env:Scripts\ModularPrompt.psm1
 Import-Module $Env:Scripts\NiceConvert.psm1
@@ -623,12 +624,15 @@ function global:Get-TimedOutput {
     begin {
         $t = [System.Diagnostics.Stopwatch]::new()
         $t.Start()
+        $prev = [timespan]::new(0)
     }
     process {
         [PSCustomObject]@{
             Elapsed = $t.Elapsed
+            Delta = $t.Elapsed - $prev
             Object = $_
         }
+        $prev = $t.Elapsed
     }
 }
 
@@ -809,3 +813,8 @@ Set-PSReadLineKeyHandler `
             Write-Host -NoNewLine (' ' * $Host.UI.RawUI.BufferSize.Width)
         }
     }
+
+# Set error prompt to double exclamation mark.
+# NOTE: Ideally this should interface with ModularPrompt, but currently it just
+# uses the single space between the prompt and command line.
+Set-PSReadLineOption -PromptText ' ',([char]0x203c)
