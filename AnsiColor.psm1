@@ -130,12 +130,12 @@ function ConvertFrom-AnsiColor {
         black, blue, green cyan, red, magenta, yellow, gray.
     The addition of a '+' character modifies the color to represent the
     lighter versions, with 'n+' mapping to dark gray and 'w+' to white.
-    
+
     Effect cab be one or more of the characters:
         'n', 'b', 'f', 'i', 'u', 'a', 'b', 'r'
     representing:
         normal, bold, faint, italic, underline, slow blink, fast blink, reverse.
-    
+
     Whitespace and character case is ignored.
 
 .PARAMETER InputObject
@@ -227,7 +227,7 @@ function ConvertTo-AnsiColor {
                 }
             }
         }
-        function ParseEffect ($Effect) {
+        function ParseEffect ([string]$Effect) {
             foreach ($c in [char[]]$Effect) {
                 $n = 'nbfiuabr'.IndexOf($c)
                 if ($n -eq -1) {
