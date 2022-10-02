@@ -46,10 +46,16 @@ function Get-GogGame {
         [Parameter(ParameterSetName = 'Id')]
         [int[]]$Id,
 
-        [string[]]$Directory = 'D:\games'
+        [string[]]$Directory
     )
+    if (-not $PSBoundParameters.ContainsKey('Directory')) {
+        $Directory = (script:Get-GogOption).GameDirectory
+    }
     foreach ($path in $Directory) {
-        # TODO: emit warning when $path is not a directory
+        if (-not (Test-Path -LiteralPath $path -PathType Container)) {
+            Write-Warning "Game containing directory does not exist: $path"
+            continue
+        }
         # use Force, since some info files are hidden (e.g. Far Cry 2)
         Get-ChildItem "$path\*\goggame*.info" -Force | ForEach-Object {
             $a = Get-Content $_ | ConvertFrom-Json

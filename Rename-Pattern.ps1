@@ -30,7 +30,7 @@
     Hashtable of extra named captures to provide for each replacement. Can
     be used to provide data not found in the original strings (e.g. increment
     counter).
-    
+
     Each key is the capture name and its corresponding value a list of strings.
     The strings are provided for each input item in order. The size of each
     list must match the number of input items.
@@ -49,7 +49,10 @@
     None.
 
 .OUTPUTS
-    Nothing if Commit is present. Othersize, multiple PSCustomObjects.
+    - If Commit is set, return file system objects of all input items with an
+        additional property Renamed showing whether the name was changed.
+    - If Commit is not set, return PSCustomObjects with info about how each
+        input item would be affected.
 
 .NOTES
     Rename-Item fails when renaming a directory with a different letter case.
@@ -160,7 +163,17 @@ for ($i = 0; $i -lt $count; ++$i) {
 
     if ($Commit) {
         if ($InputObject[$i] -cne $newName) {
-            Rename-Item -LiteralPath $InputObject[$i] -NewName $newName
+            $ret = Rename-Item -LiteralPath $InputObject[$i] -NewName $newName -PassThru
+        }
+        if ($ret) {
+            $wasRenamed = $true
+        } else {
+            $ret = Get-Item -LiteralPath $InputObject[$i]
+            $wasRenamed = $false
+        }
+        if ($ret) {
+            $ret | Add-Member -NotePropertyName Renamed -NotePropertyValue $wasRenamed
+            Write-Output $ret
         }
     }
     else {
