@@ -239,11 +239,16 @@ function ConvertTo-AnsiColor {
     }
     process {
         $fore, $back, $effect = ($InputObject -replace '\s+','') -split '/',3
-        $a = @(
-            ParseColor $fore $true
-            ParseColor $back $false
-            ParseEffect $effect
-        )
+        try {
+            $a = @(
+                ParseColor $fore $true
+                ParseColor $back $false
+                ParseEffect $effect
+            )
+        } catch {
+            Write-Error "Could not parse color: $InputObject"
+            throw
+        }
         Write-Output (MakeSequence $a $Substitute)
     }
 }
