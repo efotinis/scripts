@@ -64,7 +64,7 @@ begin {
             [Parameter(Position = 0)]$Patt
         )
         process {
-            $Dir | Get-IfProperty Name -NotLikeAny $Patt | % {
+            $Dir | Get-IfProperty Name -NotLikeAll $Patt | % {
                 Write-Output $_
                 gci -dir $_.FullName | ProcessDir -Patt $Patt
             }
