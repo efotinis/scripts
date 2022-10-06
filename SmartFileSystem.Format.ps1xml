@@ -48,7 +48,7 @@
                             <TableColumnItem><ScriptBlock>(ConvertTo-FlagField $_.Attributes 'eioclptn-ad-shr') -replace '-','.'</ScriptBlock></TableColumnItem>
                             <TableColumnItem><ScriptBlock>FileTableAge $_.CreationTime -Precision 1</ScriptBlock></TableColumnItem>
                             <TableColumnItem><ScriptBlock>FileTableAge $_.LastWriteTime -Precision 2</ScriptBlock></TableColumnItem>
-                            <TableColumnItem><ScriptBlock>if ($_.PSIsContainer) { '' } else { (ConvertTo-NiceSize $_.Length) -replace 'B$','' -replace 'bytes','B' -replace ' ','' }</ScriptBlock></TableColumnItem>
+                            <TableColumnItem><ScriptBlock>if ($_.PSIsContainer) { '' } else { (ConvertTo-NiceSize $_.Length) -replace 'B$','' -replace 'bytes?','B' -replace ' ','' }</ScriptBlock></TableColumnItem>
                             <TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
                         </TableColumnItems>
                     </TableRowEntry>
