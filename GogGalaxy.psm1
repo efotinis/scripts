@@ -9,12 +9,20 @@ function Get-GogOption {
         Encoding = 'UTF8'
         ErrorAction = 'Ignore'
     }
-    $opt = Get-Content @args | ConvertFrom-Json
-    if ($null -eq $opt) {
-        @{}
-    } else {
-        $opt
+    $a = Get-Content @args | ConvertFrom-Json
+    $t = [System.Management.Automation.PSCustomObject]
+    if ($null -eq $a -or $a.GetType() -ne $t) {
+        $a = [PSCustomObject]@{}
     }
+    function TryGetProp ($obj, $name) {
+        if (Get-Member -InputObject $obj -Name $name) {
+            $obj.$name
+        }
+    }
+    Write-Output ([PSCustomObject]@{
+        GameDirectory = @(TryGetProp $a 'GameDirectory')
+        ClientPath = TryGetProp $a 'ClientPath'
+    })
 }
 
 
