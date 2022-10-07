@@ -1,6 +1,21 @@
 $script:OPTIONS_PATH = "$Env:LOCALAPPDATA\goggalaxy.json"
 
 
+<#
+.SYNOPSIS
+    Get module options.
+
+.DESCRIPTION
+    Returns custom object with configuration options for the GogGalaxy module.
+    See Set-GogOption for available options. Missing or non-configured options
+    are set to $null.
+
+.INPUTS
+    None.
+
+.OUTPUTS
+    PSCustomObject.
+#>
 function Get-GogOption {
     [CmdletBinding()]
     param()
@@ -14,6 +29,8 @@ function Get-GogOption {
     if ($null -eq $a -or $a.GetType() -ne $t) {
         $a = [PSCustomObject]@{}
     }
+    # Get object property if it exists, otherwise nothing (to convert to empty
+    # array of needed).
     function TryGetProp ($obj, $name) {
         if (Get-Member -InputObject $obj -Name $name) {
             $obj.$name
@@ -26,6 +43,26 @@ function Get-GogOption {
 }
 
 
+<#
+.SYNOPSIS
+    Set module options.
+
+.DESCRIPTION
+    Sets one or more configuration options for the GogGalaxy module.
+
+.PARAMETER GameDirectory
+    List of directory paths containing GOG games. Subdirectories are scanned
+    for game metadata when querying installed games.
+
+.PARAMETER ClientPath
+    Location of GalaxyClient.exe. Used when starting a game.
+
+.INPUTS
+    None.
+
+.OUTPUTS
+    None.
+#>
 function Set-GogOption {
     [CmdletBinding()]
     param(
@@ -44,7 +81,37 @@ function Set-GogOption {
 }
 
 
-# Get id,name,path of games in specified directories.
+<#
+.SYNOPSIS
+    Get game objects.
+
+.DESCRIPTION
+    Returns info objects for games matching the specified criteria. If no
+    criteria are specified, all games are returned.
+
+    The returned object properties are:
+        - Id: Unique game number ID.
+        - Name: Game name.
+        - Path: Game directory.
+
+    Each object contains a Start method that can be used to launch the game.
+
+.PARAMETER Name
+    One of more names of games to return. Can contain wildcards.
+
+.PARAMETER Id
+    One of more IDs of games to return.
+
+.PARAMETER Directory
+    List of directories to scan for installed games.
+    Overrides the GameDirectory configuration option.
+
+.INPUTS
+    None.
+
+.OUTPUTS
+    PSCustomObject.
+#>
 function Get-GogGame {
     [CmdletBinding(DefaultParameterSetName = 'Name')]
     param(
