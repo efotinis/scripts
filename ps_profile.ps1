@@ -765,6 +765,13 @@ function global:Set-SystemVolume {
 }
 
 
+# Toggle ModularPrompt path display between Full and Tail.
+function global:tpd {
+    $cur = (Get-ModPromptOption).PathDisplay
+    $new = if ($cur -eq 'Tail') { 'Full' } else { 'Tail' }
+    Set-ModPromptOption -PathDisplay $new
+}
+
 
 Set-Alias -Scope global gip Get-IfProperty
 Set-Alias -Scope global ndd New-DateDirectory
