@@ -64,6 +64,18 @@ function Get-GogGame {
             Write-Warning "Game containing directory does not exist: $path"
             continue
         }
+        $startMemberArgs = @{
+            MemberType = 'ScriptMethod'
+            Name = 'Start'
+            Value = {
+                $args = @(
+                    '/gameid=' + $this.Id
+                    '/command=runGame'
+                    '/path="' + $this.Path + '"'
+                )
+                & (script:Get-GogOption).ClientPath @args
+            }
+        }
         # use Force, since some info files are hidden (e.g. Far Cry 2)
         Get-ChildItem "$path\*\goggame*.info" -Force | ForEach-Object {
             $a = Get-Content $_ | ConvertFrom-Json
@@ -72,6 +84,7 @@ function Get-GogGame {
                 Name = $a.name
                 Path = $_ | Split-Path -Parent
             }
+            $g | Add-Member @startMemberArgs
             switch ($PSCmdlet.ParameterSetName) {
                 'Name' {
                     foreach ($p in $Name) {
@@ -90,21 +103,4 @@ function Get-GogGame {
             }
         }
     }
-}
-
-
-function Start-GogGame {
-    param(
-        [Parameter(Mandatory, ValueFromPipelineByPropertyName)]
-        [string]$Path,
-
-        [Parameter(Mandatory, ValueFromPipelineByPropertyName)]
-        [int]$Id
-    )
-    $args = @(
-        '/gameid=' + $Id
-        '/command=runGame'
-        '/path="' + $Path + '"'
-    )
-    & (script:Get-GogOption).ClientPath @args
 }
