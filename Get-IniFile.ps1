@@ -7,7 +7,8 @@
     format, i.e. no spaces around equal sign in key/value entries and inside
     brackets of section names.
 .PARAMETER InputObject
-    Path of INI file.
+    Path of INI file. This is stored in returned objects as a '_source'
+    property.
 .INPUTS
     INI path.
 .OUTPUTS
@@ -20,36 +21,38 @@ param(
     [Alias('FullName', 'PSPath')]
     [string]$InputObject
 )
+process {
+    $file = Get-Item -LiteralPath $InputObject
+    if (-not $file) {
+        return
+    }
 
-$file = Get-Item -LiteralPath $InputObject
-if (-not $file) {
-    return
+    $sectionExpr = [Regex]'^\s*\[\s*(.*?)\s*\]\s*$'
+    $entryExpr = [Regex]'^\s*([^=]+)\s*=(.*)$'
+    $whitespaceExpr = [Regex]'^\s*$'
+
+    $ret = @{}
+    $curSectName = ''
+    $file | Get-Content | ForEach-Object {
+        $m = $sectionExpr.Match($_)
+        if ($m.Success) {
+            Write-Verbose "SECTION: $($m.Groups[1].Value)"
+            $curSectName = $m.Groups[1].Value
+            $ret[$curSectName] = @{}
+            return
+        }
+        $m = $entryExpr.Match($_)
+        if ($m.Success) {
+            Write-Verbose "KEY/VAL: $($m.Groups[1].Value) / $($m.Groups[2].Value)"
+            $ret[$curSectName][$m.Groups[1].Value] = $m.Groups[2].Value
+            return
+        }
+        $m = $whitespaceExpr.Match($_)
+        if (-not $m.Success) {
+            Write-Warning "Unrecognized INI line: $_"
+            return
+        }
+    }
+    $ret | Add-Member -NotePropertyName _source -NotePropertyValue $InputObject
+    Write-Output $ret
 }
-
-$sectionExpr = [Regex]'^\s*\[\s*(.*?)\s*\]\s*$'
-$entryExpr = [Regex]'^\s*([^=]+)\s*=(.*)$'
-$whitespaceExpr = [Regex]'^\s*$'
-
-$ret = @{}
-$curSectName = ''
-$file | Get-Content | ForEach-Object {
-    $m = $sectionExpr.Match($_)
-    if ($m.Success) {
-        Write-Verbose "SECTION: $($m.Groups[1].Value)"
-        $curSectName = $m.Groups[1].Value
-        $ret[$curSectName] = @{}
-        return
-    }
-    $m = $entryExpr.Match($_)
-    if ($m.Success) {
-        Write-Verbose "KEY/VAL: $($m.Groups[1].Value) / $($m.Groups[2].Value)"
-        $ret[$curSectName][$m.Groups[1].Value] = $m.Groups[2].Value
-        return
-    }
-    $m = $whitespaceExpr.Match($_)
-    if (-not $m.Success) {
-        Write-Warning "Unrecognized INI line: $_"
-        return
-    }
-}
-Write-Output $ret
