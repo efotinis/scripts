@@ -33,7 +33,9 @@ param(
     [Parameter(Mandatory)]
     [string]$Destination,
 
-    [switch]$Copy
+    [switch]$Copy,
+
+    [switch]$Shuffle
 )
 
 begin {
@@ -98,8 +100,9 @@ end {
         return
     }
 
-    # Shuffle items.
-    #$items = $items | Get-Random -Count $items.Count
+    if ($Shuffle) {
+        $items = $items | Get-Random -Count $items.Count
+    }
 
     $indexFormat = 'D' + ([string]$items.Count).Length
     $index = 1
