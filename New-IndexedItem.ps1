@@ -126,8 +126,8 @@ end {
     $sec = $timer.Elapsed.TotalSeconds
     $speed = if ($sec) { $info.bytesCopied / $sec } else { 0 }
 
-    Write-Host "items OK/failed: $itemsOK/$itemsFailed"
+    Write-Verbose "items OK/failed: $itemsOK/$itemsFailed"
     if ($Copy) {
-        Write-Host "speed: $(ConvertTo-NiceSize $speed)/s"
+        Write-Verbose "copy speed: $(ConvertTo-NiceSize $speed)/s"
     }
 }
