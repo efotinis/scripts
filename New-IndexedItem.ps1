@@ -13,18 +13,20 @@ the following will:
 - editing/deleting files in junctions
 #>
 
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess)]
 param(
     # Input file.
-    [Parameter(ValueFromPipeline)]
-    [System.IO.FileSystemInfo]
-    $InputFile,
+    [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [SupportsWildcards()]
+    [Alias('PSPath', 'FullName')]
+    [string[]]
+    $InputObject,
 
     # Target directory. Will be created if needed.
     [Parameter(Mandatory)]
     [string]
     $Destination,
-    
+
     # Copy items instead of creating hardlinks/junctions.
     [switch]
     $Copy
@@ -33,7 +35,7 @@ param(
 begin {
     Set-StrictMode -Version Latest
     $items = [System.Collections.ArrayList]@()
-    
+
     function ProcessItem ($SrcPath, $NewPath, $IsDir, $Copy, $Info) {
         if ($Copy) {
             if ($IsDir) {
@@ -54,7 +56,7 @@ begin {
             }
         }
     }
-    
+
     function GetDirSize ($Path) {
         Get-ChildItem -LiteralPath $Path -Recurse -Force |
             Measure-Item -Sum Length |
@@ -63,7 +65,7 @@ begin {
 
 }
 process {
-    $null = $items.Add($InputFile)
+    [void]$items.AddRange(($InputObject | Get-Item))
 }
 end {
     # Create destination directory.
@@ -87,6 +89,11 @@ end {
         }
     }
 
+    if ($items.Count -eq 0) {
+        Write-Error "No input items."
+        return
+    }
+
     # Shuffle items.
     $items = $items | Get-Random -Count $items.Count
 
@@ -107,7 +114,7 @@ end {
         }
         ++$index
     }
-    
+
     $timer.Stop()
     $sec = $timer.Elapsed.TotalSeconds
     $speed = if ($sec) { $info.bytesCopied / $sec } else { 0 }
