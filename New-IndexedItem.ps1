@@ -1,35 +1,39 @@
 <#
-Link/copy pipelined filesystem items in random order with number prefix.
-Unless copied, files produce hardlinks and directories junctions.
+.SYNOPSIS
+    Create filesystem objects with numeric prefix from existing items.
 
-Can be used to access files in random order (e.g. media, documents).
-The generated files can be either deleted (without affecting the originals)
-or bookmarked in order to continue from that point at a later time.
+.DESCRIPTION
+    Generates new file and directory objects from existing items and inserts
+    an increasing index as a name prefix.
 
-WARNING:
-While deleting hardlinks and junctions does not affect the originals,
-the following will:
-- editing hardlinks
-- editing/deleting files in junctions
+.PARAMETER InputObject
+    Input item path. Can specify multiple items either as an array or via the
+    pipeline. Wildcards are supported.
+
+.PARAMETER Destination
+    Output directory. Will be created if needed.
+
+.PARAMETER Copy
+    Copy input items. If omitted, file hardlinks and directory junctions are
+    created.
+
+.INPUTS
+    Input item paths.
+
+.OUTPUTS
+    New filesystem objects.
 #>
-
 [CmdletBinding(SupportsShouldProcess)]
 param(
-    # Input file.
     [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
     [SupportsWildcards()]
     [Alias('PSPath', 'FullName')]
-    [string[]]
-    $InputObject,
+    [string[]]$InputObject,
 
-    # Target directory. Will be created if needed.
     [Parameter(Mandatory)]
-    [string]
-    $Destination,
+    [string]$Destination,
 
-    # Copy items instead of creating hardlinks/junctions.
-    [switch]
-    $Copy
+    [switch]$Copy
 )
 
 begin {
@@ -95,7 +99,7 @@ end {
     }
 
     # Shuffle items.
-    $items = $items | Get-Random -Count $items.Count
+    #$items = $items | Get-Random -Count $items.Count
 
     $indexFormat = 'D' + ([string]$items.Count).Length
     $index = 1
