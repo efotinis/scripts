@@ -17,6 +17,9 @@
     Copy input items. If omitted, file hardlinks and directory junctions are
     created.
 
+.PARAMETER Shuffle
+    Randomize the order of new items.
+
 .INPUTS
     Input item paths.
 
