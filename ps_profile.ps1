@@ -773,6 +773,38 @@ function global:tpd {
 }
 
 
+<#
+.SYNOPSIS
+    Reverse string.
+.DESCRIPTION
+    Gets the reverse of the input string.
+.PARAMETER Text
+    Input string. Can pass multipl values via the pipeline.
+.INPUTS
+    String.
+.OUTPUTS
+    String.
+#>
+function Get-ReverseString {
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [AllowEmptyString()]
+        [string]$Text
+    )
+    begin {
+        $sb = [System.Text.StringBuilder]::new()
+    }
+    process {
+        [void]$sb.Clear()
+        [void]$sb.EnsureCapacity($Text.Length)
+        for ($i = $Text.Length - 1; $i -ge 0; --$i) {
+            [void]$sb.Append($Text[$i])
+        }
+        Write-Output $sb.ToString()
+    }
+}
+
+
 Set-Alias -Scope global gip Get-IfProperty
 Set-Alias -Scope global ndd New-DateDirectory
 Set-Alias -Scope global gft Get-FileTotal
