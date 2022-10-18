@@ -833,6 +833,12 @@ Set-Alias -Scope global sd Invoke-ShellDelete
 [Net.ServicePointManager]::SecurityProtocol = 'Tls12, Tls13'
 
 
+function global:EnablePythonUtf8Piping {
+  $global:OutputEncoding = [System.Text.UTF8Encoding]::new($false)  # no BOM
+  $Env:PYTHONUTF8 = 1
+}
+
+
 & "$Env:scripts\SmartFileSystem.Format.ps1"
 
 Set-DefaultConsoleTitle
