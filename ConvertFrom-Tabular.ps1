@@ -13,17 +13,22 @@
 .PARAMETER InputObject
     Source text lines. Should be passed via the pipeline.
 
+.PARAMETER AsHashtable
+    Output hashtables instead of PSCustomObjects.
+
 .INPUTS
     Text.
 
 .OUTPUTS
-    PSCustomObject.
+    PSCustomObject or hashtable.
 #>
 
 [CmdletBinding()]
 param(
     [Parameter(Mandatory, ValueFromPipeline)]
-    [string]$InputObject
+    [string]$InputObject,
+
+    [switch]$AsHashtable
 )
 begin {
     # Convert header line to Column objects.
@@ -61,6 +66,10 @@ process {
         foreach ($c in $columns) {
             AddField $a $c $InputObject
         }
-        [PSCustomObject]$a
+        if ($AsHashtable) {
+            [hashtable]$a
+        } else {
+            [PSCustomObject]$a
+        }
     }
 }
