@@ -47,7 +47,7 @@ begin {
     function AddField ($Obj, $Col, [string]$Line) {
         if ($Col.Pos -ge $Line.Length) {
             $value = ''
-        } elseif ($Col.Pos + $Col.Len -gt $Line.Length) {
+        } elseif ($null -eq $Col.Len -or $Col.Pos + $Col.Len -gt $Line.Length) {
             $value = $Line.Substring($Col.Pos)
         } else {
             $value = $Line.Substring($Col.Pos, $Col.Len)
