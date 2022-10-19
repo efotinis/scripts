@@ -118,7 +118,7 @@ function global:Edit-ScriptInVSCode ([string]$InputObject) {
 # Interafe with MPC-HC command line.
 function global:Invoke-MediaPlayerClassic {
     param(
-        [Parameter(Mandatory, ValueFromPipeline<#, ValueFromPipelineByPropertyName#>)]
+        [Parameter(ValueFromPipeline<#, ValueFromPipelineByPropertyName#>)]
         #[Alias('FullName')]
         [object[]]$InputObject,
         [switch]$Open,
