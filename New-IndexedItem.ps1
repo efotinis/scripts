@@ -61,7 +61,8 @@ begin {
     function ProcessItem ($SrcPath, $NewPath, $IsDir, $Copy) {
         if ($Copy) {
             if ($IsDir) {
-                Copy-Item -LiteralPath $SrcPath -Destination $NewPath -PassThru -Recurse
+                Copy-Item -LiteralPath $SrcPath -Destination $NewPath -Recurse
+                if ($?) { Get-Item -LiteralPath $NewPath }
             } else {
                 Copy-Item -LiteralPath $SrcPath -Destination $NewPath -PassThru
             }
