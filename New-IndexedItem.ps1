@@ -53,14 +53,12 @@ begin {
     Set-StrictMode -Version Latest
     $items = [System.Collections.ArrayList]@()
 
-    function ProcessItem ($SrcPath, $NewPath, $IsDir, $Copy, $Info) {
+    function ProcessItem ($SrcPath, $NewPath, $IsDir, $Copy) {
         if ($Copy) {
             if ($IsDir) {
                 Copy-Item -LiteralPath $SrcPath -Destination $NewPath -PassThru -Recurse
-                $Info.bytesCopied += GetDirSize $SrcPath
             } else {
                 Copy-Item -LiteralPath $SrcPath -Destination $NewPath -PassThru
-                $Info.bytesCopied += (Get-Item -LiteralPath $SrcPath).Length
             }
         } else {
             # NOTE: New-Item's '-Value' is incorrectly treated as a wildcard and must be escaped.
@@ -72,12 +70,6 @@ begin {
                 New-Item -Type HardLink -Path $NewPath -Value $SrcPath
             }
         }
-    }
-
-    function GetDirSize ($Path) {
-        Get-ChildItem -LiteralPath $Path -Recurse -Force |
-            Measure-Item -Sum Length |
-            Select-Object -ExpandProperty Sum
     }
 
 }
@@ -110,39 +102,17 @@ end {
         }
     }
 
-    if ($items.Count -eq 0) {
-        Write-Error "No input items."
-        return
-    }
-
     if ($Shuffle) {
         $items = $items | Get-Random -Count $items.Count
     }
 
     $indexFormat = 'D' + ([string]$items.Count).Length
     $index = 1
-    $itemsOK, $itemsFailed = 0, 0
-
-    $info = @{ bytesCopied=0 }
-    $timer = [System.Diagnostics.Stopwatch]::StartNew()
 
     foreach ($item in $items) {
         $newName = $index.ToString($indexFormat) + '. ' + $item.Name
         $newPath = Join-Path $dest $newName
-        if (ProcessItem $item.FullName $newPath $item.PSIsContainer $Copy $info) {
-            ++$itemsOK
-        } else {
-            ++$itemsFailed
-        }
+        ProcessItem $item.FullName $newPath $item.PSIsContainer $Copy
         ++$index
-    }
-
-    $timer.Stop()
-    $sec = $timer.Elapsed.TotalSeconds
-    $speed = if ($sec) { $info.bytesCopied / $sec } else { 0 }
-
-    Write-Verbose "items OK/failed: $itemsOK/$itemsFailed"
-    if ($Copy) {
-        Write-Verbose "copy speed: $(ConvertTo-NiceSize $speed)/s"
     }
 }
