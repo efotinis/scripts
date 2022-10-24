@@ -61,8 +61,9 @@ begin {
                 Copy-Item -LiteralPath $SrcPath -Destination $NewPath -PassThru
             }
         } else {
-            # NOTE: New-Item's '-Value' is incorrectly treated as a wildcard and must be escaped.
-            # See: https://github.com/PowerShell/PowerShell/issues/6232 (opened Feb 24, 2018)
+            # NOTE: New-Item's '-Value' is incorrectly treated as a wildcard
+            # and must be escaped. See issue open on Feb 24, 2018:
+            #   https://github.com/PowerShell/PowerShell/issues/6232
             $SrcPath = $SrcPath.Replace('[','`[').Replace(']','`]')
             if ($IsDir) {
                 New-Item -Type Junction -Path $NewPath -Value $SrcPath
@@ -81,18 +82,11 @@ process {
     [void]$items.AddRange($a)
 }
 end {
-    # Create destination directory.
-    <#
-    # NOTE: '-Force' prevents error if directory already exists.
-    #   However, it fails with root paths.
-    $dest = New-Item -Type Directory -Path $Destination -Force
-    if (-not $dest) {
-        return
-    }
-    #>
+    # NOTE: Test destination explicitly instead of using `New-Item -Force`,
+    # to report error if it's file and to avoid failure if it's a root path.
     $dest = Get-Item -LiteralPath $Destination -ErrorAction Ignore
     if ($dest -and -not $dest.PSIsContainer) {
-        Write-Error "destination path is a file: $Destination"
+        Write-Error "Destination path is a file: $Destination"
         return
     }
     if (-not $dest) {
