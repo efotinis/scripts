@@ -82,10 +82,10 @@ begin {
             } else {
                 $type = 'HardLink'
             }
-            # NOTE: New-Item's '-Value' is incorrectly treated as a wildcard
-            # and must be escaped. See issue open on Feb 24, 2018:
+            # NOTE: New-Item's `-Value` is incorrectly treated as a wildcard,
+            # so brackets must be backtick-escaped. See issue Feb 24, 2018:
             #   https://github.com/PowerShell/PowerShell/issues/6232
-            $SrcPath = $SrcPath.Replace('[','`[').Replace(']','`]')
+            $SrcPath = $SrcPath -replace '([[\]])','`$1'
             New-Item -Type $type -Path $NewPath -Value $SrcPath
         }
     }
