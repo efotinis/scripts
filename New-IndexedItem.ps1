@@ -6,9 +6,13 @@
     Generates new file and directory objects from existing items and inserts
     an increasing index as a name prefix.
 
-.PARAMETER InputObject
-    Input item path. Can specify multiple items either as an array or via the
-    pipeline. Wildcards are supported.
+.PARAMETER Path
+    Input item path. Wildcards are supported. Can specify multiple items either
+    as an array or via the pipeline.
+
+.PARAMETER LiteralPath
+    Input item path. Wildcards are ignored. Can specify multiple items either
+    as an array or via the pipeline.
 
 .PARAMETER Destination
     Output directory. Will be created if needed.
@@ -26,12 +30,16 @@
 .OUTPUTS
     New filesystem objects.
 #>
-[CmdletBinding(SupportsShouldProcess)]
+[CmdletBinding(SupportsShouldProcess, DefaultParameterSetName = 'Path')]
 param(
-    [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName, Position = 0, ParameterSetName = 'Path')]
     [SupportsWildcards()]
-    [Alias('PSPath', 'FullName')]
-    [string[]]$InputObject,
+    [string[]]$Path,
+
+    [Parameter(Mandatory, ValueFromPipelineByPropertyName, ParameterSetName = 'LiteralPath')]
+    [SupportsWildcards()]
+    [Alias('PSPath')]
+    [string[]]$LiteralPath,
 
     [Parameter(Mandatory)]
     [string]$Destination,
@@ -74,7 +82,11 @@ begin {
 
 }
 process {
-    [void]$items.AddRange(($InputObject | Get-Item))
+    $a = @(switch ($PSCmdlet.ParameterSetName) {
+        'Path' { Get-Item -Path $Path }
+        'LiteralPath' { Get-Item -LiteralPath $LiteralPath }
+    })
+    [void]$items.AddRange($a)
 }
 end {
     # Create destination directory.
