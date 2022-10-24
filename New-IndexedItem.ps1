@@ -17,12 +17,17 @@
 .PARAMETER Destination
     Output directory. Will be created if needed.
 
+.PARAMETER Operation
+    Method of new item creation. One of:
+
+        - Copy:         Files and directories are copied.
+        - Link:         Hardlinks are created for files and junctions for
+                        directories.
+        - SymbolicLink: Symbolic links of files and directories are created.
+                        This operation requires elevation.
+
 .PARAMETER StartIndex
     Initial prefix number of created items. Default is 1.
-
-.PARAMETER Copy
-    Copy input items. If omitted, file hardlinks and directory junctions are
-    created.
 
 .PARAMETER Shuffle
     Randomize the order of new items.
@@ -47,9 +52,11 @@ param(
     [Parameter(Mandatory)]
     [string]$Destination,
 
-    [int]$StartIndex = 1,
+    [Parameter(Mandatory)]
+    [ValidateSet('Copy', 'Link', 'SymbolicLink')]
+    [string]$Operation,
 
-    [switch]$Copy,
+    [int]$StartIndex = 1,
 
     [switch]$Shuffle
 )
@@ -58,8 +65,9 @@ begin {
     Set-StrictMode -Version Latest
     $items = [System.Collections.ArrayList]@()
 
-    function ProcessItem ($SrcPath, $NewPath, $IsDir, $Copy) {
-        if ($Copy) {
+    # Handle item and return new item object.
+    function ProcessItem ($SrcPath, $NewPath, $IsDir) {
+        if ($Operation -eq 'Copy') {
             if ($IsDir) {
                 Copy-Item -LiteralPath $SrcPath -Destination $NewPath -Recurse
                 if ($?) { Get-Item -LiteralPath $NewPath }
@@ -67,15 +75,18 @@ begin {
                 Copy-Item -LiteralPath $SrcPath -Destination $NewPath -PassThru
             }
         } else {
+            if ($Operation -eq 'SymbolicLink') {
+                $type = 'SymbolicLink'
+            } elseif ($IsDir) {
+                $type = 'Junction'
+            } else {
+                $type = 'HardLink'
+            }
             # NOTE: New-Item's '-Value' is incorrectly treated as a wildcard
             # and must be escaped. See issue open on Feb 24, 2018:
             #   https://github.com/PowerShell/PowerShell/issues/6232
             $SrcPath = $SrcPath.Replace('[','`[').Replace(']','`]')
-            if ($IsDir) {
-                New-Item -Type Junction -Path $NewPath -Value $SrcPath
-            } else {
-                New-Item -Type HardLink -Path $NewPath -Value $SrcPath
-            }
+            New-Item -Type $type -Path $NewPath -Value $SrcPath
         }
     }
 
@@ -112,7 +123,7 @@ end {
     foreach ($item in $items) {
         $newName = $index.ToString($indexFormat) + '. ' + $item.Name
         $newPath = Join-Path $dest $newName
-        ProcessItem $item.FullName $newPath $item.PSIsContainer $Copy
+        ProcessItem $item.FullName $newPath $item.PSIsContainer
         ++$index
     }
 }
