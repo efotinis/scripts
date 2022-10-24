@@ -17,6 +17,9 @@
 .PARAMETER Destination
     Output directory. Will be created if needed.
 
+.PARAMETER StartIndex
+    Initial prefix number of created items. Default is 1.
+
 .PARAMETER Copy
     Copy input items. If omitted, file hardlinks and directory junctions are
     created.
@@ -43,6 +46,8 @@ param(
 
     [Parameter(Mandatory)]
     [string]$Destination,
+
+    [int]$StartIndex = 1,
 
     [switch]$Copy,
 
@@ -101,7 +106,7 @@ end {
     }
 
     $indexFormat = 'D' + ([string]$items.Count).Length
-    $index = 1
+    $index = $StartIndex
 
     foreach ($item in $items) {
         $newName = $index.ToString($indexFormat) + '. ' + $item.Name
