@@ -49,7 +49,8 @@ function ConvertTo-NiceSize
         [string]$Unit = ''
 
         if ($n -le 999) {
-            return "$Sign$n byte" + $(if ($n -eq 1) { '' } else { 's' })
+            Write-Output ("$Sign$n byte" + $(if ($n -eq 1) { '' } else { 's' }))
+            return
         }
 
         foreach ($c in [char[]]'KMGTPE') {
@@ -67,7 +68,7 @@ function ConvertTo-NiceSize
                 'N0'
             }
         )
-        return ('{0}{1:'+$Fmt+'} {2}{3}') -f ($Sign, $n, $Unit, $PREFIX_TAIL)
+        Write-Output (('{0}{1:'+$Fmt+'} {2}{3}') -f ($Sign, $n, $Unit, $PREFIX_TAIL))
     }
 }
 
@@ -86,21 +87,24 @@ function ConvertFrom-NiceSize
         $Size = $Size.ToLower() -replace '\s+', ''
 
         if (-not ($Size -match '^([0-9.]+)(.*)$')) {
-            throw ('invalid size: "{0}"' -f $Size)
+            Write-Error ('invalid size: "{0}"' -f $Size)
+            return
         }
         $Number, $Unit = $Matches[1..2]
         $Number = [double]$Number
         if ($Unit -in 'b','byte','bytes') {
-            return [long]$Number
+            Write-Output ([long]$Number)
+            return
         }
 
         if (-not ($Unit -match '^([kmgtpe])(i?)b?$')) {
-            throw ('invalid unit: "{0}"' -f $Unit)
+            Write-Error ('invalid unit: "{0}"' -f $Unit)
+            return
         }
         $Unit, $Iec = $Matches[1..2]
         $Base = if ($Iec -or -not $Base10) { 1024 } else { 1000 }
         $Factor = [Math]::Pow($Base, 'kmgtpe'.IndexOf($Unit) + 1)
-        return [long]($Number * $Factor)
+        Write-Output ([long]($Number * $Factor))
     }
 }
 
@@ -132,7 +136,7 @@ function ConvertTo-NiceSeconds
         $Minutes = [System.Math]::DivRem($Seconds, 60, [ref]$Seconds)
         $Hours = [System.Math]::DivRem($Minutes, 60, [ref]$Minutes)
         $Fmt = '{0}{1:00}:{2:00}:{3:00.' + ('0' * $Decimals) + '}'
-        $Fmt -f $Sign,$Hours,$Minutes,($Seconds+$fract)
+        Write-Output ($Fmt -f $Sign,$Hours,$Minutes,($Seconds+$fract))
     }
 }
 
@@ -160,15 +164,15 @@ function ConvertTo-NiceDuration
         if ($HideSeconds) {
             $Minutes = [System.Math]::Round($Seconds / 60)
             $Hours = [System.Math]::DivRem($Minutes, 60, [ref]$Minutes)
-            '{0}{1:#0}:{2:00}' -f $Sign,$Hours,$Minutes
+            Write-Output ('{0}{1:#0}:{2:00}' -f $Sign,$Hours,$Minutes)
         } else {
             $Minutes = [System.Math]::DivRem($Seconds, 60, [ref]$Seconds)
             $Hours = [System.Math]::DivRem($Minutes, 60, [ref]$Minutes)
             if ($Hours) {
-                '{0}{1:#0}:{2:00}:{3:00}' -f $Sign,$Hours,$Minutes,$Seconds
+                Write-Output ('{0}{1:#0}:{2:00}:{3:00}' -f $Sign,$Hours,$Minutes,$Seconds)
             }
             else {
-                '{0}{1:#0}:{2:00}' -f $Sign,$Minutes,$Seconds
+                Write-Output ('{0}{1:#0}:{2:00}' -f $Sign,$Minutes,$Seconds)
             }
         }
     }
@@ -184,14 +188,15 @@ function ConvertFrom-NiceDuration
     process {
         $Duration = $Duration.Trim()
         if (-not ($Duration -match '^(-)?(?:(\d+):)?(?:(\d\d?):)(\d\d)$')) {
-            throw ('invalid duration: "{0}"' -f $Duration)
+            Write-Error ('invalid duration: "{0}"' -f $Duration)
+            return
         }
         $Sign, $Hours, $Minutes, $Seconds = $Matches[1..4]
         $Hours = [int]$Hours
         $Minutes = [int]$Minutes
         $Seconds = [int]$Seconds
         $Sign = if ($Sign -eq '-') { -1 } else { 1 }
-        $Sign * ((($Hours * 60) + $Minutes) * 60 + $Seconds)
+        Write-Output ($Sign * ((($Hours * 60) + $Minutes) * 60 + $Seconds))
     }
 }
 
@@ -280,10 +285,10 @@ function ConvertTo-NiceAge
         $whole = $parts -join $Joiner
 
         if ($isSentence) {
-            $Format[$negative] -f $whole
+            Write-Output ($Format[$negative] -f $whole)
         }
         else {
-            $whole
+            Write-Output $whole
         }
     }
 }
