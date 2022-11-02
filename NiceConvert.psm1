@@ -1,22 +1,26 @@
 <#
 .SYNOPSIS
-    Conversion to/from human-readable string representations.
+    Convert a number of bytes to a human-readable size string.
+
 .DESCRIPTION
-    Provides utility functions to convert values like bytes, seconds and
-    time spans into more human-readable strings and back.
-.EXAMPLE
-    PS> ...
-    (explanation)
+    Converts a number of bytes to a value with 3 significant digits and a unit
+    suffix. Values below roughly 1kb get the suffix "bytes" (or "byte").
+
+.PARAMETER Bytes
+    Input number. Can be negative in which case a "-" prefix is added.
+
+.PARAMETER Style
+    Suffix and calculation selection. One of:
+        - jedec: Multiples of 1024, without "i", e.g. 1024 == 1.00 KB. Commonly used in Windows. Default.
+        - iec: Multiples of 1024, with "i", e.g. 1024 == 1.00 KiB. Commonly used in Linux.
+        - metric: Multiples of 1000, without "i", e.g. 1000 == 1.00 KB. Commonly used by storage device manufacturers.
+
 .INPUTS
-    ...
+    Long int.
+
 .OUTPUTS
-    ...
-.NOTES
-    The conversions are only intended for displaying and as such are not exact.
+    String.
 #>
-
-
-# Convert bytes to '[-]N <unit>' where N always has 3 significant digits.
 function ConvertTo-NiceSize
 {
     param (
@@ -73,6 +77,30 @@ function ConvertTo-NiceSize
 }
 
 
+<#
+.SYNOPSIS
+    Convert a human-readable size string to a number of bytes.
+
+.DESCRIPTION
+    Converts a human -readble string representation of a size to a number of
+    bytes. This is the inverse of ConvertTo-NiceSize, but it's more lenient
+    with the input string (there's no restriction on significant digits and
+    whitespace is ignored).
+
+.PARAMETER Size
+    A human-readable size string with a unit.
+
+.PARAMETER Base10
+    Force interpretation of metric units (multiples of 1000) when no "i" is in
+    the unit, e.g. "1.00 KB" -> 1000. By default, jedec units are assumed, e.g.
+    "1.00 KB" -> 1024. This is ignored when units include "i".
+
+.INPUTS
+    String.
+
+.OUTPUTS
+    Long int.
+#>
 function ConvertFrom-NiceSize
 {
     param(
@@ -80,7 +108,6 @@ function ConvertFrom-NiceSize
         [Alias('Length')]
         [string]$Size,
 
-        # Assume base-10, when not using IEC prefix (otherwise ignored).
         [switch]$Base10
     )
     process {
@@ -109,7 +136,28 @@ function ConvertFrom-NiceSize
 }
 
 
-# Convert seconds to "[-]hh:mm:ss.lll".
+<#
+.SYNOPSIS
+    Convert a number of seconds to a human-readable time string.
+
+.DESCRIPTION
+    Converts seconds to a representation of "[-]hh:mm:ss.fff".
+
+.PARAMETER Seconds
+    Input seconds. Negative and fractional numbers are allowed.
+
+.PARAMETER Decimals
+    Number of decimals in output. Default is 0.
+
+.PARAMETER Plus
+    Optional string prefix for positive output. Default is "".
+
+.INPUTS
+    Double.
+
+.OUTPUTS
+    String.
+#>
 function ConvertTo-NiceSeconds
 {
     param(
@@ -141,8 +189,34 @@ function ConvertTo-NiceSeconds
 }
 
 
-# Convert seconds to "[[[h]h:]m]m:ss" (i.e. like video durations shown on YouTube).
-# If $HideSeconds is true, convert to "[h]h:mm".
+<#
+.SYNOPSIS
+    Convert a number of seconds to a human-readable duration string.
+
+.DESCRIPTION
+    Converts seconds to a representation of "[[[h]h:]m]m:ss".
+
+    The differences from ConvertTo-NiceSeconds are:
+        - No fractional seconds are displayed.
+        - The first part is never 0-padded.
+        - When seconds are displayed and the hour part is zero, the latter is
+        hidden, e.g. 600 -> "10:00".
+
+.PARAMETER Seconds
+    Input seconds. Negative and fractional numbers are allowed.
+
+.PARAMETER HideSeconds
+    Suppress seconds display. The output is always "[h]h:mm".
+
+.PARAMETER Plus
+    Optional string prefix for positive output. Default is "".
+
+.INPUTS
+    Int.
+
+.OUTPUTS
+    String.
+#>
 function ConvertTo-NiceDuration
 {
     param(
@@ -179,6 +253,22 @@ function ConvertTo-NiceDuration
 }
 
 
+<#
+.SYNOPSIS
+    Convert a human-readable duration string to a number of seconds.
+
+.DESCRIPTION
+    Converts seconds from a representation of "[-][[[h]h:]m]m:ss".
+
+.PARAMETER Duration
+    A human-readable duration string.
+
+.INPUTS
+    String.
+
+.OUTPUTS
+    Int.
+#>
 function ConvertFrom-NiceDuration
 {
     param(
@@ -231,28 +321,69 @@ function GetFirstNonZeroIndexes ([object[]]$Items, [int]$Span)
 }
 
 
+<#
+.SYNOPSIS
+    Convert a date or timespan to a human-readable age string.
+
+.DESCRIPTION
+    Convert a time span to a string representation using time parts.
+
+.PARAMETER DateOrSpan
+    The date or span of the age to output.
+
+.PARAMETER Precision
+    Number of most significant time parts to output. Default is 2.
+
+    Time parts generated are:
+        - c: centuries
+        - y: years
+        - mo: months
+        - d: days
+        - h: hours
+        - m: minutes
+        - s: seconds
+
+    Note that centuries, years and months are approximates.
+
+.PARAMETER Format
+    Pair of format strings used to format output of past and future dates
+    respectively as a sentence. Defaults are '{0} ago' and 'in {0}'.
+
+.PARAMETER Joiner
+    String to use between parts. Default is " ".
+
+.PARAMETER Simple
+    Output only time parts without sentence formatting.
+
+.PARAMETER Tabulate
+    Output only time parts without sentence formatting. Also inserts whitespace
+    to align time parts for columnar output.
+
+.PARAMETER Invert
+    Swap interpretation of past and future dates.
+
+.INPUTS
+    Datetime or Timespan.
+
+.OUTPUTS
+    String.
+#>
 function ConvertTo-NiceAge
 {
     param(
         [Parameter(Mandatory, ValueFromPipeline)]
         $DateOrSpan,
 
-        # max count of most significant parts to show
         [int]$Precision = 2,
 
-        # output sentence formats
         $Format = @('{0} ago','in {0}'),
 
-        # used between parts in sentence mode
         [string]$Joiner = ' ',
 
-        # no sentence formatting; only add '-' for negative
         [switch]$Simple,
 
-        # like simple, but also use spaces to align parts
         [switch]$Tabulate,
 
-        # swap begin/end semantics
         [switch]$Invert
     )
     process {
