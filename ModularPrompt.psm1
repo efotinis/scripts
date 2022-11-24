@@ -6,15 +6,13 @@ $script:Options = @{
     # Default for items that don't specify a color.
     DefaultColor = 'w+/n+'
 
-    # Part of current path to display:
+    # Path display mode:
     #   - 'Full': Whole path.
+    #   - 'FullTilde': Whole path with HOME replacement (in FileSystem only).
     #   - 'Tail': Last component.
     #   - 'DriveTail': Drive and last component.
     #   - 'None': Nothing.
     PathDisplay = 'DriveTail'
-
-    # Replace HOME path prefix with ":~"
-    ReplaceHome = $true
 
 }
 
@@ -61,19 +59,14 @@ function Set-ModPromptOption {
     param(
         [string]$DefaultColor,
 
-        [ValidateSet('Full', 'Tail', 'DriveTail', 'None')]
-        [string]$PathDisplay,
-
-        [bool]$ReplaceHome
+        [ValidateSet('Full', 'FullTilde', 'Tail', 'DriveTail', 'None')]
+        [string]$PathDisplay
     )
     if ($PSBoundParameters.ContainsKey('DefaultColor')) {
         $script:Options.DefaultColor = $DefaultColor
     }
     if ($PSBoundParameters.ContainsKey('PathDisplay')) {
         $script:Options.PathDisplay = $PathDisplay
-    }
-    if ($PSBoundParameters.ContainsKey('ReplaceHome')) {
-        $script:Options.ReplaceHome = $ReplaceHome
     }
 }
 
@@ -297,27 +290,32 @@ Add-ModPromptItem -Id 'Jobs' -Color 'w+/b' -Expression {
 } -Description 'Number of background jobs, if any.'
 
 
+# Replace HOME of FileSystem location (PathInfo) with special token.
+function TildeHome ($Location) {
+    if ($Location.Provider.Name -eq 'FileSystem') {
+        # Match to the end of path or followed by a path separator.
+        $homeRx = '^' + [RegEx]::Escape($HOME) + '(?:$|(?=\\))'
+        # Replace with special token, to disambiguate from literal '~'.
+        $Location.Path -replace $homeRx,':~'
+    } else {
+        $Location.Path
+    }
+}
+
+
 Add-ModPromptItem -Id 'Path' -Expression {
     $loc = $ExecutionContext.SessionState.Path.CurrentLocation
     $path = $loc.Path
     $drive = Split-Path -Qualifier $path
     $tail = Split-Path -Leaf $path
-    $path = switch ($script:Options.PathDisplay) {
+    switch ($script:Options.PathDisplay) {
         None { '' }
         Full { $path }
+        FullTilde { script:TildeHome $loc }
         Tail { $tail }
         DriveTail { $drive + $tail }
     }
-    $isFileSys = $loc.Provider.Name -eq 'FileSystem'
-    if ($isFileSys -and $script:Options.ReplaceHome) {
-        # Match to the end of path or followed by a path separator.
-        $homeRx = '^' + [RegEx]::Escape($HOME) + '(?:$|(?=\\))'
-        # Replace with special token, to disambiguate from literal '~'.
-        $path -replace $homeRx,':~'
-    } else {
-        $path
-    }
-} -Description 'Current path. Configurable via PathDisplay and ReplaceHome.'
+} -Description 'Current path. Configurable via PathDisplay.'
 
 
 Add-ModPromptItem -Id 'Level' -Expression {
