@@ -9,8 +9,9 @@ $script:Options = @{
     # Part of current path to display:
     #   - 'Full': Whole path.
     #   - 'Tail': Last component.
+    #   - 'DriveTail': Drive and last component.
     #   - 'None': Nothing.
-    PathDisplay = 'Tail'
+    PathDisplay = 'DriveTail'
 
     # Replace HOME path prefix with ":~"
     ReplaceHome = $true
@@ -60,7 +61,7 @@ function Set-ModPromptOption {
     param(
         [string]$DefaultColor,
 
-        [ValidateSet('Full', 'Tail', 'None')]
+        [ValidateSet('Full', 'Tail', 'DriveTail', 'None')]
         [string]$PathDisplay,
 
         [bool]$ReplaceHome
@@ -297,21 +298,25 @@ Add-ModPromptItem -Id 'Jobs' -Color 'w+/b' -Expression {
 
 
 Add-ModPromptItem -Id 'Path' -Expression {
-    $s = ''
-    if ($script:Options.PathDisplay -ne 'None') {
-        $loc = $ExecutionContext.SessionState.Path.CurrentLocation
-        $isFileSys = $loc.Provider.Name -eq 'FileSystem'
-        $s = $loc.Path
-        if ($isFileSys -and $script:Options.ReplaceHome) {
-            # replace home path with ":~"; since "~" alone is a valid
-            # directory name, an extra, invalid path char (colon) is used
-            $s = $s -replace ([RegEx]::Escape($HOME)+'(?:$|(?=\\))'),':~'
-        }
-        if ($script:Options.PathDisplay -eq 'Tail') {
-            $s = Split-Path -Leaf $s
-        }
+    $loc = $ExecutionContext.SessionState.Path.CurrentLocation
+    $path = $loc.Path
+    $drive = Split-Path -Qualifier $path
+    $tail = Split-Path -Leaf $path
+    $path = switch ($script:Options.PathDisplay) {
+        None { '' }
+        Full { $path }
+        Tail { $tail }
+        DriveTail { $drive + $tail }
     }
-    $s
+    $isFileSys = $loc.Provider.Name -eq 'FileSystem'
+    if ($isFileSys -and $script:Options.ReplaceHome) {
+        # Match to the end of path or followed by a path separator.
+        $homeRx = '^' + [RegEx]::Escape($HOME) + '(?:$|(?=\\))'
+        # Replace with special token, to disambiguate from literal '~'.
+        $path -replace $homeRx,':~'
+    } else {
+        $path
+    }
 } -Description 'Current path. Configurable via PathDisplay and ReplaceHome.'
 
 
