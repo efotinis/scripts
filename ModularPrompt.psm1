@@ -299,12 +299,10 @@ Add-ModPromptItem -Id 'Jobs' -Color 'w+/b' -Expression {
 Add-ModPromptItem -Id 'Path' -Expression {
     $s = ''
     if ($script:Options.PathDisplay -ne 'None') {
-        # FIXME: home dir replacement should only
-        # occur when current location is the file system
-        # (SessionState.Path contains both CurrentLocation and
-        # CurrentFileSystemLocation)
-        $s = $ExecutionContext.SessionState.Path.CurrentLocation
-        if ($script:Options.ReplaceHome) {
+        $loc = $ExecutionContext.SessionState.Path.CurrentLocation
+        $isFileSys = $loc.Provider.Name -eq 'FileSystem'
+        $s = $loc.Path
+        if ($isFileSys -and $script:Options.ReplaceHome) {
             # replace home path with ":~"; since "~" alone is a valid
             # directory name, an extra, invalid path char (colon) is used
             $s = $s -replace ([RegEx]::Escape($HOME)+'(?:$|(?=\\))'),':~'
