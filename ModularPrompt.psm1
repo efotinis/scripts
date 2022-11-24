@@ -303,11 +303,22 @@ function TildeHome ($Location) {
 }
 
 
+# Get tail path component or '\' for root.
+function GetTail ($Path) {
+    # Check manually for root, since FileSystem and Registry are inconsistent.
+    if ($Path -match '^[a-z]+:\\$') {
+        '\'
+    } else {
+        Split-Path -Leaf $P ath
+    }
+}
+
+
 Add-ModPromptItem -Id 'Path' -Expression {
     $loc = $ExecutionContext.SessionState.Path.CurrentLocation
     $path = $loc.Path
     $drive = Split-Path -Qualifier $path
-    $tail = Split-Path -Leaf $path
+    $tail = script:GetTail $path
     switch ($script:Options.PathDisplay) {
         None { '' }
         Full { $path }
