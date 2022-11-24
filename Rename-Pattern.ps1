@@ -162,8 +162,8 @@ for ($i = 0; $i -lt $count; ++$i) {
     $newName = $s + $ext
 
     if ($Commit) {
-        if ($InputObject[$i] -cne $newName) {
-            $ret = Rename-Item -LiteralPath $InputObject[$i] -NewName $newName -PassThru
+        $ret = if ($InputObject[$i] -cne $newName) {
+            Rename-Item -LiteralPath $InputObject[$i] -NewName $newName -PassThru
         }
         if ($ret) {
             $wasRenamed = $true
