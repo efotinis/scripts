@@ -628,6 +628,33 @@ function global:DateAgo {
 }
 
 
+# Get the datetime of the next occurence of specified time.
+function global:NextTime {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Time  # 'HH[:]mm' format
+    )
+    if ($Time -notmatch '^\s*(\d\d):?(\d\d)\s*$') {
+        Write-Error "Invalid time string: $Time."
+        return
+    }
+    $h, $m = $Matches[1..2].ForEach([int])
+    if ($h -gt 23) {
+        Write-Error "Invalid hour: $h."
+        return
+    }
+    if ($m -gt 59) {
+        Write-Error "Invalid minute: $m."
+        return
+    }
+    $d = Get-Date
+    $t = [timespan]::new($h, $m, 0)
+    $tomorrow = $t -le $d.TimeOfDay
+    [datetime]::new($d.Year, $d.Month, $d.Day, $h, $m, 0).AddDays($tomorrow)
+}
+
+
 # Timestamp in filename-safe format.
 function global:Get-FileNameSafeTimestamp ([switch]$Utc) {
     $fmt = if ($Utc) { 'FileDateTimeUniversal' } else { 'FileDateTime' }
