@@ -428,17 +428,35 @@ function global:timeit {
 
 
 # Eject drive.
-function global:eject {
+function global:Dismount-RemovableDrive {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [string]$Drive
+        [string]$Name # letter, drive or path
     )
+    $Drive = [System.IO.DriveInfo]::new($Name)
+    switch ($Drive.DriveType) {
+        'Unknown' {
+            Write-Error "Drive type is unknown: $Name."
+            return
+        }
+        'NoRootDirectory' {
+            Write-Error "Drive does not exist: $Name."
+            return
+        }
+        'Removable' {
+        }
+        default {
+            Write-Error "Drive $($Drive.Name) is of type $($Drive.DriveType), not Removable."
+            return
+        }
+    }
     $ssfDRIVES = 0x11  # "My Computer"
     $shell = New-Object -comObject Shell.Application
-    $driveObj = $shell.Namespace($ssfDRIVES).ParseName($Drive)
+    $driveObj = $shell.Namespace($ssfDRIVES).ParseName($Drive.Name)
     if (-not $driveObj) {
-        throw "drive does not exist: $Drive"
+        Write-Error "Could not get shell object of drive $($Drive.Name)."
+        return
     }
     $driveObj.InvokeVerb("Eject")  # NOTE: must be localized string
 }
@@ -858,6 +876,7 @@ Set-Alias -Scope global nw ~\newwall.ps1
 Set-Alias -Scope global fst Get-FileNameSafeTimestamp
 Set-Alias -Scope global drv Get-DiskDrive
 Set-Alias -Scope global sd Invoke-ShellDelete
+Set-Alias -Scope global ej global:Dismount-RemovableDrive
 
 
 # change default transfer protocols ("Ssl3, Tls"), both of which are insecure;
