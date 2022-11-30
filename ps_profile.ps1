@@ -882,6 +882,19 @@ function global:Get-AbsolutePath {
 }
 
 
+# Convert from base64-encoded string.
+function global:ConvertFrom-Base64 {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [string]$Data
+    )
+    process {
+        [string]::new([System.Convert]::FromBase64String($Data))
+    }
+}
+
+
 Set-Alias -Scope global gip Get-IfProperty
 Set-Alias -Scope global ndd New-DateDirectory
 Set-Alias -Scope global gft Get-FileTotal
@@ -904,6 +917,7 @@ Set-Alias -Scope global fst Get-FileNameSafeTimestamp
 Set-Alias -Scope global drv Get-DiskDrive
 Set-Alias -Scope global sd Invoke-ShellDelete
 Set-Alias -Scope global ej global:Dismount-RemovableDrive
+Set-Alias -Scope global b64 ConvertFrom-Base64
 
 
 # change default transfer protocols ("Ssl3, Tls"), both of which are insecure;
