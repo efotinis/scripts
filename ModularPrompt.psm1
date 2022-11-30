@@ -309,7 +309,7 @@ function GetTail ($Path) {
     if ($Path -match '^[a-z]+:\\$') {
         '\'
     } else {
-        Split-Path -Leaf $P ath
+        Split-Path -Leaf $Path
     }
 }
 
