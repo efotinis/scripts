@@ -655,8 +655,10 @@ function global:NextTime {
 
 
 # Timestamp in filename-safe format.
-function global:Get-FileNameSafeTimestamp ([switch]$Utc) {
-    $fmt = if ($Utc) { 'FileDateTimeUniversal' } else { 'FileDateTime' }
+function global:Get-FileNameSafeTimestamp ([switch]$Utc, [switch]$DateOnly) {
+    $fmt = 'FileDate'
+    if (-not $DateOnly) { $fmt += 'Time' }
+    if ($Utc) { $fmt += 'Universal' }
     Get-Date -Format $fmt
 }
 
