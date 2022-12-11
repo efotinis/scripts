@@ -595,10 +595,9 @@ function global:Last ([int]$Count = 1) {
 function global:Nth ([int[]]$Index) {
     $input | Select-Object -Index $Index
 }
-Set-Alias -Scope global Reversed Get-ReverseArray
-Set-Alias -Scope global Reverse Get-ReverseArray
-Set-Alias -Scope global Shuffle Get-ShuffleArray
-Set-Alias -Scope global Pick Get-OrderedSubset
+Set-Alias -Scope global rev Get-ReverseArray
+Set-Alias -Scope global shuf Get-ShuffleArray
+Set-Alias -Scope global pick Get-OrderedSubset
 
 
 # Create DateTime representing some hours/minutes/seconds ago from now.
