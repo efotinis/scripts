@@ -80,9 +80,15 @@
 
 #>
 
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'Path')]
 param(
-    [string[]]$InputObject,
+    [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName, Position = 0, ParameterSetName = 'Path')]
+    [SupportsWildcards()]
+    [string[]]$Path,
+
+    [Parameter(Mandatory, ValueFromPipelineByPropertyName, ParameterSetName = 'LiteralPath')]
+    [Alias('PSPath')]
+    [string[]]$LiteralPath,
 
     [string[]]$Match,
 
@@ -96,91 +102,101 @@ param(
     [switch]$Commit
 )
 
-
-# TODO: implement title-case using
-#   [cultureinfo]::CurrentCulture.TextInfo.ToTitleCase(string)
-#   NOTE: this may need to be applied in specific text ranges
-#       e.g.:  for 's1e01 this is a title' the 's1e01' part should be uppercase
-#       and the rest titlecase
-# TODO: perhaps use scriptblock param for more customization
-# TODO: implement input pipeline
-
-
-$count = $InputObject.Count
-
-# Make sure Match and Replace are the same size.
-if ($Match.Count -ne $Replace.Count) {
-    Write-Error "Match and Replace must have the same number of values."
-    return
+begin {
+    $items = [System.Collections.ArrayList]@()
 }
+process {
+    $a = @(switch ($PSCmdlet.ParameterSetName) {
+        'Path' { Get-Item -Path $Path }
+        'LiteralPath' { Get-Item -LiteralPath $LiteralPath }
+    })
+    [void]$items.AddRange($a)
+}
+end {
 
-# Make sure extra field data counts match input file count.
-if ($Extra.Count) {
-    $mismatchedFields = @()
-    foreach ($item in $Extra.GetEnumerator()) {
-        if ($item.Value.Count -ne $count) {
-            $mismatchedFields += "$($item.Key) (=$($item.Value.Count))"
-        }
-    }
-    if ($mismatchedFields.Count) {
-        $msg = "file count ($count)) does not match extra field count: " +
-            ($mismatchedFields -join ', ')
-        Write-Error $msg
+    # TODO: implement title-case using
+    #   [cultureinfo]::CurrentCulture.TextInfo.ToTitleCase(string)
+    #   NOTE: this may need to be applied in specific text ranges
+    #       e.g.:  for 's1e01 this is a title' the 's1e01' part should be uppercase
+    #       and the rest titlecase
+    # TODO: perhaps use scriptblock param for more customization
+
+    $count = $items.Count
+
+    # Make sure Match and Replace are the same size.
+    if ($Match.Count -ne $Replace.Count) {
+        Write-Error "Match and Replace must have the same number of values."
         return
     }
-}
 
-function AffectExtension ($Path, $Mode) {
-    switch ($Mode) {
-        'Never' { $False }
-        'Always' { $True}
-        'FilesOnly' { Test-Path -LiteralPath $Path -Type Leaf }
-        'DirsOnly' { Test-Path -LiteralPath $Path -Type Container }
-    }
-}
-
-for ($i = 0; $i -lt $count; ++$i) {
-    $orgName = [IO.Path]::GetFileName($InputObject[$i])
-
-    if (AffectExtension $InputObject[$i] $IncludeExtension) {
-        $stem = $orgName
-        $ext = ''
-    } else {
-        $stem = [IO.Path]::GetFileNameWithoutExtension($orgName)
-        $ext = [IO.Path]::GetExtension($orgName)
-    }
-
-    $s = $stem
-    for ($step = 0; $step -lt $Match.Count; ++$step) {
-        $s = $s -replace $Match[$step],$Replace[$step]
-    }
+    # Make sure extra field data counts match input file count.
     if ($Extra.Count) {
+        $mismatchedFields = @()
         foreach ($item in $Extra.GetEnumerator()) {
-            $s = $s -replace ('\${'+$item.Key+'}'),$item.Value[$i]
+            if ($item.Value.Count -ne $count) {
+                $mismatchedFields += "$($item.Key) (=$($item.Value.Count))"
+            }
+        }
+        if ($mismatchedFields.Count) {
+            $msg = "file count ($count)) does not match extra field count: " +
+                ($mismatchedFields -join ', ')
+            Write-Error $msg
+            return
         }
     }
-    $newName = $s + $ext
 
-    if ($Commit) {
-        $ret = if ($InputObject[$i] -cne $newName) {
-            Rename-Item -LiteralPath $InputObject[$i] -NewName $newName -PassThru
-        }
-        if ($ret) {
-            $wasRenamed = $true
-        } else {
-            $ret = Get-Item -LiteralPath $InputObject[$i]
-            $wasRenamed = $false
-        }
-        if ($ret) {
-            $ret | Add-Member -NotePropertyName Renamed -NotePropertyValue $wasRenamed
-            Write-Output $ret
+    function AffectExtension ($Item, $Mode) {
+        switch ($Mode) {
+            'Never' { $False }
+            'Always' { $True }
+            'FilesOnly' { -not $Item.PSIsContainer }
+            'DirsOnly' { $Item.PSIsContainer }
         }
     }
-    else {
-        [PSCustomObject]@{
-            Change=$orgName -cne $newName
-            Name=$newName
-            Input=$InputObject[$i]
+
+    for ($i = 0; $i -lt $count; ++$i) {
+        $orgName = $items[$i].Name
+
+        if (AffectExtension $items[$i] $IncludeExtension) {
+            $stem = $orgName
+            $ext = ''
+        } else {
+            $stem = [IO.Path]::GetFileNameWithoutExtension($orgName)
+            $ext = [IO.Path]::GetExtension($orgName)
+        }
+
+        $s = $stem
+        for ($step = 0; $step -lt $Match.Count; ++$step) {
+            $s = $s -replace $Match[$step],$Replace[$step]
+        }
+        if ($Extra.Count) {
+            foreach ($item in $Extra.GetEnumerator()) {
+                $s = $s -replace ('\${'+$item.Key+'}'),$item.Value[$i]
+            }
+        }
+        $newName = $s + $ext
+
+        if ($Commit) {
+            $ret = if ($items[$i].Name -cne $newName) {
+                $items[$i] | Rename-Item -NewName $newName -PassThru
+            }
+            if ($ret) {
+                $wasRenamed = $true
+            } else {
+                $ret = $items[$i]
+                $wasRenamed = $false
+            }
+            if ($ret) {
+                $ret | Add-Member -NotePropertyName Renamed -NotePropertyValue $wasRenamed
+                Write-Output $ret
+            }
+        }
+        else {
+            [PSCustomObject]@{
+                Change=$orgName -cne $newName
+                Name=$newName
+                Input=$items[$i]
+            }
         }
     }
 }
