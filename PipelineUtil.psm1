@@ -91,8 +91,9 @@ function Get-ShuffleArray
 .PARAMETER Count
     Number of items to get. Must be > 0. Specifying a number greater or equal
     to the input size is not an error and simply retuns the entire input as is.
+    Default is 1.
 #>
-function Get-OrderedSubset ([int]$Count) {
+function Get-OrderedSubset ([int]$Count = 1) {
     $items = @($input)
     if ($items.length) {
         0..($items.Count - 1) | Get-Random -Count $Count | Sort-Object | % {
