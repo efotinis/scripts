@@ -103,7 +103,11 @@ param(
 )
 
 begin {
+    Set-StrictMode -Version Latest
     $items = [System.Collections.ArrayList]@()
+    if ($null -eq $Extra) {
+        $Extra = @{}
+    }
 }
 process {
     $a = @(switch ($PSCmdlet.ParameterSetName) {
