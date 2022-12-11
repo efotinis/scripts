@@ -2,6 +2,7 @@
 """Suspend/hibernate the system after a specified amount of time."""
 
 import argparse
+import datetime
 import time
 import sys
 
@@ -19,7 +20,8 @@ def msg(s):
 
 
 def wait_and_suspend(seconds, hibernate, force):
-    msg('starting timer for ' + timer.pretty_time(seconds))
+    when = datetime.datetime.now() + datetime.timedelta(seconds=seconds)
+    msg('starting timer for ' + timer.pretty_time(seconds) + f' ({when})')
     try:
         timer.countdown(seconds, 0.1, 1, 'suspend in {}')
     except KeyboardInterrupt:
