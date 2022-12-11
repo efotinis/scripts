@@ -108,6 +108,9 @@ begin {
     if ($null -eq $Extra) {
         $Extra = @{}
     }
+    if ($Match.Count -ne $Replace.Count) {
+        throw "Match and Replace must have the same number of values."
+    }
 }
 process {
     $a = @(switch ($PSCmdlet.ParameterSetName) {
@@ -117,7 +120,6 @@ process {
     [void]$items.AddRange($a)
 }
 end {
-
     # TODO: implement title-case using
     #   [cultureinfo]::CurrentCulture.TextInfo.ToTitleCase(string)
     #   NOTE: this may need to be applied in specific text ranges
@@ -126,12 +128,6 @@ end {
     # TODO: perhaps use scriptblock param for more customization
 
     $count = $items.Count
-
-    # Make sure Match and Replace are the same size.
-    if ($Match.Count -ne $Replace.Count) {
-        Write-Error "Match and Replace must have the same number of values."
-        return
-    }
 
     # Make sure extra field data counts match input file count.
     if ($Extra.Count) {
