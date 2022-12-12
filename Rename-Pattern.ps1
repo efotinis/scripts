@@ -8,8 +8,11 @@
     the replace strings. Extra data per input can be specified and used as
     additional named captures.
 
-.PARAMETER InputObject
-    Input file paths.
+.PARAMETER Path
+    Input file paths. Supports wildcards.
+
+.PARAMETER LiteralPath
+    Input file paths. No wildcards allowed.
 
 .PARAMETER Match
     Regex string to search for. Parts of the file name that do not match remain
@@ -111,6 +114,8 @@ begin {
     if ($Match.Count -ne $Replace.Count) {
         throw "Match and Replace must have the same number of values."
     }
+    #function AssertExtraCounts($ $InputSize) {
+    #}
 }
 process {
     $a = @(switch ($PSCmdlet.ParameterSetName) {
