@@ -85,7 +85,7 @@
 
 [CmdletBinding(DefaultParameterSetName = 'Path')]
 param(
-    [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName, Position = 0, ParameterSetName = 'Path')]
+    [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName, ParameterSetName = 'Path')]
     [SupportsWildcards()]
     [string[]]$Path,
 
@@ -93,10 +93,10 @@ param(
     [Alias('PSPath')]
     [string[]]$LiteralPath,
 
-    [Parameter(Mandatory, Position = 1)]
+    [Parameter(Mandatory, Position = 0)]
     [string[]]$Match,
 
-    [Parameter(Mandatory, Position = 2)]
+    [Parameter(Mandatory, Position = 1)]
     [string[]]$Replace,
 
     [hashtable]$Extra,
