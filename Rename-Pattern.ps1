@@ -93,8 +93,10 @@ param(
     [Alias('PSPath')]
     [string[]]$LiteralPath,
 
+    [Parameter(Mandatory, Position = 1)]
     [string[]]$Match,
 
+    [Parameter(Mandatory, Position = 2)]
     [string[]]$Replace,
 
     [hashtable]$Extra,
