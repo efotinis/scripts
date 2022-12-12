@@ -200,9 +200,10 @@ end {
         }
         else {
             [PSCustomObject]@{
-                Change=$orgName -cne $newName
-                Name=$newName
-                Input=$items[$i]
+                New = $orgName -cne $newName
+                NewName = $newName
+                Name = $items[$i].Name
+                Directory = [System.IO.Path]::GetDirectoryName($items[$i].FullName)
             }
         }
     }
