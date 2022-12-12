@@ -49,7 +49,7 @@
 .EXAMPLE
 
 .INPUTS
-    None.
+    File/directory objects or paths.
 
 .OUTPUTS
     - If Commit is set, return file system objects of all input items with an
