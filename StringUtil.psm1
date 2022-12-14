@@ -36,7 +36,7 @@ function Get-CrazyCaseString {
         [string]$Text,
 
         [switch]$LowerStart,  # start alternating with lowercase
-        
+
         [switch]$Random  # randomize case instead of alternating
     )
     begin {
@@ -65,31 +65,30 @@ function Get-CrazyCaseString {
 
 # Number of matching characters.
 function Get-CharacterCount {
+    [CmdletBinding()]
     param(
         [Parameter(Mandatory, ValueFromPipeline)]
         [AllowEmptyString()]
         [string]$InputObject,
-        
-        [Parameter(Mandatory)]
-        [string]$Characters,
-        
+
+        [Parameter(Mandatory, Position = 0)]
+        [char[]]$Character,
+
         [switch]$MatchCase
     )
     begin {
-        $charSet = [System.Collections.Generic.HashSet[char]]$Characters
+        $charSet = [System.Collections.Generic.HashSet[char]]::new($Character)
     }
     process {
         $count = 0
         if ($MatchCase) {
             for ($i = 0; $i -lt $InputObject.Length; ++$i) {
-                #if ($InputObject[$i] -ceq $Character) {
                 if ($InputObject[$i] -cin $charSet) {
                     ++$count
                 }
             }
         } else {
             for ($i = 0; $i -lt $InputObject.Length; ++$i) {
-                #if ($InputObject[$i] -ieq $Character) {
                 if ($InputObject[$i] -iin $charSet) {
                     ++$count
                 }
@@ -102,7 +101,7 @@ function Get-CharacterCount {
 
 # Convert numeric value to string of chararacter flags.
 #
-# Set bits in Value produce the corresponding character, with the 
+# Set bits in Value produce the corresponding character, with the
 # least-significant bit corresponding to the right-most character. Unset bits
 # produce '-'.
 #
@@ -119,10 +118,10 @@ function ConvertTo-FlagField {
     param(
         [Parameter(Mandatory, ValueFromPipeline)]
         [int]$Value,
-        
+
         [Parameter(Mandatory)]
         [string]$Characters,
-        
+
         [switch]$Fixed
     )
     process {
