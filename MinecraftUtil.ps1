@@ -177,7 +177,8 @@ Add-Type -TypeDefinition @"
             double timeLoaded,
             double damageDealt,
             double damageTaken,
-            int deaths)
+            int deaths,
+            object stats)
         {
             Instance = instance;
             Path = path;
@@ -188,6 +189,7 @@ Add-Type -TypeDefinition @"
             DamageDealt = damageDealt;
             DamageTaken = damageTaken;
             Deaths = deaths;
+            Stats = stats;
         }
         public string Instance;
         public string Path;
@@ -198,6 +200,7 @@ Add-Type -TypeDefinition @"
         public double DamageDealt;
         public double DamageTaken;
         public int Deaths;
+        public object Stats;
     };
 
     public struct MinecraftVersion {
@@ -312,19 +315,23 @@ function GetInstances {
 
 
 function GetWorlds ([string]$Instance) {
+    $JSON = '5abf8770-8ace-47fc-856f-1ecefd98ddc3.json'
     ls "$MULTIMC_ROOT\instances\$Instance\.minecraft\saves" | % {
-        $a = gc "$($_.FullName)\stats\5abf8770-8ace-47fc-856f-1ecefd98ddc3.json" | ConvertFrom-Json
+        $stats = gc "$($_.FullName)\stats\$JSON" | ConvertFrom-Json
+        $stats, $version = $stats.stats, $stats.DataVersion
+        $stats | Add-Member version $version
 
         [MinecraftWorld]::new(
             ($Instance),
             ($_.FullName),
             ($_.Name),
             (Get-Item -LiteralPath $_.FullName | % CreationTime),
-            (($a.stats.'minecraft:custom'.'minecraft:play_time' -as [int]) / 20),
-            (($a.stats.'minecraft:custom'.'minecraft:total_world_time' -as [int]) / 20),
-            (($a.stats.'minecraft:custom'.'minecraft:damage_dealt' -as [int]) / 10),
-            (($a.stats.'minecraft:custom'.'minecraft:damage_taken' -as [int]) / 10),
-            ($a.stats.'minecraft:custom'.'minecraft:deaths' -as [int])
+            (($stats.'minecraft:custom'.'minecraft:play_time' -as [int]) / 20),
+            (($stats.'minecraft:custom'.'minecraft:total_world_time' -as [int]) / 20),
+            (($stats.'minecraft:custom'.'minecraft:damage_dealt' -as [int]) / 10),
+            (($stats.'minecraft:custom'.'minecraft:damage_taken' -as [int]) / 10),
+            ($stats.'minecraft:custom'.'minecraft:deaths' -as [int]),
+            $stats
         )
     }
 }
