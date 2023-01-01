@@ -41,9 +41,9 @@
     a wildcard that defaults to "*" or a regular expression if it starts with
     "re:".
 
-.PARAMETER DocText
-    Display contents of text files in my Minecraft game docs folder
-    (recursively), whose name matches the specified regex.
+.PARAMETER Notes
+    Find text files with names matching the specified regex pattern.
+    Searches the local Minecraft docs folder recursively.
 
 .PARAMETER WikiSearch
     Perform search on minecraft.gamepedia.com using specified terms.
@@ -105,8 +105,8 @@ param(
         [Parameter(ParameterSetName="ListWorld", Position=0)]
         [string]$World,
 
-    [Parameter(ParameterSetName="DocText", Mandatory)]
-    [string]$DocText,
+    [Parameter(ParameterSetName="Notes", Mandatory)]
+    [regex]$Notes,
 
     [Parameter(ParameterSetName="WikiSearch", Mandatory)]
     [string]$WikiSearch,
@@ -337,20 +337,8 @@ function GetWorlds ([string]$Instance) {
 }
 
 
-function PrintDocs ([regex]$Pattern) {
-    $a = @(ls -rec -file $LOCAL_DOCS_DIR\*.txt | ? name -match $Pattern)
-    if (-not $a) {
-        Write-Warning "no text file names match $Pattern"
-        return
-    }
-    function Header ([string]$Text) {
-        $line = '=' * 8
-        "$line $Text $line"
-    }
-    $a | % {
-        Header $_.name
-        $_ | gc
-    }
+function FindDocs ([regex]$Pattern) {
+    ls -rec -file $LOCAL_DOCS_DIR\*.txt | ? name -match $Pattern
 }
 
 
@@ -423,8 +411,8 @@ switch ($PSCmdlet.ParameterSetName) {
     'Restore' {
         backup.ps1 $Instance $World -RestoreLast
     }
-    'DocText' {
-        PrintDocs $DocText
+    'Notes' {
+        FindDocs $Notes
     }
     'WikiSearch' {
         $url = 'https://minecraft.gamepedia.com/index.php?search={0}' -f (
