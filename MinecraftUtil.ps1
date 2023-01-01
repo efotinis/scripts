@@ -42,7 +42,8 @@
     "re:".
 
 .PARAMETER DocText
-    Display *.TXT file contents in personal game docs matching name pattern.
+    Display contents of text files in my Minecraft game docs folder
+    (recursively), whose name matches the specified regex.
 
 .PARAMETER WikiSearch
     Perform search on minecraft.gamepedia.com using specified terms.
@@ -329,10 +330,10 @@ function GetWorlds ([string]$Instance) {
 }
 
 
-function PrintDocs ([string]$Pattern) {
-    $a = @(ls $LOCAL_DOCS_DIR\*.txt | ? name -like "*$DocText*")
+function PrintDocs ([regex]$Pattern) {
+    $a = @(ls -rec -file $LOCAL_DOCS_DIR\*.txt | ? name -match $Pattern)
     if (-not $a) {
-        Write-Warning "no files match $DocText"
+        Write-Warning "no text file names match $Pattern"
         return
     }
     function Header ([string]$Text) {
