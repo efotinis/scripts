@@ -592,8 +592,52 @@ function global:First ([int]$Count = 1) {
 function global:Last ([int]$Count = 1) {
     $Input | Select-Object -Last $Count
 }
-function global:Nth ([int[]]$Index) {
-    $input | Select-Object -Index $Index
+<#
+.SYNOPSIS
+    Select from pipeline by index.
+.DESCRIPTION
+    Get the n-th (0-based) pipeline object(s). If Ordered is not set, this is
+    the same as `Select-Object -Index ...`: objects are matched in pipeline
+    order and duplicate indexes are ignored.
+.PARAMETER InputObject
+    Input objects. Must be specified using the pipeline.
+.PARAMETER Index
+    List of indexes of input objects to be returned.
+.PARAMETER Ordered
+    Forces the returned objects to match the indexes exactly as specified and
+    allows duplicate indexes to return the same object multiple times.
+.INPUTS
+    Objects.
+.OUTPUTS
+    Objects.
+#>
+function global:Nth {
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+        $InputObject,
+
+        [Parameter(Mandatory, Position = 0)]
+        [int[]]$Index,
+
+        [switch]$Ordered
+    )
+    begin {
+        $items = [System.Collections.ArrayList]::new()
+    }
+    process {
+        [void]$items.Add($InputObject)
+    }
+    end {
+        if (-not $Ordered) {
+            $items | Select-Object -Index $Index
+        } else {
+            $output = [object[]]::new($Index.Count)
+            for ($i = 0; $i -lt $Index.Count; ++$i) {
+                $output[$i] = $items[$Index[$i]]
+            }
+            $output
+        }
+    }
 }
 Set-Alias -Scope global rev Get-ReverseArray
 Set-Alias -Scope global shuf Get-ShuffleArray
