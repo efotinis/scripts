@@ -108,7 +108,4 @@ def main(args):
 
 
 if __name__ == '__main__':
-    try:
-        main(parse_args())
-    except Exception as x:
-        sys.exit(x)
+    main(parse_args())
