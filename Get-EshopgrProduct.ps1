@@ -73,14 +73,14 @@ begin {
 process {
     eshopgr_json.py @args $Url | % { ConvertFrom-Json $_ } | % {
         [EshopgrProduct]::new(
-            $_. name,
-            $_. url,
-            $_. id,
+            $_.name,
+            $_.url,
+            $_.id,
             $_.price,
-            $_. discount,
-            $_. type,
-            $_. subtype,
-            $_. manufacturer
+            $_.discount,
+            $_.type,
+            $_.subtype,
+            $_.manufacturer
         )
     }
 }
