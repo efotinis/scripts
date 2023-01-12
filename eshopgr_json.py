@@ -18,8 +18,23 @@ from bs4 import BeautifulSoup
 
 Item = collections.namedtuple(
     'Item',
-    'name url id price discount type subtype manufacturer specifications'
+    'name url id price discount type subtype manufacturer specifications availability'
 )
+
+MONTHS = {
+    'Ιανουαρίου': 'Jan',
+    'Φεβρουαρίου': 'Feb',
+    'Μαρτίου': 'Mar',
+    'Απριλίου': 'Apr',
+    'Μαΐου': 'May',
+    'Ιουνίου': 'Jun',
+    'Ιουλίου': 'Jul',
+    'Αυγούστου': 'Aug',
+    'Σεπτεμβρίου': 'Sep',
+    'Οκτωβρίου': 'Oct',
+    'Νοεμβρίου': 'Nov',
+    'Δεκεμβρίου': 'Dec',
+}
 
 
 def parse_args():
@@ -48,6 +63,21 @@ def parse_args():
     if args.verbose:
         logging.basicConfig(level=logging.INFO)
     return args
+
+
+def parse_date_availability(s):
+    if s == 'Αμεσα διαθέσιμο':
+        return 'now'
+    if s == 'Κατόπιν παραγγελίας':
+        return 'after ordering'
+    m = re.match('(\d+-\d+) εργάσιμες ημέρες', s)
+    if m:
+        return f'in {m.group(1)} working days'
+    m = re.match('Αναμένεται στις (\d+) (\w+)', s)
+    if m:
+        return f'on {MONTHS[m.group(2)]} {m.group(1)}'
+    logging.warning(f'unexpected date availability: {s}')
+    return ''
 
 
 def page_items(soup):
@@ -85,6 +115,9 @@ def page_items(soup):
                 logging.warning(f'unexpected detail field: {b.text}')
                 continue
             data[s] = b.next_sibling.strip()
+
+        td = cont.find('td', 'web-product-buttons')
+        data['availability'] = parse_date_availability(td.div.text.strip())
 
         yield Item(**data)
         item_index += 1

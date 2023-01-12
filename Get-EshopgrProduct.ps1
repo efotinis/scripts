@@ -35,6 +35,7 @@ begin {
             public string Subtype;
             public string Manufacturer;
             public string Specifications;
+            public string Availability;
             public EshopgrProduct(
                 string name,
                 string url,
@@ -44,7 +45,8 @@ begin {
                 string type,
                 string subtype,
                 string manufacturer,
-                string specifications)
+                string specifications,
+                string availability)
             {
                 Name = name;
                 Url = url;
@@ -55,6 +57,7 @@ begin {
                 Subtype = subtype;
                 Manufacturer = manufacturer;
                 Specifications = specifications;
+                Availability = availability;
             }
         }
 "@
@@ -84,7 +87,8 @@ process {
             $_.type,
             $_.subtype,
             $_.manufacturer,
-            $_.specifications
+            $_.specifications,
+            $_.availability
         )
     }
 }
