@@ -18,7 +18,7 @@
 param(
     [Parameter(Mandatory, ValueFromPipeline, Position = 0)]
     [string]$Url,
-    
+
     [float]$Delay = 0.2
 )
 begin {
@@ -34,6 +34,7 @@ begin {
             public string Type;
             public string Subtype;
             public string Manufacturer;
+            public string Specifications;
             public EshopgrProduct(
                 string name,
                 string url,
@@ -42,7 +43,8 @@ begin {
                 string discount,
                 string type,
                 string subtype,
-                string manufacturer)
+                string manufacturer,
+                string specifications)
             {
                 Name = name;
                 Url = url;
@@ -52,6 +54,7 @@ begin {
                 Type = type;
                 Subtype = subtype;
                 Manufacturer = manufacturer;
+                Specifications = specifications;
             }
         }
 "@
@@ -68,7 +71,7 @@ begin {
             '-v'
         }
     )
-    
+
 }
 process {
     eshopgr_json.py @args $Url | % { ConvertFrom-Json $_ } | % {
@@ -80,7 +83,8 @@ process {
             $_.discount,
             $_.type,
             $_.subtype,
-            $_.manufacturer
+            $_.manufacturer,
+            $_.specifications
         )
     }
 }

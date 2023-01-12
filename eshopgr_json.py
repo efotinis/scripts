@@ -18,7 +18,7 @@ from bs4 import BeautifulSoup
 
 Item = collections.namedtuple(
     'Item',
-    'name url id price discount type subtype manufacturer'
+    'name url id price discount type subtype manufacturer specifications'
 )
 
 
@@ -74,11 +74,17 @@ def page_items(soup):
         fields = {
             'Κατηγορία:': 'type',
             'Υποκατηγορία:': 'subtype',
-            'Κατασκευαστής:': 'manufacturer'
+            'Κατασκευαστής:': 'manufacturer',
+            'Χαρακτηριστικά:': 'specifications'
         }
         data.update(dict.fromkeys(fields.values(), ''))
-        for b in td.find_all('b', recursive=False, limit=3):
-            data[fields[b.text]] = b.next_sibling.strip()
+        for b in td.find_all('b', recursive=False):
+            try:
+                s = fields[b.text]
+            except KeyError:
+                logging.warning(f'unexpected detail field: {b.text}')
+                continue
+            data[s] = b.next_sibling.strip()
 
         yield Item(**data)
         item_index += 1
