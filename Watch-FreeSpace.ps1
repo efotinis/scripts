@@ -1,14 +1,57 @@
+<#
+.SYNOPSIS
+    Monitor free disk space.
+
+.DESCRIPTION
+    Displays changes of a drive's free space at regular intervals or when a key
+    is pressed.
+
+    Output starts with a line including the drive letter and label, followed by
+    the current local time with timezone offset. The next line shows the update
+    interval or a prompt for manual updates.
+
+    Subsequent lines include the following information:
+        - timestamp     Local date/time.
+        - elapsed       Time since start.
+        - drive         Drive free space.
+        - delta         Total change since start.
+        - step          Change since previous check.
+
+.PARAMETER Drive
+    The drive to monitor. Can specify a letter with an optional colon.
+    The default is the drive of the current location.
+
+.PARAMETER PollMsec
+    Interval in milliseconds to check for changes. Output is only generate when
+    there's an actual, non-zero change in free space. Default is 500.
+
+.PARAMETER Manual
+    Generate output only when Enter is pressed. Overrides PollMsec.
+
+.PARAMETER InitialDelta
+    Starting value of size delta to use when resuming an interrupted run.
+
+.PARAMETER InitialElapsed
+    Starting value of time elapsed to use when resuming an interrupted run.
+
+.INPUTS
+    None.
+
+.OUTPUTS
+    String.
+#>
+
 [CmdletBinding()]
 param(
-    [string]$Drive = (Get-Location).Drive.Name,  # drive letter; optional colon
-    
-    [int]$PollMsec = 500,  # auto-update rate
-    
-    [switch]$Manual,  # manually update by keypress
+    [string]$Drive = (Get-Location).Drive.Name,
 
-    [long]$InitialDelta = 0,  # assume this delta for restarting a previous session
+    [int]$PollMsec = 500,
 
-    [timespan]$InitialElapsed = 0  # assume this elapsed for restarting a previous session
+    [switch]$Manual,
+
+    [long]$InitialDelta = 0,
+
+    [timespan]$InitialElapsed = 0
 )
 
 Set-StrictMode -Version Latest
