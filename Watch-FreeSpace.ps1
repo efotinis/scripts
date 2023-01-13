@@ -22,8 +22,11 @@
     The default is the drive of the current location.
 
 .PARAMETER PollMsec
-    Interval in milliseconds to check for changes. Output is only generate when
-    there's an actual, non-zero change in free space. Default is 500.
+    Interval in milliseconds to check for changes. Default is 500.
+
+.PARAMETER Threshold
+    Absolute value of minimum change to generate output for. If this is 0,
+    output is generated for any (non-zero) change in free space. Default is 0.
 
 .PARAMETER Manual
     Generate output only when Enter is pressed. Overrides PollMsec.
@@ -46,6 +49,8 @@ param(
     [string]$Drive = (Get-Location).Drive.Name,
 
     [int]$PollMsec = 500,
+
+    [uint64]$Threshold = 0,
 
     [switch]$Manual,
 
@@ -121,14 +126,20 @@ while ($true) {
     if ($Manual) {
         $s = StatusLine $current $previous $start
         Read-Host $s | Out-Null
+        $previous = $current
     } else {
         $step = $current.Free - $previous.Free
-        if ($initOutput -or $step -ne 0) {
+        if (
+            $initOutput -or
+            ($Threshold -and ([System.Math]::Abs($step) -ge $Threshold)) -or
+            (-not $Threshold -and ($step -ne 0))
+        ) {
+            $initOutput = $false
             $s = StatusLine $current $previous $start
             Write-Output $s
-            $initOutput = $false
+            $previous = $current
         }
+
         Start-Sleep -Milliseconds $PollMsec
     }
-    $previous = $current
 }
