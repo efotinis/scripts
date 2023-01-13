@@ -13,7 +13,7 @@
     Subsequent lines include the following information:
         - timestamp     Local date/time.
         - elapsed       Time since start.
-        - drive         Drive free space.
+        - free          Drive free space.
         - delta         Total change since start.
         - step          Change since previous check.
 
@@ -57,58 +57,78 @@ param(
 Set-StrictMode -Version Latest
 
 
+# Condensed string of size value with optional plus for positive numbers.
 function Size ([long]$n, [switch]$WithPlus) {
     $s = (PrettySize $n) -replace 'bytes','B'
-    if ($WithPlus -and $n -ge 0) { $s = '+' + $s }
-    $s
+    if ($WithPlus -and $n -gt 0) {
+        '+' + $s
+    } else {
+        $s
+    }
 }
 
 
-$t0 = Get-Date
+# Current time and free bytes of specified drive.
+function GetState ($Drive) {
+    @{ Time = Get-Date; Free = $Drive.Free }
+}
+
+
+# Build output line.
+function StatusLine ($Current, $Previous, $Start) {
+    '{0:G} {1} {2,10} {3,10} {4,11}' -f @(
+        $Current.Time
+        $Current.Time - $Start.Time
+        Size $Current.Free
+        Size -WithPlus ($Current.Free - $Start.Free)
+        Size -WithPlus ($Current.Free - $Previous.Free)
+    )
+}
+
+
+# Generate text lines shown before status output.
+function OutputPreample ($Drive, $StartTime, $PollMsec, $Manual) {
+    Write-Output ('Started tracking {0}: ({1}) at {2:o}' -f @(
+        $Drive.Name
+        $Drive.Description
+        $StartTime
+    ))
+    if ($Manual) {
+        Write-Output 'Press Enter to update or Ctrl-C to exit.'
+    }
+    else {
+        Write-Output "Auto-update every $PollMsec msec. Press Ctrl-C to exit"
+    }
+    Write-Output ('{0,19:} {1,16:} {2,10} {3,10} {4,11}' -f @(
+        'Time', 'Elapsed', 'Free', 'Delta', 'Step'
+    ))
+}
+
+
 $driveObj = Get-PSDrive ($Drive.TrimEnd(':'))
 if (-not $driveObj) { exit }
 
+$start = GetState $driveObj
+$start.Time -= $InitialElapsed
+$start.Free -= $InitialDelta
 
-echo ('started tracking {0}: ({1}) at {2:o}' -f @(
-    $($driveObj.Name)
-    $driveObj.Description
-    $t0
-))
-if ($Manual) {
-    echo 'hit Enter to update (Ctrl-C exits)'
-}
-else {
-    echo "auto-update every $PollMsec msec (Ctrl-C exits)"
-}
+OutputPreample $driveObj $start.Time $PollMsec $Manual | Write-Output
 
-
-echo ('{0,19:} {1,16:} {2,10} {3,10} {4,11}' -f 'timestamp','elapsed','drive','delta','step')
-
-$prevFree = $driveObj.Free
-$delta = $InitialDelta
-$first = $true
+$previous = GetState $driveObj
+$initOutput = $true
 while ($true) {
-    $timestamp = Get-Date
-    $elapsed = $timestamp - $t0 + $InitialElapsed
-    $free = $driveObj.Free
-    $step = $free - $prevFree
-    $prevFree = $free
-    $delta += $step
-    $prompt = '{0:G} {1} {2,10} {3,10} {4,11}' -f @(
-        $timestamp
-        $elapsed
-        Size $free
-        Size $delta
-        Size $step -WithPlus
-    )
+    $current = GetState $driveObj
     if ($Manual) {
-        Read-Host $prompt | Out-Null
-    }
-    else {
-        if ($step -or $first) {
-            echo $prompt
-            $first = $false
+        $s = StatusLine $current $previous $start
+        Read-Host $s | Out-Null
+    } else {
+        $step = $current.Free - $previous.Free
+        if ($initOutput -or $step -ne 0) {
+            $s = StatusLine $current $previous $start
+            Write-Output $s
+            $initOutput = $false
         }
-        sleep -millisec $PollMsec
+        Start-Sleep -Milliseconds $PollMsec
     }
+    $previous = $current
 }
