@@ -12,6 +12,7 @@
                     <TableColumnHeader><Label>Seed</Label><Width>8</Width><Alignment>Right</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>Leech</Label><Width>8</Width><Alignment>Right</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>Size</Label><Width>10</Width><Alignment>Right</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>M</Label><Width>1</Width></TableColumnHeader>
                     <TableColumnHeader><Label>Name</Label><Alignment>Left</Alignment></TableColumnHeader>
                 </TableHeaders>
                 <TableRowEntries>
@@ -22,6 +23,7 @@
                             <TableColumnItem><ScriptBlock>$_.Seeds.ToString('N0')</ScriptBlock></TableColumnItem>
                             <TableColumnItem><ScriptBlock>$_.Leeches.ToString('N0')</ScriptBlock></TableColumnItem>
                             <TableColumnItem><ScriptBlock>ConvertTo-NiceSize $_.Size</ScriptBlock></TableColumnItem>
+                            <TableColumnItem><ScriptBlock>if ($_.Link.StartsWith('magnet:')) { '*' } else { ' ' } </ScriptBlock></TableColumnItem>
                             <TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
                         </TableColumnItems>
                     </TableRowEntry>
