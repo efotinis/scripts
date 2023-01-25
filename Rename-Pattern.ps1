@@ -97,6 +97,7 @@ param(
     [string[]]$Match,
 
     [Parameter(Mandatory, Position = 1)]
+    [AllowEmptyString()]
     [string[]]$Replace,
 
     [hashtable]$Extra,
@@ -133,6 +134,7 @@ end {
     #       e.g.:  for 's1e01 this is a title' the 's1e01' part should be uppercase
     #       and the rest titlecase
     # TODO: perhaps use scriptblock param for more customization
+    # TODO: implement stored params by using (json) file to specify match/replace/etc
 
     $count = $items.Count
 
