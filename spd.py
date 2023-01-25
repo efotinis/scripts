@@ -108,6 +108,8 @@ def parse_cmdline():
                         'second, minute, hour, day, week; default: "%(default)s".')
     parser.add_argument('-v', action='store_true', dest='verbose',
                         help='verbose output; includes interpreted input values')
+    parser.add_argument('-b', action='store_true', dest='bare',
+                        help='bare output; suppresses label; overrides -v')
     opt = parser.parse_args()
     if opt.value1[0] == opt.value2[0]:
         parser.error('both value types are the same ("%s")' % opt.value1[0])
@@ -121,13 +123,18 @@ if __name__ == '__main__':
     values[opt.value1[0]] = opt.value1[1]
     values[opt.value2[0]] = opt.value2[1]
 
-    if opt.verbose:
+    if opt.verbose and not opt.bare:
         print(fmt_value(*opt.value1))
         print(fmt_value(*opt.value2))
 
     if values['size'] is None:
-        print('size:', fmt_size(values['speed'] * values['time']))
+        label, value = 'size:', fmt_size(values['speed'] * values['time'])
     elif values['time'] is None:
-        print('time:', fmt_time(values['size'] / values['speed']))
+        label, value = 'time:', fmt_time(values['size'] / values['speed'])
     else:
-        print('speed:', fmt_speed(values['size'] / values['time'], opt.timeunit))
+        label, value = 'speed:', fmt_speed(values['size'] / values['time'], opt.timeunit)
+
+    if opt.bare:
+        print(value)
+    else:
+        print(label, value)
