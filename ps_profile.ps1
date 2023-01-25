@@ -588,11 +588,11 @@ function global:GetReleaseYear {
 function global:Count {
     $Input | Measure-Object | % count
 }
-function global:First ([int]$Count = 1) {
-    $Input | Select-Object -First $Count
+function global:First ([int]$Count = 1, [int]$Skip = 0) {
+    $Input | Select-Object -First $Count -Skip $Skip
 }
-function global:Last ([int]$Count = 1) {
-    $Input | Select-Object -Last $Count
+function global:Last ([int]$Count = 1, [int]$Skip = 0) {
+    $Input | Select-Object -Last $Count -Skip $Skip
 }
 <#
 .SYNOPSIS
