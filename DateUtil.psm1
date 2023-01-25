@@ -26,12 +26,51 @@ function ConvertTo-CompactDate {
 }
 
 
+# Convert from 'M/d/(yy)yy' or 'M.d.(yy)yy' to DateTime.
+# 2-digit years are assumed to be 20xx.
+function global:ConvertFrom-USDate {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [string]$Date,
+
+        [switch]$Scan  # match substring anywhere within input
+    )
+    begin {
+        $s1 = '(\d{1,2})/(\d{1,2})/(\d{2,4})'
+        $s2 = '(\d{1,2})\.(\d{1,2})\.(\d{2,4})'
+        $rx = [regex]$(if ($Scan) {
+            "$s1|$s2"
+        } else {
+            "^$s1$|^$s2$"
+        })
+    }
+    process {
+        $a = $rx.Match($Date)
+        if (-not $a.Success) {
+            Write-Error "No US-style date found in string: $Date"
+            return
+        }
+        if ($a.Groups[1].Value) {
+            $m, $d, $y = $a.Groups[1..3].Value
+        } else {
+            $m, $d, $y = $a.Groups[4..6].Value
+        }
+        $y, $m, $d = @($y, $m, $d).ForEach([int])
+        if ($y -lt 100) {
+            $y += 2000
+        }
+        [datetime]::new($y, $m, $d)
+    }
+}
+
+
 function Get-DateSection {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, ValueFromPipeline)]
         [datetime]$Date,
-        
+
         [Parameter(Mandatory)]
         [ValidateSet('Year', 'Quarter', 'Month')]
         [string]$Type
