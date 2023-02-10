@@ -64,8 +64,8 @@ begin {
             $knownExtType['.' + $_] = $Type
         }
     }
-    Register 'video'    '3gp avi divx flv m4v mkv mov mp4 mpeg mpg rm rmvb webm wmv'
-    Register 'audio'    'aac ape flac it m4a mid mod mp2 mp3 ogg opus ra ram s3m umx wav wma xm'
+    Register 'video'    '3gp avi divx flv m4v f4v mkv mov mp4 mpeg mpg rm rmvb webm wmv'
+    Register 'audio'    'aac ape flac it m4a m4b m4r f4a f4b mid mod mp2 mp3 ogg opus ra ram s3m umx wav wma xm'
     Register 'image'    'ani bmp cur gif ico jpeg jpg pcx png tga tif tiff webp xcf'
     Register 'archive'  '7z gz jar rar tar zip'
     Register 'binary'   'bin chm com dat djv djvu dll doc docx epub exe fnt fon iso lib lnk mdf mobi nrg obj ocx par par2 pdf pif pyc pyd rtf scr swf torrent ttf vxd wad wri xps'
