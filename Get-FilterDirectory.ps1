@@ -9,10 +9,13 @@
     Can be used to exclude meta directories (e.g. .git, .vscode, __pycache__)
     when searching for actual user files (see examples).
 
-.PARAMETER InputObject
+.PARAMETER Path
     Source directories to list subdirectories from. They are also included
     in the output, with the same filtering applied to them. Wildcards allowed.
     Default is the current directory.
+
+.PARAMETER LiteralPath
+    Same as Path, but without wildcard expansion.
 
 .PARAMETER Pattern
     One or more wildcard patterns to match directory names against.
@@ -51,33 +54,43 @@
             Recurse for the whole command to work as intended.
         - Select-String searches the file contents.
 #>
+[CmdletBinding(DefaultParameterSetName = 'Path')]
 param(
-    [Parameter(Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-    [Alias('FullName', 'Path')]
+    [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName, ParameterSetName = 'Path')]
     [SupportsWildcards()]
-    [string[]]$InputObject = '.',
+    [string[]]$Path = '.',
 
-    [Parameter(Mandatory, Position = 1)]
+    [Parameter(ValueFromPipelineByPropertyName, ParameterSetName = 'LiteralPath')]
+    [Alias('PSPath')]
+    [string[]]$LiteralPath,
+
+    [Parameter(Mandatory, Position = 0)]
     [string[]]$Pattern,
 
     [switch]$Force
 )
 begin {
-    function ProcessDir {
+    Set-StrictMode -Version Latest
+    function ProcessItem {
         param(
-            [Parameter(ValueFromPipeline)]$Dir,
-            [Parameter(Position = 0)]$Patt
+            [Parameter(ValueFromPipeline)]$Directory,
+            [Parameter(Position = 0)]$Pattern
         )
         process {
-            $Dir | Get-IfProperty Name -NotLikeAll $Patt | % {
+            $Directory | Get-IfProperty Name -NotLikeAll $Pattern | % {
                 Write-Output $_
-                gci -dir -Force:$Force $_.FullName | ProcessDir -Patt $Patt
+                $_ | Get-ChildItem -Directory -Force:$Force | ProcessItem $Pattern
             }
         }
     }
+    function ResolveInput {
+        $opt = switch ($PSCmdlet.ParameterSetName) {
+            'Path' { @{ Path = $Path } }
+            'LiteralPath' { @{ LiteralPath = $LiteralPath } }
+        }
+        Get-Item @opt -Force:$Force | ? PSIsContainer
+    }
 }
 process {
-    foreach ($dir in $InputObject) {
-        gi -Force:$Force $dir | ProcessDir -Patt $Pattern
-    }
+    ResolveInput | ProcessItem $Pattern
 }
