@@ -18,6 +18,9 @@
     One or more wildcard patterns to match directory names against.
     If a directory matches any of them, it is excluded from the output.
 
+.PARAMETER Force
+    Include hidden and system directories.
+
 .INPUTS
     Source directories.
 
@@ -55,7 +58,9 @@ param(
     [string[]]$InputObject = '.',
 
     [Parameter(Mandatory, Position = 1)]
-    [string[]]$Pattern
+    [string[]]$Pattern,
+
+    [switch]$Force
 )
 begin {
     function ProcessDir {
@@ -66,13 +71,13 @@ begin {
         process {
             $Dir | Get-IfProperty Name -NotLikeAll $Patt | % {
                 Write-Output $_
-                gci -dir $_.FullName | ProcessDir -Patt $Patt
+                gci -dir -Force:$Force $_.FullName | ProcessDir -Patt $Patt
             }
         }
     }
 }
 process {
     foreach ($dir in $InputObject) {
-        gi $dir | ProcessDir -Patt $Pattern
+        gi -Force:$Force $dir | ProcessDir -Patt $Pattern
     }
 }
