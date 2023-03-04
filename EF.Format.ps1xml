@@ -2,13 +2,39 @@
 <Configuration>
   <ViewDefinitions>
     <View>
+      <Name>Short</Name>
+      <ViewSelectedBy>
+        <TypeName>VideoInfo</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader><Label>Wdth/Hght</Label><Width>9</Width><Alignment>center</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>Duration</Label><Width>8</Width><Alignment>right</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>Fps</Label><Width>3</Width><Alignment>right</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>Length</Label><Width>7</Width><Alignment>right</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>Name</Label><Alignment>left</Alignment></TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem><ScriptBlock>'{0,4}:{1,-4}' -f $_.Width, $_.Height</ScriptBlock></TableColumnItem>
+              <TableColumnItem><ScriptBlock>PrettyDuration $_.Duration</ScriptBlock></TableColumnItem>
+              <TableColumnItem><PropertyName>Framerate</PropertyName><FormatString>N0</FormatString></TableColumnItem>
+              <TableColumnItem><ScriptBlock>PrettySize $_.Length</ScriptBlock></TableColumnItem>
+              <TableColumnItem><ScriptBlock>[IO.Path]::GetFileName($_.FullName)</ScriptBlock></TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <View>
       <Name>DefaultView</Name>
       <ViewSelectedBy>
         <TypeName>VideoInfo</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
-          <TableColumnHeader><Label>Container</Label><Width>9</Width><Alignment>left</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>Format</Label><Width>6</Width><Alignment>left</Alignment></TableColumnHeader>
           <TableColumnHeader><Label>Str#</Label><Width>4</Width><Alignment>left</Alignment></TableColumnHeader>
           <TableColumnHeader><Label>Dims(W:H)</Label><Width>9</Width><Alignment>center</Alignment></TableColumnHeader>
           <TableColumnHeader><Label>Ch</Label><Width>2</Width><Alignment>right</Alignment></TableColumnHeader>
@@ -31,18 +57,7 @@
         <TableRowEntries>
           <TableRowEntry>
             <TableColumnItems>
-              <TableColumnItem><ScriptBlock>
-                    switch ($_.Container) {
-                        'QuickTime / MOV'                   { 'QTFF/MOV' }
-                        'ASF (Advanced / Active Streaming Format)' { 'ASF' }
-                        'MPEG-PS (MPEG-2 Program Stream)'   { 'MPEG-PS' }
-                        'AVI (Audio Video Interleaved)'     { 'AVI' }
-                        'MPEG-TS (MPEG-2 Transport Stream)' { 'MPEG-TS' }
-                        'Matroska / WebM'                   { 'MKV/WebM' }
-                        'FLV (Flash Video)'                 { 'FLV' }
-                        default { $_ }
-                    }
-              </ScriptBlock></TableColumnItem>
+              <TableColumnItem><PropertyName>Format</PropertyName></TableColumnItem>
               <TableColumnItem><ScriptBlock>$_.StreamCounts -replace '\d{2,}','*' -replace 0,'-' -join ''</ScriptBlock></TableColumnItem>
               <TableColumnItem><ScriptBlock>'{0,4}:{1,-4}' -f $_.Width, $_.Height</ScriptBlock></TableColumnItem>
               <TableColumnItem><PropertyName>Channels</PropertyName></TableColumnItem>
