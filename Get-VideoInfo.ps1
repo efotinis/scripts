@@ -115,32 +115,6 @@ begin {
         $s -replace '\[0\]',"`0"
     }
 
-    # Testing if a path is a valid file.
-    #
-    # Notes:
-    # - "Test-Path -Type Leaf -LiteralPath $Path" returns false (in PS5.1)
-    #   if the parent path contains brackets.
-    # - "Resolve-Path -LiteralPath $Path" returns missing parent path parts
-    #   containing brackets errorneously preceeded by backticks (in PS5.1).
-    #   Maybe that's the reason Test-Path fails.
-    # - One way to test is to use [IO.File]::GetAttributes, but that requires
-    #   either a relative path (using the process CWD and not PowerShell's),
-    #   or an absolute path. As mentioned above, we can't reliably get the
-    #   absolute path using Resolve-Path and [IO.Path]::GetFullPath also uses
-    #   the process CWD instead of PowerShell's. The only way is to use
-    #   GetUnresolvedProviderPathFromPSPath.
-    # - The rest is easy. /s
-    function TestPathIsFile ([string]$Path) {
-        try {
-            # from: https://gist.github.com/sayedihashimi/02e98613efcb7280d706
-            $abs = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
-            $attr = [IO.File]::GetAttributes($abs)
-            ($attr -band [IO.FileAttributes]::Directory) -eq 0
-        } catch {
-            $false
-        }
-    }
-
     $inputItems = [System.Collections.ArrayList]@()
 
 }
@@ -148,8 +122,18 @@ begin {
 process {
 
     $a = @(switch ($PSCmdlet.ParameterSetName) {
-        'Path' { Get-Item -Path $Path }
-        'LiteralPath' { Get-Item -LiteralPath $LiteralPath }
+        'Path' {
+            Get-Item -Path $Path | ? PSIsContainer -eq $false
+        }
+        'LiteralPath' {
+            Get-Item -LiteralPath $LiteralPath | % {
+                if (-not $_.PSIsContainer) {
+                    $_
+                } else {
+                    Write-Error "Path is a directory: $LiteralPath"
+                }
+            }
+        }
     })
     [void]$inputItems.AddRange($a)
 
@@ -168,11 +152,6 @@ end {
         $progress.Status = "$progressIndex of $($inputItems.Count)"
         $progress.PercentComplete = ($progressIndex - 1) / $inputItems.Count * 100
         Write-Progress @progress
-
-        if (-not (TestPathIsFile $item)) {
-            Write-Error -Message 'Input path is not a file' -TargetObject $item
-            continue
-        }
 
         $info = avprobe.exe $item -show_format -show_streams -of json -v 0 | ConvertFrom-Json
         if (-not ($info | Get-Member format) -or -not ($info | Get-Member streams)) {
