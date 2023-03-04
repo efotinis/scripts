@@ -1,10 +1,5 @@
 [CmdletBinding(DefaultParameterSetName = 'Path')]
 param(
-    <#
-    [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-    [Alias( <-#'PSPath',#-> 'FullName')]
-    [string[]]$InputObject
-    #>
     [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName, Position=0, ParameterSetName = 'Path')]
     [SupportsWildcards()]
     [string[]]$Path,
