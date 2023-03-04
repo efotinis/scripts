@@ -17,7 +17,8 @@ begin {
         using int64 = System.Int64;
         public struct VideoInfo
         {
-            public string   Container;
+            public string   Format;
+            public string   FormatDescr;
             public int[]    StreamCounts;
             public int      Width;
             public int      Height;
@@ -33,11 +34,12 @@ begin {
             public int64    Length;
             public string   FullName;
             public VideoInfo(
-                string container, int[] streamCounts, int width, int height, double duration, int bitrate, double framerate, string framerateRatio,
+                string format, string formatDescr, int[] streamCounts, int width, int height, double duration, int bitrate, double framerate, string framerateRatio,
                 string video, string videoTag, string audio, string audioTag, int channels, int64 length,
                 string fullName)
             {
-                Container = container;
+                Format = format;
+                FormatDescr = formatDescr;
                 StreamCounts = streamCounts;
                 Width = width;
                 Height = height;
@@ -55,6 +57,18 @@ begin {
             }
             public string PSPath {
                 get { return FullName; }
+            }
+            public string Container {
+                get { return Format; }
+            }
+            public string ContainerDescr {
+                get { return FormatDescr; }
+            }
+            public double Fps {
+                get { return Framerate; }
+            }
+            public int Kbps {
+                get { return Bitrate; }
             }
         }
 "@
@@ -169,6 +183,7 @@ end {
         $actag = if ($audio) { CodecTag $audio.codec_tag_string } else { '' }
 
         [VideoInfo]::new(
+            $format.format_name,
             $format.format_long_name,
             (GetStreamTypesCount $info.streams),
             [int]$video.width,
