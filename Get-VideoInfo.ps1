@@ -1,8 +1,17 @@
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'Path')]
 param(
+    <#
     [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-    [Alias( <#'PSPath',#> 'FullName', 'Path')]
+    [Alias( <-#'PSPath',#-> 'FullName')]
     [string[]]$InputObject
+    #>
+    [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName, Position=0, ParameterSetName = 'Path')]
+    [SupportsWildcards()]
+    [string[]]$Path,
+
+    [Parameter(Mandatory, ValueFromPipelineByPropertyName, ParameterSetName = 'LiteralPath')]
+    [Alias('PSPath')]
+    [string[]]$LiteralPath
 )
 
 begin {
@@ -27,11 +36,11 @@ begin {
             public string   AudioTag;
             public int      Channels;
             public int64    Length;
-            public string   Path;
+            public string   FullName;
             public VideoInfo(
                 string container, int[] streamCounts, int width, int height, double duration, int bitrate, double framerate, string framerateRatio,
                 string video, string videoTag, string audio, string audioTag, int channels, int64 length,
-                string path)
+                string fullName)
             {
                 Container = container;
                 StreamCounts = streamCounts;
@@ -47,7 +56,10 @@ begin {
                 AudioTag = audioTag;
                 Channels = channels;
                 Length = length;
-                Path = path;
+                FullName = fullName;
+            }
+            public string PSPath {
+                get { return FullName; }
             }
         }
 "@
@@ -135,7 +147,11 @@ begin {
 
 process {
 
-    $inputItems += @($InputObject)
+    $a = @(switch ($PSCmdlet.ParameterSetName) {
+        'Path' { Get-Item -Path $Path }
+        'LiteralPath' { Get-Item -LiteralPath $LiteralPath }
+    })
+    [void]$inputItems.AddRange($a)
 
 }
 
@@ -154,7 +170,7 @@ end {
         Write-Progress @progress
 
         if (-not (TestPathIsFile $item)) {
-            Write-Error -Message 'path is not a file' -TargetObject $item
+            Write-Error -Message 'Input path is not a file' -TargetObject $item
             continue
         }
 
