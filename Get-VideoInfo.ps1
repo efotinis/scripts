@@ -18,6 +18,7 @@ begin {
         public struct VideoInfo
         {
             public string   Format;
+            public string   FormatRaw;
             public string   FormatDescr;
             public int[]    StreamCounts;
             public int      Width;
@@ -34,11 +35,12 @@ begin {
             public int64    Length;
             public string   FullName;
             public VideoInfo(
-                string format, string formatDescr, int[] streamCounts, int width, int height, double duration, int bitrate, double framerate, string framerateRatio,
+                string format, string formatRaw, string formatDescr, int[] streamCounts, int width, int height, double duration, int bitrate, double framerate, string framerateRatio,
                 string video, string videoTag, string audio, string audioTag, int channels, int64 length,
                 string fullName)
             {
                 Format = format;
+                FormatRaw = formatRaw;
                 FormatDescr = formatDescr;
                 StreamCounts = streamCounts;
                 Width = width;
@@ -124,6 +126,12 @@ begin {
         $s -replace '\[0\]',"`0"
     }
 
+    function SimplifyFormatName ([string]$s) {
+        $s  -replace 'matroska,webm','mkv' `
+            -replace 'mov,mp4,m4a,3gp,3g2,mj2','mov' `
+            -replace 'hls,applehttp','hls'
+    }
+
     $inputItems = [System.Collections.ArrayList]@()
 
 }
@@ -183,6 +191,7 @@ end {
         $actag = if ($audio) { CodecTag $audio.codec_tag_string } else { '' }
 
         [VideoInfo]::new(
+            (SimplifyFormatName $format.format_name),
             $format.format_name,
             $format.format_long_name,
             (GetStreamTypesCount $info.streams),
