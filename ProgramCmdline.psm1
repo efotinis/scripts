@@ -118,9 +118,9 @@ function global:Edit-ScriptInVSCode ([string]$InputObject) {
 # Interafe with MPC-HC command line.
 function global:Invoke-MediaPlayerClassic {
     param(
-        [Parameter(ValueFromPipeline<#, ValueFromPipelineByPropertyName#>)]
-        #[Alias('FullName')]
-        [object[]]$InputObject,
+        [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [Alias('FullName')]
+        [string[]]$InputObject,
         [switch]$Open,
         [switch]$Play,
         [switch]$Close,
@@ -146,7 +146,7 @@ function global:Invoke-MediaPlayerClassic {
         if (-not $exe) {
             throw 'MPC-HC executable not found'
         }
-        $filePaths = @()
+        $filePaths = [System.Collections.ArrayList]@()
         $opt = @(
             if ($Open)      { '/open' }
             if ($Play)      { '/play' }
@@ -164,12 +164,8 @@ function global:Invoke-MediaPlayerClassic {
         )
     }
     process {
-        $filePaths += foreach ($item in $InputObject) {
-            if ($item -is [System.IO.FileSystemInfo]) {
-                $item.FullName
-            } else {
-                $item
-            }
+        if ($InputObject) {
+            [void]$filePaths.AddRange($InputObject)
         }
     }
     end {
