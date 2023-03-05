@@ -28,15 +28,17 @@ begin {
             public double   Framerate;
             public string   FramerateRatio;
             public string   Video;
-            public string   VideoTag;
+            public string   VTag;
+            public string   VTagRaw;
             public string   Audio;
-            public string   AudioTag;
+            public string   ATag;
+            public string   ATagRaw;
             public int      Channels;
             public int64    Length;
             public string   FullName;
             public VideoInfo(
                 string format, string formatRaw, string formatDescr, int[] streamCounts, int width, int height, double duration, int bitrate, double framerate, string framerateRatio,
-                string video, string videoTag, string audio, string audioTag, int channels, int64 length,
+                string video, string vtag, string vtagRaw, string audio, string atag, string atagRaw, int channels, int64 length,
                 string fullName)
             {
                 Format = format;
@@ -50,9 +52,11 @@ begin {
                 Framerate = framerate;
                 FramerateRatio = framerateRatio;
                 Video = video;
-                VideoTag = videoTag;
+                VTag = vtag;
+                VTagRaw = vtagRaw;
                 Audio = audio;
-                AudioTag = audioTag;
+                ATag = atag;
+                ATagRaw = atagRaw;
                 Channels = channels;
                 Length = length;
                 FullName = fullName;
@@ -122,8 +126,12 @@ begin {
         }
     }
 
-    function CodecTag ([string]$s) {
-        $s -replace '\[0\]',"`0"
+    # Replace byte values represented by "[NNN]" and then remove non-essential chars.
+    function SimpleCodecTag ([string]$s) {
+        $s = ([regex]'\[(\d+)\]').replace($s, {
+            param($m) [char][int]$m.groups[1].value
+        })
+        $s -replace '[^a-z0-9-]',''
     }
 
     function SimplifyFormatName ([string]$s) {
@@ -187,8 +195,8 @@ end {
         $vcodec = $video.codec_name
         $acodec = if ($audio) { $audio.codec_name } else { $null }
         $channels = if ($audio) { $audio.channels } else { $null }
-        $vctag = CodecTag $video.codec_tag_string
-        $actag = if ($audio) { CodecTag $audio.codec_tag_string } else { '' }
+        $vctag = $video.codec_tag_string
+        $actag = if ($audio) { $audio.codec_tag_string } else { '' }
 
         [VideoInfo]::new(
             (SimplifyFormatName $format.format_name),
@@ -202,8 +210,10 @@ end {
             (fps_value $video.avg_frame_rate),
             $video.avg_frame_rate,
             $vcodec,
+            (SimpleCodecTag $vctag),
             $vctag,
             $acodec,
+            (SimpleCodecTag $actag),
             $actag,
             $channels,
             [int64]$format.size,
