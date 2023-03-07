@@ -991,10 +991,18 @@ Set-PSReadLineKeyHandler `
         [Microsoft.PowerShell.PSConsoleReadLine]::GetBufferState([ref]$line, [ref]$cursor)
         [Microsoft.PowerShell.PSConsoleReadLine]::AcceptLine()
         if ($line -eq '') {
-            $Host.UI.RawUI.CursorPosition = [System.Management.Automation.Host.Coordinates]::new(
-                0, $Host.UI.RawUI.CursorPosition.Y - 1
-            )
-            Write-Host -NoNewLine (' ' * $Host.UI.RawUI.BufferSize.Width)
+            if ([console]::CapsLock) {
+                # TODO: Scroll window up 1 line if we were at the view bottom
+                Clear-HostUp -Count 2
+             } else {
+                Clear-HostUp -Count 1
+                Write-Host ''
+                <#$Host.UI.RawUI.CursorPosition = [System.Management.Automation.Host.Coordinates]::new(
+                    0, $Host.UI.RawUI.CursorPosition.Y - 1
+                )
+                Write-Host -NoNewLine (' ' * $Host.UI.RawUI.BufferSize.Width)
+                #>
+            }
         }
     }
 
