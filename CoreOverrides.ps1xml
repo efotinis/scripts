@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Configuration>
+    <ViewDefinitions>
+        <View>
+            <Name>JobCompact</Name>
+            <ViewSelectedBy>
+                <TypeName>System.Management.Automation.Job</TypeName>
+            </ViewSelectedBy>
+            <TableControl>
+                <TableHeaders>
+                    <TableColumnHeader><Label>Id</Label><Width>6</Width><Alignment>left</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>Name</Label><Width>15</Width><Alignment>left</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>PSJobTypeName</Label><Width>15</Width><Alignment>Left</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>State</Label><Width>13</Width><Alignment>Left</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>HasMoreData</Label><Width>15</Width><Alignment>Left</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>Location</Label><Width>20</Width><Alignment>Left</Alignment></TableColumnHeader>
+                    <!--TableColumnHeader><Label>Command</Label><Width>25</Width><Alignment>Left</Alignment></TableColumnHeader-->
+                </TableHeaders>
+                <TableRowEntries>
+                    <TableRowEntry>
+                        <TableColumnItems>
+                            <TableColumnItem><PropertyName>Id</PropertyName></TableColumnItem>
+                            <TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+                            <TableColumnItem><PropertyName>PSJobTypeName</PropertyName></TableColumnItem>
+                            <TableColumnItem><PropertyName>State</PropertyName></TableColumnItem>
+                            <TableColumnItem><PropertyName>HasMoreData</PropertyName></TableColumnItem>
+                            <TableColumnItem><PropertyName>Location</PropertyName></TableColumnItem>
+                            <!--TableColumnItem><PropertyName>Command</PropertyName></TableColumnItem-->
+                        </TableColumnItems>
+                    </TableRowEntry>
+                </TableRowEntries>
+            </TableControl>
+        </View>
+    </ViewDefinitions>
+</Configuration>
