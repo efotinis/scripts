@@ -15,7 +15,7 @@ def size_factor(unit):
     """
     if not unit:
         return 1
-    i = 'kmgtpe'.index(unit)
+    i = 'kmgtpe'.index(unit.lower())
     return 1 << (10 * (i + 1))
 
 
