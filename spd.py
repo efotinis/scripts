@@ -11,7 +11,7 @@ import mathutil
 def size_factor(unit):
     """Convert unit char to numeric factor (e.g. 'k' -> 1024).
 
-    If unit is empty, returns 1.    
+    If unit is empty, returns 1.
     """
     if not unit:
         return 1
@@ -72,7 +72,7 @@ def fmt_speed(n, unit='s'):
 
 
 def parse_value(s):
-    """Detect value type and return it's type name and parsed value.
+    """Detect value type and return its type name and parsed value.
 
     Examples:
         parse_value('10kb') => ('size', 10240)
@@ -94,8 +94,8 @@ def fmt_value(type_, val, orig_str):
 
 def parse_cmdline():
     value_parser = lambda s: parse_value(s) + (s,)  # append original string
-    value_parser.func_name = 'Parameter'  # HACK: provide a meaningful name
-                                          # for argparse error reporting
+    value_parser.__name__ = 'Parameter'  # HACK: provide a meaningful name
+                                         # for argparse error reporting
     parser = argparse.ArgumentParser(
         description='Given two of size/time/speed, calculate the third.')
     parser.add_argument('value1', metavar='VAL1', type=value_parser,
