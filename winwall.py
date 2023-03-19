@@ -2,6 +2,7 @@
 """Windows wallpaper functions."""
 
 import argparse
+import json
 import os
 
 import win32api
@@ -28,18 +29,24 @@ def parse_args():
         description='manage Windows wallpaper'
     )
     ap.add_argument(
-        'path', 
+        'path',
         type=pathArg,
         nargs='?',
         help='image file; specify a dash ("-") to remove wallpaper; '
             'omit to print current path and style'
     )
     ap.add_argument(
-        '-s', 
-        dest='style', 
-        choices=STYLE_VALUES, 
+        '-s',
+        dest='style',
+        choices=STYLE_VALUES,
         default='fill',
         help='position style; default: %(default)s'
+    )
+    ap.add_argument(
+        '-j',
+        dest='json',
+        action='store_true',
+        help='use JSON for output'
     )
     return ap.parse_args()
 
@@ -107,8 +114,14 @@ if __name__ == '__main__':
         args = parse_args()
         if not args.path:
             path, style = get()
-            print(path)
-            print(style)
+            if args.json:
+                print(json.dumps({
+                    'style': style,
+                    'path': path
+                }))
+            else:
+                print(path)
+                print(style)
         elif args.path == '-':
             remove()
         else:
