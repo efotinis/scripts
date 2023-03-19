@@ -19,12 +19,26 @@ def size_factor(unit):
     return 1 << (10 * (i + 1))
 
 
+TIME_UNIT_SEC = {
+    's': 1,
+    'm': 60,
+    'h': 3600,
+    'd': 3600*24,
+    'w': 3600*24*7,
+    'n': 3600*24*30,
+    'y': 3600*24*365
+}
+
+
 def time_unit_to_sec(s):
     """Convert a time unit to seconds.
 
-    Currently supported: 's', 'm', 'h', 'd', 'w'
+    Currently supported: 's', 'm', 'h', 'd', 'w' (exact), 'n', 'y' (approx.)
     """
-    return {'s':1, 'm':60, 'h':3600, 'd':3600*24, 'w':3600*24*7}[s.lower()]
+    try:
+        return TIME_UNIT_SEC[s.lower()]
+    except KeyError:
+        raise ValueError(f'invalid time unit: {s}')
 
 
 def parse_size(s):
@@ -102,10 +116,11 @@ def parse_cmdline():
                         help='first value')
     parser.add_argument('value2', metavar='VAL2', type=value_parser,
                         help='second value.')
-    parser.add_argument('-t', choices='smhdw', metavar='UNIT', default='s',
+    parser.add_argument('-t', choices='smhdwny', metavar='UNIT', default='s',
                         dest='timeunit',
-                        help='time unit for speed output; use initials of: '
-                        'second, minute, hour, day, week; default: "%(default)s".')
+                        help='time unit for speed output; one of: '
+                        '(s)econd, (m)inute, (h)our, (d)ay, (w)eek, '
+                        'mo(n)th, (y)ear; default: "%(default)s".')
     parser.add_argument('-v', action='store_true', dest='verbose',
                         help='verbose output; includes interpreted input values')
     parser.add_argument('-b', action='store_true', dest='bare',
