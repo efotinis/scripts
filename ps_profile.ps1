@@ -1081,3 +1081,11 @@ function global:Set-PSReadLineColor {
 # NOTE: Ideally this should interface with ModularPrompt, but currently it just
 # uses the single space between the prompt and command line.
 Set-PSReadLineOption -PromptText ' ',([char]0x203c)
+
+# Change default (n/w+), since the background intensity prevents the color
+# from being interpreted properly and it shows the ANSI codes instead.
+# Apparently this happens with all PSReadLine color settings.
+# I think it used to work properly before ~2023-02-20, but I'm not sure
+# if it did or what caused it to change. I only remember using Colortool
+# to mess with the console colors before noticing this.
+Set-PSReadLineColor -Selection n/w

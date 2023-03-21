@@ -1,10 +1,10 @@
- # Functions to utilize specific programs via command line options.
+# Functions to utilize specific programs via command line options.
 
 
- Set-StrictMode -Version Latest
+Set-StrictMode -Version Latest
 
 
- # Get path of PS external script or OS executable script.
+# Get path of PS external script or OS executable script.
 function global:Get-CommandFile ($Name)
 {
     function isTextScript ($cmd) {
@@ -181,7 +181,7 @@ function global:Invoke-Foobar2000 {
         [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'Path')]
         [string[]]$InputObject,
-        
+
         [switch]$Add,  # add instead of replace in current playlist
         [switch]$Immediate,  # suppress file adding delay
         [switch]$Play,
