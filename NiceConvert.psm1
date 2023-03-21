@@ -11,10 +11,10 @@
 
 .PARAMETER Style
     Suffix and calculation selection. One of:
-        - jedec: Multiples of 1024, without "i", e.g. 1024 == 1.00 KB. Commonly used in Windows. Default.
-        - iec: Multiples of 1024, with "i", e.g. 1024 == 1.00 KiB. Commonly used in Linux.
-        - metric: Multiples of 1000, without "i", e.g. 1000 == 1.00 KB. Commonly used by storage device manufacturers.
-        - bozo: Multiples of 1000, with "o", e.g. 1000 == 1.00 KoB. My own non-standard style to protest against the gibi-jibi silliness.
+        - jedec / bin: Multiples of 1024, without "i", e.g. 1024 == 1.00 KB. Commonly used in Windows. Default.
+        - iec / ibin: Multiples of 1024, with "i", e.g. 1024 == 1.00 KiB. Commonly used in Linux.
+        - metric / dec: Multiples of 1000, without "i", e.g. 1000 == 1.00 KB. Commonly used by storage device manufacturers.
+        - bozo / odec: Multiples of 1000, with "o", e.g. 1000 == 1.00 KoB. My own non-standard style to protest against the gibi-jibi silliness.
 
 .INPUTS
     Long int.
@@ -29,7 +29,7 @@ function ConvertTo-NiceSize
         [Alias('Length')]
         [long]$Bytes,
 
-        [ValidateSet('jedec', 'iec', 'metric', 'bozo')]
+        [ValidateSet('jedec', 'iec', 'metric', 'bozo', 'bin', 'ibin', 'dec', 'odec')]
         [string]$Style = 'jedec'
     )
     process {
@@ -39,13 +39,13 @@ function ConvertTo-NiceSize
             $Bytes = -$Bytes
         }
 
-        if ($Style -eq 'jedec') {
+        if ($Style -eq 'jedec' -or $Style -eq 'bin') {
             $MULTIPLIER = 1024
             $PREFIX_TAIL = 'B'
-        } elseif ($Style -eq 'iec') {
+        } elseif ($Style -eq 'iec' -or $Style -eq 'ibin') {
             $MULTIPLIER = 1024
             $PREFIX_TAIL = 'iB'
-        } elseif ($Style -eq 'metric') {
+        } elseif ($Style -eq 'metric' -or $Style -eq 'dec') {
             $MULTIPLIER = 1000
             $PREFIX_TAIL = 'B'
         } else {
