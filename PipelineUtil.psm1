@@ -522,18 +522,22 @@ function Split-Array {
 
         [Parameter(Mandatory, ParameterSetName='GroupSize')]
         [ValidateRange(1, [int]::MaxValue)]
+        [Alias('GS')]
         [int]$GroupSize,
 
         [Parameter(Mandatory, ParameterSetName='GroupCount')]
         [ValidateRange(1, [int]::MaxValue)]
+        [Alias('GC')]
         [int]$GroupCount,
 
         [Parameter(Mandatory, ParameterSetName='HeadSize')]
         [ValidateRange(0, [int]::MaxValue)]
+        [Alias('HS')]
         [int]$HeadSize,
 
         [Parameter(Mandatory, ParameterSetName='TailSize')]
         [ValidateRange(0, [int]::MaxValue)]
+        [Alias('TS')]
         [int]$TailSize
     )
     begin {
