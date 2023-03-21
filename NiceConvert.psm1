@@ -14,6 +14,7 @@
         - jedec: Multiples of 1024, without "i", e.g. 1024 == 1.00 KB. Commonly used in Windows. Default.
         - iec: Multiples of 1024, with "i", e.g. 1024 == 1.00 KiB. Commonly used in Linux.
         - metric: Multiples of 1000, without "i", e.g. 1000 == 1.00 KB. Commonly used by storage device manufacturers.
+        - bozo: Multiples of 1000, with "o", e.g. 1000 == 1.00 KoB. My own non-standard style to protest against the gibi-jibi silliness.
 
 .INPUTS
     Long int.
@@ -28,7 +29,7 @@ function ConvertTo-NiceSize
         [Alias('Length')]
         [long]$Bytes,
 
-        [ValidateSet('jedec', 'iec', 'metric')]
+        [ValidateSet('jedec', 'iec', 'metric', 'bozo')]
         [string]$Style = 'jedec'
     )
     process {
@@ -44,9 +45,12 @@ function ConvertTo-NiceSize
         } elseif ($Style -eq 'iec') {
             $MULTIPLIER = 1024
             $PREFIX_TAIL = 'iB'
-        } else {
+        } elseif ($Style -eq 'metric') {
             $MULTIPLIER = 1000
             $PREFIX_TAIL = 'B'
+        } else {
+            $MULTIPLIER = 1000
+            $PREFIX_TAIL = 'oB'
         }
 
         [double]$n = $Bytes
@@ -93,7 +97,7 @@ function ConvertTo-NiceSize
 .PARAMETER Base10
     Force interpretation of metric units (multiples of 1000) when no "i" is in
     the unit, e.g. "1.00 KB" -> 1000. By default, jedec units are assumed, e.g.
-    "1.00 KB" -> 1024. This is ignored when units include "i".
+    "1.00 KB" -> 1024. This is ignored when units include "i" or "o".
 
 .INPUTS
     String.
@@ -124,12 +128,16 @@ function ConvertFrom-NiceSize
             return
         }
 
-        if (-not ($Unit -match '^([kmgtpe])(i?)b?$')) {
+        if (-not ($Unit -match '^([kmgtpe])([io]?)b?$')) {
             Write-Error ('invalid unit: "{0}"' -f $Unit)
             return
         }
-        $Unit, $Iec = $Matches[1..2]
-        $Base = if ($Iec -or -not $Base10) { 1024 } else { 1000 }
+        $Unit, $Spec = $Matches[1..2]
+        $Base = if ($Spec -eq 'o' -or ($Spec -eq '' -and $Base10)) {
+            1000
+        } else {
+            1024
+        }
         $Factor = [Math]::Pow($Base, 'kmgtpe'.IndexOf($Unit) + 1)
         Write-Output ([long]($Number * $Factor))
     }
