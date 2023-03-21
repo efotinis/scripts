@@ -28,7 +28,7 @@
             </TableControl>
         </View>
         <View>
-            <Name>DefaultView</Name>
+            <Name>Long</Name>
             <ViewSelectedBy>
                 <TypeName>VideoInfo</TypeName>
             </ViewSelectedBy>
@@ -39,18 +39,12 @@
                     <TableColumnHeader><Label>Dims(W:H)</Label><Width>9</Width><Alignment>center</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>Ch</Label><Width>2</Width><Alignment>right</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>Duration</Label><Width>8</Width><Alignment>right</Alignment></TableColumnHeader>
-                    <TableColumnHeader><Label>Framerate</Label><Width>9</Width><Alignment>right</Alignment></TableColumnHeader>
-                    <TableColumnHeader><Label>Bitrate</Label><Width>7</Width><Alignment>right</Alignment></TableColumnHeader>
-                    <!--
-                    <TableColumnHeader><Label>VCodec</Label><Width>10</Width><Alignment>left</Alignment></TableColumnHeader>
-                    <TableColumnHeader><Label>VTag</Label><Width>4</Width><Alignment>right</Alignment></TableColumnHeader>
-                    -->
-                    <TableColumnHeader><Label>Video/Tag</Label><Width>12</Width><Alignment>left</Alignment></TableColumnHeader>
-                    <!--
-                    <TableColumnHeader><Label>ACodec</Label><Width>10</Width><Alignment>left</Alignment></TableColumnHeader>
-                    <TableColumnHeader><Label>ATag</Label><Width>4</Width><Alignment>right</Alignment></TableColumnHeader>
-                    -->
-                    <TableColumnHeader><Label>Audio/Tag</Label><Width>12</Width><Alignment>left</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>Fps</Label><Width>6</Width><Alignment>right</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>Kbps</Label><Width>6</Width><Alignment>right</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>Video</Label><Width>6</Width><Alignment>right</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>VTag</Label><Width>4</Width><Alignment>left</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>Audio</Label><Width>6</Width><Alignment>right</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>ATag</Label><Width>4</Width><Alignment>left</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>Length</Label><Width>7</Width><Alignment>right</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>Name</Label><Alignment>left</Alignment></TableColumnHeader>
                 </TableHeaders>
@@ -62,30 +56,12 @@
                             <TableColumnItem><ScriptBlock>'{0,4}:{1,-4}' -f $_.Width, $_.Height</ScriptBlock></TableColumnItem>
                             <TableColumnItem><PropertyName>Channels</PropertyName></TableColumnItem>
                             <TableColumnItem><ScriptBlock>PrettyDuration $_.Duration</ScriptBlock></TableColumnItem>
-                            <TableColumnItem><PropertyName>Framerate</PropertyName><FormatString>N4</FormatString></TableColumnItem>
+                            <TableColumnItem><PropertyName>Framerate</PropertyName><FormatString>N3</FormatString></TableColumnItem>
                             <TableColumnItem><ScriptBlock>$_.Bitrate / 1000</ScriptBlock><FormatString>N0</FormatString></TableColumnItem>
-                            <!--
                             <TableColumnItem><PropertyName>Video</PropertyName></TableColumnItem>
-                            <TableColumnItem><PropertyName>VideoTag</PropertyName></TableColumnItem>
-                            -->
-                            <TableColumnItem><ScriptBlock>
-                                        $tag = ([regex]'\[(\d+)\]').replace($_.VideoTag, { param($m) [char][int]$m.groups[1].value })
-                                        $tag = $tag -replace '[^a-z0-9-]',''
-                                        if ($tag.Length -gt 4) { $tag = $tag.Substring(0, 4) }
-                                        if ($tag) { $tag = '/' + $tag }
-                                        $_.Video + $tag
-                            </ScriptBlock></TableColumnItem>
-                            <!--
+                            <TableColumnItem><PropertyName>VTag</PropertyName></TableColumnItem>
                             <TableColumnItem><PropertyName>Audio</PropertyName></TableColumnItem>
-                            <TableColumnItem><PropertyName>AudioTag</PropertyName></TableColumnItem>
-                            -->
-                            <TableColumnItem><ScriptBlock>
-                                        $tag = ([regex]'\[(\d+)\]').replace($_.AudioTag, { param($m) [char][int]$m.groups[1].value })
-                                        $tag = $tag -replace '[^a-z0-9-]',''
-                                        if ($tag.Length -gt 4) { $tag = $tag.Substring(0, 4) }
-                                        if ($tag) { $tag = '/' + $tag }
-                                        $_.Audio + $tag
-                            </ScriptBlock></TableColumnItem>
+                            <TableColumnItem><PropertyName>ATag</PropertyName></TableColumnItem>
                             <TableColumnItem><ScriptBlock>PrettySize $_.Length</ScriptBlock></TableColumnItem>
                             <TableColumnItem><ScriptBlock>[IO.Path]::GetFileName($_.FullName)</ScriptBlock></TableColumnItem>
                         </TableColumnItems>
