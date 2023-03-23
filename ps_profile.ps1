@@ -944,6 +944,24 @@ function global:ConvertFrom-Base64 {
 }
 
 
+# Get group counts of pipeline object types.
+# Formats as automatic table by default (to show full typename), unless Raw is set.
+function global:GroupTypes ([switch]$Raw) {
+    $a = $input | % GetType | group -n
+    if ($Raw) {
+        $a
+    } else {
+        $a | ft -au
+    }
+}
+
+
+# List all available Windows SDK header folders.
+function global:sdkhdr {
+    gi 'C:\Program Files (x86)\Windows Kits\*\include\*'
+}
+
+
 Set-Alias -Scope global gip Get-IfProperty
 Set-Alias -Scope global ndd New-DateDirectory
 Set-Alias -Scope global gft Get-FileTotal
@@ -967,6 +985,8 @@ Set-Alias -Scope global drv Get-DiskDrive
 Set-Alias -Scope global sd Invoke-ShellDelete
 Set-Alias -Scope global ej global:Dismount-RemovableDrive
 Set-Alias -Scope global b64 ConvertFrom-Base64
+Set-Alias -Scope global clsi Clear-HostInteractive
+Set-Alias -Scope global fullscr Switch-ConsoleFullScreen
 
 
 # change default transfer protocols ("Ssl3, Tls"), both of which are insecure;
