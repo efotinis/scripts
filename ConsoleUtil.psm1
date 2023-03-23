@@ -2,6 +2,16 @@
 
 Import-Module $Env:Scripts\WindowUtil.psm1
 
+Add-Type -Name Window -Namespace Console -MemberDefinition @'
+
+    [DllImport("Kernel32.dll")]
+    public static extern IntPtr GetConsoleWindow();
+
+    [DllImport("user32.dll")]
+    public static extern bool ShowWindow(IntPtr hWnd, Int32 nCmdShow);
+
+'@
+
 
 $TitleStack = [System.Collections.ArrayList]::new()
 
@@ -81,6 +91,26 @@ function Get-ConsoleWindowHideDepth {
 
 function Get-IsConsoleWindowVisible {
     return (Get-Process -Id $PID).MainWindowHandle -ne 0
+}
+
+
+function Switch-ConsoleFullScreen {
+    $maxWidth = $Env:FullScreenWidth -as [int]
+    if (-not $maxWidth) {
+        throw "Missing environment variable: FullScreenWidth"
+    }
+    $conWnd = [Console.Window]::GetConsoleWindow()
+    $SW_MAXIMIZE = 3
+    $SW_RESTORE = 9
+    if ($Env:FullScrPreviousWidth) {
+        [void][Console.Window]::ShowWindow($conWnd, $SW_RESTORE)
+        cols $Env:FullScrPreviousWidth
+        $Env:FullScrPreviousWidth = $null
+    } else {
+        $Env:FullScrPreviousWidth = $Host.UI.RawUI.BufferSize.Width
+        cols $maxWidth
+        [void][Console.Window]::ShowWindow($conWnd, $SW_MAXIMIZE)
+    }
 }
 
 
