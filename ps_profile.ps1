@@ -985,9 +985,9 @@ Set-Alias -Scope global drv Get-DiskDrive
 Set-Alias -Scope global sd Invoke-ShellDelete
 Set-Alias -Scope global ej global:Dismount-RemovableDrive
 Set-Alias -Scope global b64 ConvertFrom-Base64
-Set-Alias -Scope global clsi Clear-HostInteractive
-Set-Alias -Scope global fullscr Switch-ConsoleFullScreen
-
+Set-Alias -Scope global winmerge 'C:\Program Files (x86)\WinMerge\WinMergeU.exe'
+Set-Alias -Scope global icls Clear-HostInteractive
+Set-Alias -Scope global fscr Switch-ConsoleFullScreen
 
 # change default transfer protocols ("Ssl3, Tls"), both of which are insecure;
 # note that TLS v1.1 has also been deprecated
