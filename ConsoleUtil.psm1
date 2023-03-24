@@ -95,6 +95,11 @@ function Get-IsConsoleWindowVisible {
 
 
 function Switch-ConsoleFullScreen {
+    $sysVer = [System.Environment]::OsVersion
+    if ($sysVer.Platform -eq 'Win32NT' -and $sysVer.Version.Major -gt 7) {
+        # TODO: toggle maximized state
+        throw 'system supports native console window maximizing'
+    }
     $maxWidth = $Env:FullScreenWidth -as [int]
     if (-not $maxWidth) {
         throw "Missing environment variable: FullScreenWidth"
