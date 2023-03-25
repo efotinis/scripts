@@ -28,7 +28,7 @@ function ConvertTo-CompactDate {
 
 # Convert from 'M/d/(yy)yy' or 'M.d.(yy)yy' to DateTime.
 # 2-digit years are assumed to be 20xx.
-function global:ConvertFrom-USDate {
+function ConvertFrom-USDate {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, ValueFromPipeline)]
