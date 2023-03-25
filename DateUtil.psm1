@@ -97,6 +97,37 @@ function Get-DateSection {
 }
 
 
+function ConvertFrom-DateSection {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [string]$Section
+    )
+    process {
+        switch -regex ($Section) {
+            '^(\d\d\d\d)$' {
+                $y = [int]$Matches[1]
+                [datetime]::new($y, 1, 1)
+            }
+            '^(\d\d\d\d)-Q(\d)$' {
+                $y = [int]$Matches[1]
+                $q = [int]$Matches[2]
+                $m = ($q - 1) * 3 + 1
+                [datetime]::new($y, $m, 1)
+            }
+            '^(\d\d\d\d)-(\d\d)$' {
+                $y = [int]$Matches[1]
+                $m = [int]$Matches[2]
+                [datetime]::new($y, $m, 1)
+            }
+            default {
+                Write-Error "Unexpected date section value: $Section."
+            }
+        }
+    }
+}
+
+
 function Get-NextDateSection {
     [CmdletBinding()]
     param(
