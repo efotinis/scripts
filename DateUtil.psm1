@@ -71,7 +71,7 @@ function ConvertTo-DateSection {
         [Parameter(Mandatory, ValueFromPipeline)]
         [datetime]$Date,
 
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory, Position = 0)]
         [ValidateSet('Year', 'Quarter', 'Month')]
         [string]$Type
     )
