@@ -65,7 +65,7 @@ function ConvertFrom-USDate {
 }
 
 
-function Get-DateSection {
+function ConvertTo-DateSection {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, ValueFromPipeline)]

@@ -97,7 +97,7 @@ begin {
     }
 }
 process {
-    $k = (GetDateValue $InputObject) | Get-DateSection -Type $Section
+    $k = (GetDateValue $InputObject) | ConvertTo-DateSection -Type $Section
     $g = GetGroup $k
     $g.count += 1
     if (-not $NoElement) {
