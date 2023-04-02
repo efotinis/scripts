@@ -104,7 +104,7 @@ def _normalize_marginals(a, align):
     a = [_pad_lines(t, max_lines, align) for t in a]
 
     # remove whole, ''-only lines (note: zip(*a) is a 2-D list transpose)
-    return zip(*[t for t in zip(*a) if any(t)])
+    return list(zip(*[t for t in zip(*a) if any(t)]))
 
 
 def _pad_lines(lines, count, valign):
