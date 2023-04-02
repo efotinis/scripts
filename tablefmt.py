@@ -241,8 +241,8 @@ class Table(object):
 
         cells_rows = ([c.format(c.selector(rec)) for c in columns] for rec in data)
 
-        head_rows = zip(*(c.header for c in columns))
-        foot_rows = zip(*(c.footer for c in columns))
+        head_rows = list(zip(*(c.header for c in columns)))
+        foot_rows = list(zip(*(c.footer for c in columns)))
         head_widths = [max(len(s) for s in a) for a in zip(*head_rows)] or \
                       [0] * len(columns)
         foot_widths = [max(len(s) for s in a) for a in zip(*foot_rows)] or \
