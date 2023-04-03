@@ -327,26 +327,31 @@ function Set-MpcOption {
 <#
 .SYNOPSIS
     Show MPC setting changes.
-    
+
 .DESCRIPTION
     Displays MPC setting changes by polling the registry. Can be used for
     debugging.
-    
+
 .PARAMETER IntervalSeconds
     Time in seconds between registry checks. Can be fractional. Default: 0.1s.
 
+.PARAMETER ShowInitial
+    Display all settings at the start.
+
 .INPUTS
     None.
-    
+
 .OUTPUTS
     Text.
 #>
 function Watch-MpcOption {
     [CmdletBinding()]
     param(
-        [float]$IntervalSeconds = 0.1
+        [float]$IntervalSeconds = 0.1,
+        [switch]$ShowInitial
     )
     $a = @()
+    $showNext = [bool]$ShowInitial
     for (;;) {
         $b = Get-ItemProperty $REG_SETTINGS * |
             Select-Object * -Exclude ps* |
@@ -354,10 +359,11 @@ function Watch-MpcOption {
             % properties |
             % { '{0}: {1}' -f $_.name, $_.value }
         $changes = Compare-Object $a $b | ? sideindicator -eq '=>'
-        if ($changes) {
+        if ($changes -and $showNext) {
             $changes.inputobject | out-string
         }
         $a = $b
+        $showNext = $true
         Start-Sleep -Milliseconds ($IntervalSeconds * 1000 -as [int])
     }
 }
