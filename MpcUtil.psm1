@@ -18,6 +18,16 @@ function Int32ToUInt32 ([Int32]$Value) {
 }
 
 
+function FindStringIgnoreCase ([string[]]$List, [string]$Value) {
+    for ($i = $List.Count - 1; $i -gt -1; --$i) {
+        if ($List[$i] -eq $Value) {
+            break
+        }
+    }
+    $i
+}
+
+
 <#
 .SYNOPSIS
     Get MPC configuration options.
@@ -259,14 +269,14 @@ function Set-MpcOption {
     }
     if ($PSBoundParameters.ContainsKey('AfterPlayback')) {
         $a = 'DoNothing', 'PlayNextFile', 'Rewind', 'TurnMonitorOff', 'Close', 'Exit'
-        $i = $a.IndexOf($AfterPlayback)
+        $i = FindStringIgnoreCase $a $AfterPlayback
         Set-ItemProperty $REG_SETTINGS 'AfterPlayback' $i
     }
 
     # -- Auto-zoom --
     if ($PSBoundParameters.ContainsKey('AutoZoom')) {
         $a = '25%', '50%', '100%', '200%', 'AutoFit', 'AutoFitIfLarger'
-        $i = $a.IndexOf($AutoZoom)
+        $i = FindStringIgnoreCase $a $AutoZoom
         if ($i -eq -1) {
             Set-ItemProperty $REG_SETTINGS 'AutoZoom' 0
         } else {
@@ -281,7 +291,7 @@ function Set-MpcOption {
     # -- Window layout --
     if ($PSBoundParameters.ContainsKey('Chrome')) {
         $a = 'Normal', 'HideMenu', 'HideCaption', 'HideBorder'
-        $i = $a.IndexOf($Chrome)
+        $i = FindStringIgnoreCase $a $Chrome
         Set-ItemProperty $REG_SETTINGS 'HideCaptionMenu' $i
     }
     if ($PSBoundParameters.ContainsKey('Panels')) {
