@@ -76,6 +76,7 @@ function global:x {
 function global:z ($time) { & $Env:Scripts\suspend.py -l $time }
 Function global:.. { Set-Location .. }
 Function global:... { Set-Location ..\.. }
+function global:sld { Set-Location ~\Desktop }
 function global:slc { Set-Location -LiteralPath (Get-Clipboard) }
 function global:glc { Get-Location | % Path | Set-Clipboard }
 Function global:?? ($Cmd) { help $Cmd -Full }
