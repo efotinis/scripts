@@ -963,6 +963,43 @@ function global:sdkhdr {
 }
 
 
+<#
+.SYNOPSIS
+    Filter hashtable items.
+.DESCRIPTION
+    Returns a hashtable with a subset of items from an existing object.
+.PARAMETER InputObject
+    Source hashtable.
+.PARAMETER Name
+    List of key names to select. Missing keys in the source object are ignored.
+.INPUTS
+    Hashtable.
+.OUTPUTS
+    Hashtable.
+#>
+function global:Select-Hashtable {
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [System.Collections.Hashtable]$InputObject,
+        
+        [Parameter(Position = 0)]
+        [string[]]$Name
+    )
+    begin {
+        $keys = [System.Collections.Generic.HashSet[string]]$Name
+    }
+    process {
+        $ret = @{}
+        foreach ($e in $InputObject.GetEnumerator()) {
+            if ($e.Name -in $keys) {
+                $ret[$e.Name] = $e.Value
+            }
+        }
+        $ret
+    }
+}
+
+
 Set-Alias -Scope global gip Get-IfProperty
 Set-Alias -Scope global ndd New-DateDirectory
 Set-Alias -Scope global gft Get-FileTotal
