@@ -64,6 +64,15 @@ begin {
             public string PSPath {
                 get { return FullName; }
             }
+            public string Name {
+                get { return System.IO.Path.GetFileName(FullName); }
+            }
+            public string BaseName {
+                get { return System.IO.Path.GetFileNameWithoutExtension(FullName); }
+            }
+            public string Extension {
+                get { return System.IO.Path.GetExtension(FullName); }
+            }
             public string Container {
                 get { return Format; }
             }
