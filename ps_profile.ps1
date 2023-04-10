@@ -981,7 +981,7 @@ function global:Select-Hashtable {
     param(
         [Parameter(Mandatory, ValueFromPipeline)]
         [System.Collections.Hashtable]$InputObject,
-        
+
         [Parameter(Position = 0)]
         [string[]]$Name
     )
@@ -996,6 +996,47 @@ function global:Select-Hashtable {
             }
         }
         $ret
+    }
+}
+
+
+# Double characters defined in PowerShell as single/double quotes.
+# Can be used to embed arbitrary strings in literals.
+# Character classification info taken from https://github.com/PowerShell/PowerShell/blob/master/src/System.Management.Automation/engine/parser/CharTraits.cs
+function global:DuplicateQuotes {
+    param(
+        [Parameter(Mandatory, Position = 1, ValueFromPipeline)]
+        [AllowEmptyString()]
+        [string]$Text,
+
+        [Parameter(Mandatory, Position = 0)]
+        [ValidateSet('Single', 'Double')]
+        [Alias('Type')]
+        [string]$QuoteType
+    )
+    begin {
+        $CHARS = switch ($QuoteType) {
+            'Single' {
+                -join @(
+                    [char]0x0027  # APOSTROPHE
+                    [char]0x2018  # LEFT SINGLE QUOTATION MARK
+                    [char]0x2019  # RIGHT SINGLE QUOTATION MARK
+                    [char]0x201a  # SINGLE LOW-9 QUOTATION MARK
+                    [char]0x201b  # SINGLE HIGH-REVERSED- QUOTATION MARK
+                )
+            }
+            'Double' {
+                -join @(
+                    [char]0x0022  # QUOTATION MARK
+                    [char]0x201C  # LEFT DOUBLE QUOTATION MARK
+                    [char]0x201D  # RIGHT DOUBLE QUOTATION MARK
+                    [char]0x201E  # DOUBLE LOW-9 QUOTATION MARK
+                )
+            }
+        }
+    }
+    process {
+        $Text -replace "([$CHARS])",'$1$1'
     }
 }
 
