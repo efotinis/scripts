@@ -25,6 +25,8 @@ begin {
             public int      Height;
             public double   Duration;
             public int      Bitrate;
+            public int      VideoBitrate;
+            public int      AudioBitrate;
             public double   Framerate;
             public string   FramerateRatio;
             public string   Video;
@@ -37,7 +39,7 @@ begin {
             public int64    Length;
             public string   FullName;
             public VideoInfo(
-                string format, string formatRaw, string formatDescr, int[] streamCounts, int width, int height, double duration, int bitrate, double framerate, string framerateRatio,
+                string format, string formatRaw, string formatDescr, int[] streamCounts, int width, int height, double duration, int bitrate, int videoBitrate, int audioBitrate, double framerate, string framerateRatio,
                 string video, string vtag, string vtagRaw, string audio, string atag, string atagRaw, int channels, int64 length,
                 string fullName)
             {
@@ -49,6 +51,8 @@ begin {
                 Height = height;
                 Duration = duration;
                 Bitrate = bitrate;
+                VideoBitrate = videoBitrate;
+                AudioBitrate = audioBitrate;
                 Framerate = framerate;
                 FramerateRatio = framerateRatio;
                 Video = video;
@@ -84,6 +88,12 @@ begin {
             }
             public int Kbps {
                 get { return Bitrate / 1000; }
+            }
+            public int KbpsV {
+                get { return VideoBitrate / 1000; }
+            }
+            public int KbpsA {
+                get { return AudioBitrate / 1000; }
             }
         }
 "@
@@ -206,6 +216,8 @@ end {
         $channels = if ($audio) { $audio.channels } else { $null }
         $vctag = $video.codec_tag_string
         $actag = if ($audio) { $audio.codec_tag_string } else { '' }
+        $br_v = $video.bit_rate
+        $br_a = if ($audio) { $audio.bit_rate } else { $null }
 
         [VideoInfo]::new(
             (SimplifyFormatName $format.format_name),
@@ -216,6 +228,8 @@ end {
             [int]$video.height,
             [double]$format.duration,
             [int]$format.bit_rate,
+            [int]$br_v,
+            [int]$br_a,
             (fps_value $video.avg_frame_rate),
             $video.avg_frame_rate,
             $vcodec,
