@@ -83,7 +83,7 @@ begin {
                 get { return Framerate; }
             }
             public int Kbps {
-                get { return Bitrate; }
+                get { return Bitrate / 1000; }
             }
         }
 "@
