@@ -4,6 +4,7 @@ import re
 import sys
 import time
 import argparse
+import contextlib
 
 import win32api
 import win32con
@@ -128,34 +129,50 @@ def parse_args():
     _add('-B', dest='beeploop', action='store_true', help='beep continuously after completion')
     _add('-d', dest='decimals', type=int, default=1, help='second fractional digits; default: %(default)s')
     _add('-c', dest='cancelerror', action='store_true', help='exit with error if canceled prematurely')
+    _add('-a', dest='attributes', type=int, help='output color attributes (0..255)')
     _add('-f', dest='format', default='{}', help='formatting string to display timer with; default: %(default)s')
     args = parser.parse_args()
     args.decimals = min(max(args.decimals, 0), 3)
+    if args.attributes is not None and (args.attributes < 0 or args.attributes > 255):
+        parser.error('attributes value must be 0..255')
     return args
 
 
-BIG_FONT = '''
-XXX  X  XXX XXX X X XXX XXX XXX XXX XXX         
-X X XX    X   X X X X   X     X X X X X      X  
-X X  X  XXX XXX XXX XXX XXX  X  XXX XXX         
-X X  X  X     X   X   X X X X   X X   X      X  
-XXX XXX XXX XXX   X XXX XXX X   XXX XXX  X      
-'''
+BIG_FONT = (
+    'XXX  X  XXX XXX X X XXX XXX XXX XXX XXX         \n'
+    'X X XX    X   X X X X   X     X X X X X      X  \n'
+    'X X  X  XXX XXX XXX XXX XXX  X  XXX XXX         \n'
+    'X X  X  X     X   X   X X X X   X X   X      X  \n'
+    'XXX XXX XXX XXX   X XXX XXX X   XXX XXX  X      \n'
+)
+
+@contextlib.contextmanager
+def StdoutAttribute(n=None):
+    """Context manager for preserving STDOUT text attributes."""
+    out = win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
+    org = out.GetConsoleScreenBufferInfo()['Attributes']
+    if n is not None:
+        out.SetConsoleTextAttribute(n)
+    try:
+        yield
+    finally:
+        out.SetConsoleTextAttribute(org)
 
 
 if __name__ == '__main__':
     args = parse_args()
-    
+
     try:
         step = 10.0**(-args.decimals) / 2  # half the smallest displayable value
         step = min(max(step, 0.01), 1)  # not too small (CPU intensive) or too large (at least 1 sec accurate)
-        if args.large:
-            FULL_BLOCK = u'\u2588'
-            bitmaps = bigecho.chars_from_string(BIG_FONT.replace('X', FULL_BLOCK), 3, 1)
-            font = bigecho.Font('0123456789.:', bitmaps, 3, 5, weight=2)
-            countdown_bigecho(font, args.seconds, step, args.decimals, args.format)
-        else:
-            countdown(args.seconds, step, args.decimals, args.format)
+        with StdoutAttribute(args.attributes):
+            if args.large:
+                FULL_BLOCK = u'\u2588'
+                bitmaps = bigecho.chars_from_string(BIG_FONT.replace('X', FULL_BLOCK), 3, 1)
+                font = bigecho.Font('0123456789.:', bitmaps, 3, 5, weight=2)
+                countdown_bigecho(font, args.seconds, step, args.decimals, args.format)
+            else:
+                countdown(args.seconds, step, args.decimals, args.format)
     except KeyboardInterrupt:
         if args.cancelerror:
             sys.exit('timer canceled')
