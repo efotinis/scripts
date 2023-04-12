@@ -20,7 +20,7 @@ function MakeObject ($h) {
 # Convert SecureString to plain text.
 function GetSecureStringText ([SecureString]$s) {
     [Runtime.InteropServices.Marshal]::PtrToStringAuto(
-        [Runtime.InteropServices.Marshal]::SecureStringToBSTR($Password)
+        [Runtime.InteropServices.Marshal]::SecureStringToBSTR($s)
     )
 }
 
