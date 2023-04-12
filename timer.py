@@ -146,6 +146,7 @@ BIG_FONT = (
     'XXX XXX XXX XXX   X XXX XXX X   XXX XXX  X      \n'
 )
 
+
 @contextlib.contextmanager
 def StdoutAttribute(n=None):
     """Context manager for preserving STDOUT text attributes."""
@@ -159,13 +160,30 @@ def StdoutAttribute(n=None):
         out.SetConsoleTextAttribute(org)
 
 
+@contextlib.contextmanager
+def StdoutCursor(size=None, visible=None):
+    """Context manager for preserving STDOUT cursor size/visibility."""
+    out = win32console.GetStdHandle(win32console.STD_OUTPUT_HANDLE)
+    orgSize, orgVisible = out.GetConsoleCursorInfo()
+    assert visible is not None
+    if size is not None or visible is not None:
+        out.SetConsoleCursorInfo(
+            size or orgSize,
+            visible if visible is not None else orgVisible
+        )
+    try:
+        yield
+    finally:
+        out.SetConsoleCursorInfo(orgSize, orgVisible)
+
+
 if __name__ == '__main__':
     args = parse_args()
 
     try:
         step = 10.0**(-args.decimals) / 2  # half the smallest displayable value
         step = min(max(step, 0.01), 1)  # not too small (CPU intensive) or too large (at least 1 sec accurate)
-        with StdoutAttribute(args.attributes):
+        with StdoutCursor(visible=False), StdoutAttribute(args.attributes):
             if args.large:
                 FULL_BLOCK = u'\u2588'
                 bitmaps = bigecho.chars_from_string(BIG_FONT.replace('X', FULL_BLOCK), 3, 1)
