@@ -1,7 +1,28 @@
-# Get archive item info.
-#
-# Converts 7-Zip's technical listing output to PSCustomObjects.
+<#
+.SYNOPSIS
+    Get archive item info.
 
+.DESCRIPTION
+    Lists archive entries info using 7-Zip's technical listing output.
+
+.PARAMETER Path
+    Input file path with optional wildcards. Use the pipeline to specify multiple items.
+
+.PARAMETER LiteralPath
+    Like Path, but without wildcard expansion.
+
+.PARAMETER Password
+    Password to use in case of encrypted archive headers.
+
+.PARAMETER GetPassword
+    Prompt interactively for password (overrides Password).
+
+.INPUTS
+    File
+
+.OUTPUTS
+    PSCustomObject
+#>
 [CmdletBinding(DefaultParameterSetName = 'Path')]
 param(
     [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName, ParameterSetName = 'Path')]
