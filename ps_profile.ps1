@@ -1067,6 +1067,7 @@ Set-Alias -Scope global b64 ConvertFrom-Base64
 Set-Alias -Scope global winmerge 'C:\Program Files (x86)\WinMerge\WinMergeU.exe'
 Set-Alias -Scope global icls Clear-HostInteractive
 Set-Alias -Scope global fscr Switch-ConsoleFullScreen
+Set-Alias -Scope global ot Get-ObjectType
 
 # change default transfer protocols ("Ssl3, Tls"), both of which are insecure;
 # note that TLS v1.1 has also been deprecated
