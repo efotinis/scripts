@@ -161,6 +161,14 @@ begin {
 
     $inputItems = [System.Collections.ArrayList]@()
 
+    function TryGet ($Object, $Property, $Default = $null) {
+        try {
+            $Object.$Property
+        } catch [System.Management.Automation.PropertyNotFoundException] {
+            $Default
+        }
+    }
+
 }
 
 process {
@@ -216,8 +224,8 @@ end {
         $channels = if ($audio) { $audio.channels } else { $null }
         $vctag = $video.codec_tag_string
         $actag = if ($audio) { $audio.codec_tag_string } else { '' }
-        $br_v = $video.bit_rate
-        $br_a = if ($audio) { $audio.bit_rate } else { $null }
+        $br_v = TryGet $video bit_rate -1
+        $br_a = if ($audio) { TryGet $audio bit_rate -1 } else { $null }
 
         [VideoInfo]::new(
             (SimplifyFormatName $format.format_name),
