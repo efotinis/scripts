@@ -69,8 +69,12 @@ function global:Edit-FileInNotepad {
         [switch]$LiteralBrackets
     )
     process {
-        global:Get-ResolvedWildcardOrLiteral $InputObject -LiteralBrackets:$LiteralBrackets | % {
-            & "$Env:windir\system32\notepad.exe" $_
+        if ($InputObject.Count -eq 1 -and $_ -is [Microsoft.PowerShell.Commands.MatchInfo]) {
+            & "$Env:windir\system32\notepad.exe" /g $_.LineNumber $InputObject
+        } else {
+            global:Get-ResolvedWildcardOrLiteral $InputObject -LiteralBrackets:$LiteralBrackets | % {
+                & "$Env:windir\system32\notepad.exe" $_
+            }
         }
     }
 }
