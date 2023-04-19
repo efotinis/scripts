@@ -1107,6 +1107,12 @@ Set-PSReadLineKeyHandler `
         }
     }
 
+# Add the "IBM Common User Access" variants for clipboard interaction.
+# PSReadline 2.2.6 only includes the Paste one by default.
+Set-PSReadLineKeyHandler -Key 'Shift+Delete' -Function Cut
+Set-PSReadLineKeyHandler -Key 'Ctrl+Insert' -Function Copy
+Set-PSReadLineKeyHandler -Key 'Shift+Insert' -Function Paste
+
 
 <#
 .SYNOPSIS
