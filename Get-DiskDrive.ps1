@@ -15,8 +15,8 @@
         - FreePercentage            Total free perecentage (0-100; float).
         - UserFreeFreePercentage    User free perecentage (0-100; float).
 
-.PARAMETER All
-    Include drives that are not ready (e.g. optical drives without media). Querying information about such drives introduces a slight delay, so they are excluded by default.
+.PARAMETER IncludeNonReady
+    Include drives like optical drives without media. Introduces a slight delay.
 
 .INPUTS
     None
@@ -27,7 +27,7 @@
 #>
 [CmdletBinding()]
 param(
-    [switch]$All  # include non-ready
+    [switch]$IncludeNonReady
 )
 
 Set-StrictMode -Version Latest
@@ -64,7 +64,7 @@ Update-FormatData $Env:SyncMain\util\fmt.ps1xml
 
 
 [System.IO.DriveInfo]::GetDrives() |
-    Where-Object { $All -or $_.IsReady } |
+    Where-Object { $IncludeNonReady -or $_.IsReady } |
     Foreach-Object {
         [DiskDrive]::new(
             $_.Name.Substring(0, 2),
