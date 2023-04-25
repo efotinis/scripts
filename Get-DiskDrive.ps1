@@ -6,7 +6,7 @@
     Returns information about existing drives. Returned properties are:
         - Letter    Assigned letter with colon, e.g. "C:".
         - Label     Drive label.
-        - Type      Drive type (string). See System.IO.DriveType enum.
+        - Type      Drive type (System.IO.DriveType enum).
         - Format    Filesystem format.
         - Ready     Boolean indicating that drive contains media.
         - Size      Total capacity in bytes.
@@ -37,7 +37,7 @@ Add-Type -TypeDefinition @"
     public struct DiskDrive {
         public string Letter;
         public string Label;
-        public string Type;
+        public System.IO.DriveType Type;
         public string Format;
         public bool Ready;
         public int64 Size;
@@ -45,7 +45,7 @@ Add-Type -TypeDefinition @"
         public int64 UserFree;
         public double FreePercentage { get { return Size != 0 ? 100.0*Free/Size : 0; } }
         public double UserFreePercentage { get { return Size != 0 ? 100.0*UserFree/Size : 0; } }
-        public DiskDrive(string letter, string label, string type, string format,
+        public DiskDrive(string letter, string label, System.IO.DriveType type, string format,
             bool ready, int64 size, int64 free, int64 userFree)
         {
             Letter = letter;
