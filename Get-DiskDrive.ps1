@@ -16,7 +16,10 @@
         - UserFreeFreePercentage    User free perecentage (0-100; float).
 
 .PARAMETER DriveType
-    Return only drive of the specified type. Can specify one or more System.IO.DriveType enum values. If omitted, returns drives of all types.
+    Return only drives of the specified type. Can specify one or more System.IO.DriveType enum values. If omitted, returns drives of all types.
+
+.PARAMETER Label
+    Return only drives with a matching label. Supports wildcards. Defaults to "*".
 
 .PARAMETER IncludeNonReady
     Include drives like optical drives without media. Introduces a slight delay.
@@ -31,6 +34,9 @@
 [CmdletBinding()]
 param(
     [System.IO.DriveType[]]$DriveType,
+
+    [SupportsWildcards()]
+    [string]$Label = '*',
 
     [switch]$IncludeNonReady
 )
@@ -71,6 +77,7 @@ Update-FormatData $Env:SyncMain\util\fmt.ps1xml
 [System.IO.DriveInfo]::GetDrives() |
     Where-Object { $IncludeNonReady -or $_.IsReady } |
     Where-Object { $null -eq $DriveType -or $_.DriveType -in $DriveType } |
+    Where-Object { $_.VolumeLabel -like $Label } |
     Foreach-Object {
         [DiskDrive]::new(
             $_.Name.Substring(0, 2),
