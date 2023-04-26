@@ -174,9 +174,16 @@ function global:SafeName ($s) {
 }
 
 
-# Change the extension of a file path
+# Change the extension of a path.
 function global:SetExt ($path, $ext) {
     [IO.Path]::ChangeExtension($path, $ext)
+}
+
+
+# Add suffix to basename (stem) of a path.
+function global:AddStem ($path, $suffix) {
+    $ext = [IO.Path]::GetExtension($path)
+    $path.Substring(0, $path.Length - $ext.Length) + $suffix + $ext
 }
 
 
