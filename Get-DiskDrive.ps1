@@ -71,8 +71,6 @@ Add-Type -TypeDefinition @"
     }
 "@
 
-Update-FormatData $Env:SyncMain\util\fmt.ps1xml
-
 
 [System.IO.DriveInfo]::GetDrives() |
     Where-Object { $IncludeNonReady -or $_.IsReady } |
