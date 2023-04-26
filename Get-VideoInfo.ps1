@@ -95,6 +95,9 @@ begin {
             public int KbpsA {
                 get { return AudioBitrate / 1000; }
             }
+            public double Megapixel {
+                get { return (double)Width * Height / 1000000; }
+            }
         }
 "@
 
