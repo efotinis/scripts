@@ -20,7 +20,7 @@ print(bs4.BeautifulSoup(requests.get(url).content).title.get_text(strip=True), e
 '@ $Url
 }
 
-$Path = Join-Path $Destination ((SafeName $Title) + '.url')
+$Path = Join-Path $Destination ((Get-SafeFileName $Title) + '.url')
 
 $Content = (
     '[InternetShortcut]',

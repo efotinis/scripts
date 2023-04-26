@@ -12,6 +12,7 @@ Import-Module $Env:Scripts\ModularPrompt.psm1
 Import-Module $Env:Scripts\MpcUtil.psm1
 Import-Module $Env:Scripts\NiceConvert.psm1
 Import-Module $Env:Scripts\NovaSearch.psm1
+Import-Module $Env:Scripts\PathUtil.psm1
 Import-Module $Env:Scripts\PipelineUtil.psm1
 Import-Module $Env:Scripts\ProgramCmdline.psm1
 Import-Module $Env:Scripts\StringUtil.psm1
@@ -156,28 +157,6 @@ function global:IsAdmin {
 function global:Duration ($path) {
     $j = (avprobe.exe -v 0 -of json -show_format $path | ConvertFrom-Json)
     $j.format.duration
-}
-
-
-# Replace invalid filename characters with underscore.
-function global:SafeName ($s) {
-    foreach ($c in [IO.Path]::GetInvalidFileNameChars()) {
-        $s = $s.Replace($c, '_')
-    };
-    return $s;
-}
-
-
-# Change the extension of a path.
-function global:SetExt ($path, $ext) {
-    [IO.Path]::ChangeExtension($path, $ext)
-}
-
-
-# Add suffix to basename (stem) of a path.
-function global:AddStem ($path, $suffix) {
-    $ext = [IO.Path]::GetExtension($path)
-    $path.Substring(0, $path.Length - $ext.Length) + $suffix + $ext
 }
 
 
@@ -704,15 +683,6 @@ function global:NextTime {
 }
 
 
-# Timestamp in filename-safe format.
-function global:Get-FileNameSafeTimestamp ([switch]$Utc, [switch]$DateOnly) {
-    $fmt = 'FileDate'
-    if (-not $DateOnly) { $fmt += 'Time' }
-    if ($Utc) { $fmt += 'Universal' }
-    Get-Date -Format $fmt
-}
-
-
 # Generate time/value objects of pipeline contents.
 # Useful for timing program output. If non-output streams (e.g. error) are also
 # needed, they should be merged with stdout beforehand (i.e. 2>&1).
@@ -866,38 +836,6 @@ function global:tpd {
     $cur = (Get-ModPromptOption).PathDisplay
     $new = if ($cur -eq 'Tail') { 'Full' } else { 'Tail' }
     Set-ModPromptOption -PathDisplay $new
-}
-
-
-<#
-.SYNOPSIS
-    Get absolute path.
-.DESCRIPTION
-    Returns absolute path by removing "." and ".." components. Respects
-    PowerShell's current directory. Does not verify that the resulting path
-    exists or is valid.
-.PARAMETER InputObject
-    Input path. Can pass multiple values via the pipeline.
-.INPUTS
-    String.
-.OUTPUTS
-    String.
-.NOTES
-    Source:
-        https://stackoverflow.com/questions/495618/how-to-normalize-a-path-in-powershell
-#>
-function global:Get-AbsolutePath {
-    param(
-        [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-        [AllowEmptyString()]
-        [Alias('Path', 'PSPath')]
-        [string]$InputObject
-    )
-    process {
-        $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath(
-            $InputObject
-        )
-    }
 }
 
 
