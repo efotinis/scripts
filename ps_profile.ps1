@@ -159,12 +159,6 @@ function global:Duration ($path) {
 }
 
 
-# Insert dashes to YYYYMMDD string.
-function global:DateDashes ([string]$Ymd) {
-    $Ymd.Insert(6,'-').Insert(4,'-')
-}
-
-
 # Replace invalid filename characters with underscore.
 function global:SafeName ($s) {
     foreach ($c in [IO.Path]::GetInvalidFileNameChars()) {
@@ -877,38 +871,6 @@ function global:tpd {
 
 <#
 .SYNOPSIS
-    Reverse string.
-.DESCRIPTION
-    Gets the reverse of the input string.
-.PARAMETER Text
-    Input string. Can pass multiple values via the pipeline.
-.INPUTS
-    String.
-.OUTPUTS
-    String.
-#>
-function Get-ReverseString {
-    param(
-        [Parameter(Mandatory, ValueFromPipeline)]
-        [AllowEmptyString()]
-        [string]$Text
-    )
-    begin {
-        $sb = [System.Text.StringBuilder]::new()
-    }
-    process {
-        [void]$sb.Clear()
-        [void]$sb.EnsureCapacity($Text.Length)
-        for ($i = $Text.Length - 1; $i -ge 0; --$i) {
-            [void]$sb.Append($Text[$i])
-        }
-        Write-Output $sb.ToString()
-    }
-}
-
-
-<#
-.SYNOPSIS
     Get absolute path.
 .DESCRIPTION
     Returns absolute path by removing "." and ".." components. Respects
@@ -935,19 +897,6 @@ function global:Get-AbsolutePath {
         $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath(
             $InputObject
         )
-    }
-}
-
-
-# Convert from base64-encoded string.
-function global:ConvertFrom-Base64 {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory, ValueFromPipeline)]
-        [string]$Data
-    )
-    process {
-        [string]::new([System.Convert]::FromBase64String($Data))
     }
 }
 
@@ -1003,47 +952,6 @@ function global:Select-Hashtable {
             }
         }
         $ret
-    }
-}
-
-
-# Double characters defined in PowerShell as single/double quotes.
-# Can be used to embed arbitrary strings in literals.
-# Character classification info taken from https://github.com/PowerShell/PowerShell/blob/master/src/System.Management.Automation/engine/parser/CharTraits.cs
-function global:DuplicateQuotes {
-    param(
-        [Parameter(Mandatory, Position = 1, ValueFromPipeline)]
-        [AllowEmptyString()]
-        [string]$Text,
-
-        [Parameter(Mandatory, Position = 0)]
-        [ValidateSet('Single', 'Double')]
-        [Alias('Type')]
-        [string]$QuoteType
-    )
-    begin {
-        $CHARS = switch ($QuoteType) {
-            'Single' {
-                -join @(
-                    [char]0x0027  # APOSTROPHE
-                    [char]0x2018  # LEFT SINGLE QUOTATION MARK
-                    [char]0x2019  # RIGHT SINGLE QUOTATION MARK
-                    [char]0x201a  # SINGLE LOW-9 QUOTATION MARK
-                    [char]0x201b  # SINGLE HIGH-REVERSED- QUOTATION MARK
-                )
-            }
-            'Double' {
-                -join @(
-                    [char]0x0022  # QUOTATION MARK
-                    [char]0x201C  # LEFT DOUBLE QUOTATION MARK
-                    [char]0x201D  # RIGHT DOUBLE QUOTATION MARK
-                    [char]0x201E  # DOUBLE LOW-9 QUOTATION MARK
-                )
-            }
-        }
-    }
-    process {
-        $Text -replace "([$CHARS])",'$1$1'
     }
 }
 
