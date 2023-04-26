@@ -68,6 +68,7 @@ begin {
     Register 'audio'    'aac ape flac it m4a m4b m4r f4a f4b mid mod mp2 mp3 ogg opus ra ram s3m umx wav wma xm'
     Register 'image'    'ani bmp cur gif ico jpeg jpg pcx png tga tif tiff webp xcf'
     Register 'archive'  '7z gz jar rar tar zip'
+    Register 'archive'  'cb7 cba cbr cbt cbz'  # image containers
     Register 'binary'   'bin chm com dat djv djvu dll doc docx epub exe fnt fon iso lib lnk mdf mobi nrg obj ocx par par2 pdf pif pyc pyd rtf scr swf torrent ttf vxd wad wri xps'
     Register 'text'     'awk bas bat c cfg cmd conf cpp css csv cue diff diz gitignore h hgignore hpp htm html inf ini js json log lua m3u m3u8 markdown md md5 mht nfo php pls ps1 ps1xml psm1 py pyw reg sfv srt sub theme txt url vbs vtt xml xsl yml'
     Register 'generic'  '!qb bak res'
