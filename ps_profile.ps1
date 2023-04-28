@@ -350,9 +350,6 @@ function global:nd ([string]$Path) {
 }
 
 
-function global:gvi { Get-VideoInfo.ps1 (Get-ChildItem -file) | Tee-Object -v a; $global:a = $a }
-
-
 # Perform web search using all passed args in a single query.
 function global:New-WebQuery {
     # Open DuckDuckGo search in new FireFox tab.
@@ -921,6 +918,8 @@ Set-Alias -Scope global winmerge 'C:\Program Files (x86)\WinMerge\WinMergeU.exe'
 Set-Alias -Scope global icls Clear-HostInteractive
 Set-Alias -Scope global fscr Switch-ConsoleFullScreen
 Set-Alias -Scope global ot Get-ObjectType
+Set-Alias -Scope global gvi Get-VideoInfo
+
 
 # change default transfer protocols ("Ssl3, Tls"), both of which are insecure;
 # note that TLS v1.1 has also been deprecated
