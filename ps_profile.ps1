@@ -919,6 +919,7 @@ Set-Alias -Scope global icls Clear-HostInteractive
 Set-Alias -Scope global fscr Switch-ConsoleFullScreen
 Set-Alias -Scope global ot Get-ObjectType
 Set-Alias -Scope global gvi Get-VideoInfo
+Set-Alias -Scope global gec Get-ExtensionCategory
 
 
 # change default transfer protocols ("Ssl3, Tls"), both of which are insecure;
