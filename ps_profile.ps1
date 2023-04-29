@@ -891,6 +891,29 @@ function global:Select-Hashtable {
 }
 
 
+# Filter objects that are files/dirs/either.
+# Input must have PSPath member.
+filter global:IfFile { if ($_ | Test-Path -PathType Leaf ) { $_ } }
+filter global:IfDir { if ($_ | Test-Path -PathType Container ) { $_ } }
+filter global:IfExists { if ($_ | Test-Path -PathType Any ) { $_ } }
+
+
+# Create global tva..tvz functions that tee input to globals $a..$z.
+[char[]]'abcdefghijklmnopqrstuvwxyz' | % {
+    $opt = @{
+        Path = 'Function:\'
+        Name = "global:tv${_}"
+        Value = [scriptblock]::Create(@"
+            begin { `$items = [System.Collections.ArrayList]::new() }
+            process { Write-Output `$_; [void]`$items.Add(`$_) }
+            end { New-Item -Path Variable:\ -Name "global:${_}" -Value (`$items) -Force > `$null }
+"@)
+        Force = $true
+    }
+    New-Item @opt > $null
+}
+
+
 Set-Alias -Scope global gip Get-IfProperty
 Set-Alias -Scope global ndd New-DateDirectory
 Set-Alias -Scope global gft Get-FileTotal
