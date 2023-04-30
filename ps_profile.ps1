@@ -899,6 +899,10 @@ filter global:IfExists { if ($_ | Test-Path -PathType Any ) { $_ } }
 
 
 # Create global tva..tvz functions that tee input to globals $a..$z.
+# These match the behavior of Tee-Object, which depends on the number of processed objects:
+#   - If 0, the global variable is not modified at all.
+#   - If 1, the global variable is set to that exact object (even if $null).
+#   - Otherwise, the global variable is set to an object array.
 [char[]]'abcdefghijklmnopqrstuvwxyz' | % {
     $opt = @{
         Path = 'Function:\'
@@ -906,7 +910,14 @@ filter global:IfExists { if ($_ | Test-Path -PathType Any ) { $_ } }
         Value = [scriptblock]::Create(@"
             begin { `$items = [System.Collections.ArrayList]::new() }
             process { Write-Output `$_; [void]`$items.Add(`$_) }
-            end { New-Item -Path Variable:\ -Name "global:${_}" -Value ([object[]]`$items) -Force > `$null }
+            end { if (`$items.Count -gt 0) {
+                `$value = if (`$items.Count -eq 1) {
+                    `$items[0]
+                } else {
+                    [object[]]`$items
+                }
+                New-Item -Path Variable:\ -Name "global:${_}" -Value `$value -Force > `$null
+            } }
 "@)
         Force = $true
     }
