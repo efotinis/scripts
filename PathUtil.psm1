@@ -18,7 +18,7 @@
     Source:
         https://stackoverflow.com/questions/495618/how-to-normalize-a-path-in-powershell
 #>
-function global:Get-AbsolutePath {
+function Get-AbsolutePath {
     param(
         [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [AllowEmptyString()]
@@ -34,16 +34,16 @@ function global:Get-AbsolutePath {
 
 
 # Replace invalid filename characters with another (default: underscore).
-function Get-SafeFileName ($s, $repl = '_') {
+function Get-SafeFileName ([string]$Name, [char]$Replacement = '_') {
     foreach ($c in [IO.Path]::GetInvalidFileNameChars()) {
-        $s = $s.Replace($c, $repl)
+        $Name = $Name.Replace($c, $Replacement)
     };
-    return $s;
+    Write-Output $Name
 }
 
 
 # Timestamp in filename-safe format.
-function global:Get-FileNameSafeTimestamp ([switch]$Utc, [switch]$DateOnly) {
+function Get-FileNameSafeTimestamp ([switch]$Utc, [switch]$DateOnly) {
     $fmt = 'FileDate'
     if (-not $DateOnly) { $fmt += 'Time' }
     if ($Utc) { $fmt += 'Universal' }
