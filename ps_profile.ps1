@@ -906,7 +906,7 @@ filter global:IfExists { if ($_ | Test-Path -PathType Any ) { $_ } }
         Value = [scriptblock]::Create(@"
             begin { `$items = [System.Collections.ArrayList]::new() }
             process { Write-Output `$_; [void]`$items.Add(`$_) }
-            end { New-Item -Path Variable:\ -Name "global:${_}" -Value (`$items) -Force > `$null }
+            end { New-Item -Path Variable:\ -Name "global:${_}" -Value ([object[]]`$items) -Force > `$null }
 "@)
         Force = $true
     }
