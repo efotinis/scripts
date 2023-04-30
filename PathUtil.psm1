@@ -33,10 +33,10 @@ function global:Get-AbsolutePath {
 }
 
 
-# Replace invalid filename characters with underscore.
-function Get-SafeFileName ($s) {
+# Replace invalid filename characters with another (default: underscore).
+function Get-SafeFileName ($s, $repl = '_') {
     foreach ($c in [IO.Path]::GetInvalidFileNameChars()) {
-        $s = $s.Replace($c, '_')
+        $s = $s.Replace($c, $repl)
     };
     return $s;
 }
