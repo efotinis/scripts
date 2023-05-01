@@ -18,6 +18,9 @@
 .PARAMETER DriveType
     Return only drives of the specified type. Can specify one or more System.IO.DriveType enum values. If omitted, returns drives of all types.
 
+.PARAMETER Name
+    One or more letters specifying which drives to return. If omitted, all drives are returned.
+
 .PARAMETER Label
     Return only drives with a matching label. Supports wildcards. Defaults to "*".
 
@@ -31,10 +34,15 @@
     DiskDrive objects.
 
 #>
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'Name')]
 param(
     [System.IO.DriveType[]]$DriveType,
 
+    [Parameter(ParameterSetName = 'Name')]
+    [ValidatePattern('[A-Z]')]
+    [char[]]$Name,
+
+    [Parameter(ParameterSetName = 'Label')]
     [SupportsWildcards()]
     [string]$Label = '*',
 
@@ -72,11 +80,28 @@ Add-Type -TypeDefinition @"
 "@
 
 
+switch ($PSCmdlet.ParameterSetName) {
+    'Name' {
+        filter SelectItems {
+            if (-not $Name -or $_.Name[0] -in $Name) {
+                $_
+            }
+        }
+    }
+    'Label' {
+        filter SelectItems {
+            if ($_.VolumeLabel -like $Label) {
+                $_
+            }
+        }
+    }
+}
+
+
 [System.IO.DriveInfo]::GetDrives() |
     Where-Object { $IncludeNonReady -or $_.IsReady } |
     Where-Object { $null -eq $DriveType -or $_.DriveType -in $DriveType } |
-    Where-Object { $_.VolumeLabel -like $Label } |
-    Foreach-Object {
+    SelectItems | Foreach-Object {
         [DiskDrive]::new(
             $_.Name.Substring(0, 2),
             $_.VolumeLabel,
