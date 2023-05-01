@@ -15,14 +15,14 @@
         - FreePercentage            Total free perecentage (0-100; float).
         - UserFreeFreePercentage    User free perecentage (0-100; float).
 
-.PARAMETER DriveType
-    Return only drives of the specified type. Can specify one or more System.IO.DriveType enum values. If omitted, returns drives of all types.
-
 .PARAMETER Name
     One or more letters specifying which drives to return. If omitted, all drives are returned.
 
 .PARAMETER Label
-    Return only drives with a matching label. Supports wildcards. Defaults to "*".
+    Return only drives with a matching label. Supports wildcards.
+
+.PARAMETER DriveType
+    Return only drives of the specified type. Can specify one or more System.IO.DriveType enum values. If omitted, returns drives of all types.
 
 .PARAMETER IncludeNonReady
     Include drives like optical drives without media. Introduces a slight delay.
@@ -36,15 +36,16 @@
 #>
 [CmdletBinding(DefaultParameterSetName = 'Name')]
 param(
-    [System.IO.DriveType[]]$DriveType,
-
-    [Parameter(ParameterSetName = 'Name')]
+    [Parameter(ParameterSetName = 'Name', Position = 0)]
     [ValidatePattern('[A-Z]')]
     [char[]]$Name,
 
     [Parameter(ParameterSetName = 'Label')]
     [SupportsWildcards()]
-    [string]$Label = '*',
+    [string]$Label,
+
+    [Alias('Type')]
+    [System.IO.DriveType[]]$DriveType,
 
     [switch]$IncludeNonReady
 )
