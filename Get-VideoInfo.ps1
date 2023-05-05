@@ -13,8 +13,11 @@ begin {
 
     Set-StrictMode -Version Latest
 
-    Add-Type -TypeDefinition @"
+    $refAsm = 'System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+    Add-Type -ReferencedAssemblies $refAsm -TypeDefinition @"
+
         using int64 = System.Int64;
+        using bigint = System.Numerics.BigInteger;
         public struct VideoInfo
         {
             public string   Format;
@@ -97,6 +100,19 @@ begin {
             }
             public double Megapixel {
                 get { return (double)Width * Height / 1000000; }
+            }
+            public double Aspect {
+                get { return Height != 0 ? (double)Width / Height : 0; }
+            }
+            public string AspectRatio {
+                get {
+                    if (Width != 0 && Height != 0) {
+                        bigint d = bigint.GreatestCommonDivisor(Width, Height);
+                        return (Width / d).ToString() + ":" + (Height / d).ToString();
+                    } else {
+                        return "";
+                    }
+                }
             }
         }
 "@
