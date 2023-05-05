@@ -81,9 +81,9 @@
                     <TableColumnHeader><Label>Ready</Label><Width>5</Width><Alignment>left</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>Format</Label><Width>6</Width><Alignment>left</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>Size</Label><Width>8</Width><Alignment>right</Alignment></TableColumnHeader>
-                    <TableColumnHeader><Label>Free</Label><Width>8</Width><Alignment>right</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>Free</Label><Width>9</Width><Alignment>right</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>%</Label><Width>3</Width><Alignment>left</Alignment></TableColumnHeader>
-                    <TableColumnHeader><Label>UserFree</Label><Width>8</Width><Alignment>right</Alignment></TableColumnHeader>
+                    <TableColumnHeader><Label>UserFree</Label><Width>9</Width><Alignment>right</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>%</Label><Width>3</Width><Alignment>left</Alignment></TableColumnHeader>
                     <TableColumnHeader><Label>Label</Label><Alignment>left</Alignment></TableColumnHeader>
                 </TableHeaders>
@@ -95,10 +95,10 @@
                             <TableColumnItem><PropertyName>Type</PropertyName></TableColumnItem>
                             <TableColumnItem><PropertyName>Ready</PropertyName></TableColumnItem>
                             <TableColumnItem><PropertyName>Format</PropertyName></TableColumnItem>
-                            <TableColumnItem><ScriptBlock>PrettySize $_.Size</ScriptBlock></TableColumnItem>
-                            <TableColumnItem><ScriptBlock>PrettySize $_.Free</ScriptBlock></TableColumnItem>
+                            <TableColumnItem><ScriptBlock>(ConvertTo-NiceSize -Style Metric -Bytes $_.Size) -replace '(\.0+|(?&lt;=\.[1-9]+)0+)(?= .B$)',''</ScriptBlock></TableColumnItem>
+                            <TableColumnItem><ScriptBlock>ConvertTo-NiceSize -Style Iec -Bytes $_.Free</ScriptBlock></TableColumnItem>
                             <TableColumnItem><ScriptBlock>$_.FreePercentage.ToString('N0')</ScriptBlock></TableColumnItem>
-                            <TableColumnItem><ScriptBlock>PrettySize ($_.UserFree)</ScriptBlock></TableColumnItem>
+                            <TableColumnItem><ScriptBlock>ConvertTo-NiceSize -Style Iec -Bytes $_.UserFree</ScriptBlock></TableColumnItem>
                             <TableColumnItem><ScriptBlock>$_.UserFreePercentage.ToString('N0')</ScriptBlock></TableColumnItem>
                             <TableColumnItem><PropertyName>Label</PropertyName></TableColumnItem>
                         </TableColumnItems>
