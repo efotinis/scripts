@@ -893,9 +893,9 @@ function global:Select-Hashtable {
 
 # Filter objects that are files/dirs/either.
 # Input must have PSPath member.
-filter global:IfFile { if ($_ | Test-Path -PathType Leaf ) { $_ } }
-filter global:IfDir { if ($_ | Test-Path -PathType Container ) { $_ } }
-filter global:IfExists { if ($_ | Test-Path -PathType Any ) { $_ } }
+filter global:IfFile ([switch]$Not) { if (($_ | Test-Path -PathType Leaf) -xor $Not) { $_ } }
+filter global:IfDir ([switch]$Not) { if (($_ | Test-Path -PathType Container) -xor $Not) { $_ } }
+filter global:IfExists ([switch]$Not) { if (($_ | Test-Path -PathType Any) -xor $Not) { $_ } }
 
 
 # Create global tva..tvz functions that tee input to globals $a..$z.
