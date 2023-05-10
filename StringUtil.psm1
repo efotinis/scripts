@@ -219,4 +219,56 @@ function ConvertTo-DuplicateQuote {
 }
 
 
+<#
+.SYNOPSIS
+    Get unique characters in string.
+
+.DESCRIPTION
+    Returns a string with all unique characters found in the input string. The characters in the output string are sorted.
+
+.PARAMETER InputObject
+    Source string. Can pass multiple strings via the pipeline.
+
+.PARAMETER Concatenate
+    Return single result for all of the input. By default, each input item returns a separate string,
+
+.INPUTS
+    String.
+
+.OUTPUTS
+    String.
+#>
+function Get-UniqueCharacter {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [AllowEmptyString()]
+        [string]$InputObject,
+
+        [switch]$Concatenate
+    )
+    begin {
+        $CHS = [System.Collections.Generic.HashSet[char]]
+        $h = $CHS::new()
+        function Output ($Chars) {
+            Write-Output (($Chars | Sort-Object) -join '')
+        }
+    }
+    process {
+        if (-not $Concatenate) {
+            $h.Clear()
+        }
+        $h.UnionWith(($InputObject -as $CHS))
+        if (-not $Concatenate) {
+            Output $h
+        }
+    }
+    end {
+        if ($Concatenate) {
+            Output $h
+        }
+    }
+}
+
+
 Export-ModuleMember -Function *-*
