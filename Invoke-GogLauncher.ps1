@@ -1,3 +1,4 @@
+#requires -Modules ConsoleUtil
 <#
 .SYNOPSIS
     GOG Galaxy game launcher.

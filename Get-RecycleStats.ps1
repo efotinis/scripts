@@ -1,3 +1,5 @@
+#requires -Modules NiceConvert
+
 <#
 .SYNOPSIS
     Show Recycle Bin item statistics.

@@ -1,3 +1,5 @@
+#requires -Modules NiceConvert
+
 # calculate hashes of all files recursively
 # and also prints relative paths
 

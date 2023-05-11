@@ -1,3 +1,5 @@
+#requires -Modules PathUtil
+
 param(
     [Parameter(Mandatory)]
     [string]$Url,

@@ -1,3 +1,5 @@
+#requires -Modules PipelineUtil
+
 <#
 .SYNOPSIS
     Recursively list directories, skipping items based on name pattern.

@@ -1,3 +1,5 @@
+#requires -Modules PipelineUtil
+
 <#
 .SYNOPSIS
     Calculate statistics.

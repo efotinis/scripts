@@ -1,3 +1,5 @@
+#requires -Modules NiceConvert
+
 <#
 .SYNOPSIS
     Monitor free disk space.
@@ -64,7 +66,7 @@ Set-StrictMode -Version Latest
 
 # Condensed string of size value with optional plus for positive numbers.
 function Size ([long]$n, [switch]$WithPlus) {
-    $s = (PrettySize $n) -replace 'bytes','B'
+    $s = (ConvertTo-NiceSize $n) -replace 'bytes','B'
     if ($WithPlus -and $n -gt 0) {
         '+' + $s
     } else {

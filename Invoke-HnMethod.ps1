@@ -1,3 +1,5 @@
+#requires -Modules NiceConvert
+
 <#
 .SYNOPSIS
     Hacker News API client.

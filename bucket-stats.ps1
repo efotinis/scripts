@@ -1,3 +1,5 @@
+#requires -Modules NiceConvert
+
 <#
 Show group statistics for properties interpreted as size or time.
 #>
@@ -31,10 +33,10 @@ if (-not ($Size -xor $Time)) {
     return
 }
 if ($Size) {
-    Set-Alias valueFormatter PrettySize
+    Set-Alias valueFormatter ConvertTo-NiceSize
 }
 if ($Time) {
-    Set-Alias valueFormatter PrettyDuration
+    Set-Alias valueFormatter ConvertTo-NiceDuration
 }
 
 

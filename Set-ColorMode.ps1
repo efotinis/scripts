@@ -1,3 +1,5 @@
+#requires -Modules AnsiColor
+
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)]

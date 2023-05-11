@@ -1,3 +1,5 @@
+#requires -Modules NiceConvert
+
 <#
 .SYNOPSIS
     Minecraft CLI tools.

@@ -5,7 +5,7 @@ Set-StrictMode -Version Latest
 
 
 # Get path of PS external script or OS executable script.
-function global:Get-CommandFile ($Name)
+function Get-CommandFile ($Name)
 {
     function isTextScript ($cmd) {
         $ext = '.BAT;.CMD;.VBS;.JS;.WSH;.PY;.PYW;.PSM1' -split ';'
@@ -24,7 +24,7 @@ function global:Get-CommandFile ($Name)
 # Writes warning for any patterns that did not match anything.
 # Can optionally interpret brackets as literals, since they are traditionally
 # used verbatim in file names.
-function global:Get-ResolvedWildcardOrLiteral {
+function Get-ResolvedWildcardOrLiteral {
     param(
         [string[]]$Pattern,
         [switch]$LiteralBrackets
@@ -58,7 +58,7 @@ function global:Get-ResolvedWildcardOrLiteral {
 }
 
 
-function global:Edit-FileInNotepad {
+function Edit-FileInNotepad {
     param(
         [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'Path')]
@@ -72,7 +72,7 @@ function global:Edit-FileInNotepad {
         if ($InputObject.Count -eq 1 -and $_ -is [Microsoft.PowerShell.Commands.MatchInfo]) {
             & "$Env:windir\system32\notepad.exe" /g $_.LineNumber $InputObject
         } else {
-            global:Get-ResolvedWildcardOrLiteral $InputObject -LiteralBrackets:$LiteralBrackets | % {
+            Get-ResolvedWildcardOrLiteral $InputObject -LiteralBrackets:$LiteralBrackets | % {
                 & "$Env:windir\system32\notepad.exe" $_
             }
         }
@@ -80,7 +80,7 @@ function global:Edit-FileInNotepad {
 }
 
 
-function global:Edit-FileInVSCode {
+function Edit-FileInVSCode {
     param(
         [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'Path')]
@@ -100,27 +100,27 @@ function global:Edit-FileInVSCode {
         }
     }
     process {
-        global:Get-ResolvedWildcardOrLiteral $InputObject -LiteralBrackets:$LiteralBrackets | % {
+        Get-ResolvedWildcardOrLiteral $InputObject -LiteralBrackets:$LiteralBrackets | % {
             & $exePath $_ > $null
         }
     }
 }
 
 
-function global:Edit-ScriptInNotepad ([string]$InputObject) {
-    $path = global:Get-CommandFile $InputObject
-    if ($path) { global:Edit-FileInNotepad $path }
+function Edit-ScriptInNotepad ([string]$InputObject) {
+    $path = Get-CommandFile $InputObject
+    if ($path) { Edit-FileInNotepad $path }
 }
 
 
-function global:Edit-ScriptInVSCode ([string]$InputObject) {
-    $path = global:Get-CommandFile $InputObject
-    if ($path) { global:Edit-FileInVSCode $path }
+function Edit-ScriptInVSCode ([string]$InputObject) {
+    $path = Get-CommandFile $InputObject
+    if ($path) { Edit-FileInVSCode $path }
 }
 
 
 # Interafe with MPC-HC command line.
-function global:Invoke-MediaPlayerClassic {
+function Invoke-MediaPlayerClassic {
     param(
         [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName')]
@@ -180,7 +180,7 @@ function global:Invoke-MediaPlayerClassic {
 
 
 # Interafe with foobar2000 command line.
-function global:Invoke-Foobar2000 {
+function Invoke-Foobar2000 {
     param(
         [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'Path')]

@@ -1,3 +1,5 @@
+# TODO: removed this
+
 <#
 function hms2sec ([string]$s) {
     $Hours, $Minutes, $Seconds = ($s -Split ':').foreach([int])
