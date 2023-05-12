@@ -153,13 +153,6 @@ function global:IsAdmin {
 }
 
 
-# media file duration in seconds using AVPROBE
-function global:Duration ($path) {
-    $j = (avprobe.exe -v 0 -of json -show_format $path | ConvertFrom-Json)
-    $j.format.duration
-}
-
-
 # Measure total files, dirs and bytes of passed FileSystemInfo objects.
 function global:Get-FileTotal
 {
@@ -833,18 +826,6 @@ function global:tpd {
     $cur = (Get-ModPromptOption).PathDisplay
     $new = if ($cur -eq 'Tail') { 'Full' } else { 'Tail' }
     Set-ModPromptOption -PathDisplay $new
-}
-
-
-# Get group counts of pipeline object types.
-# Formats as automatic table by default (to show full typename), unless Raw is set.
-function global:GroupTypes ([switch]$Raw) {
-    $a = $input | % GetType | group -n
-    if ($Raw) {
-        $a
-    } else {
-        $a | ft -au
-    }
 }
 
 
