@@ -66,14 +66,16 @@ function Get-MpcOption {
         Mute = [bool]$x.Mute
         Volume = $x.Volume
         Balance = UIn32ToInt32 $x.Balance
-        LoopMode = if (-not $x.Loop) {
-            'Off'
-        } elseif (-not $x.LoopMode) {
+        PlayMode = if (-not $x.Loop -and -not $x.LoopMode) {
             'File'
-        } else {
+        } elseif (-not $x.Loop -and $x.LoopMode) {
             'Playlist'
+        } elseif ($x.Loop -and -not $x.LoopMode) {
+            'LoopFile'
+        } else {
+            'LoopPlaylist'
         }
-        LoopCount = $x.LoopNum
+        RepeatCount = $x.LoopNum
         AfterPlayback = $(
             $a = 'DoNothing', 'PlayNextFile', 'Rewind', 'TurnMonitorOff', 'Close', 'Exit'
             $i = $x.AfterPlayback
@@ -146,14 +148,15 @@ function Get-MpcOption {
 .PARAMETER Balance
     Volume balance (-100..100).
 
-.PARAMETER LoopMode
-    Loop mode. Possible values:
-        - Off
+.PARAMETER PlayMode
+    Playback mode. Possible values:
         - File
         - Playlist
+        - LoopFile
+        - LoopPlaylist
 
-.PARAMETER LoopCount
-    Nummber of loops when loop mode is File or Playlist.
+.PARAMETER RepeatCount
+    Number of repeats when playback mode is File or Playlist.
 
 .PARAMETER AfterPlayback
     Action at playback completion. One of:
@@ -213,11 +216,11 @@ function Set-MpcOption {
         [ValidateRange(-100, 100)]
         [int]$Balance,
 
-        [ValidateSet('Off', 'File', 'Playlist')]
-        [string]$LoopMode,
+        [ValidateSet('File', 'Playlist', 'LoopFile', 'LoopPlaylist')]
+        [string]$PlayMode,
 
-        [ValidateRange(0, 9999)]
-        [int]$LoopCount,
+        [ValidateRange(0, [Int32]::MaxValue)]
+        [int]$RepeatCount,
 
         [ValidateSet('DoNothing', 'PlayNextFile', 'Rewind', 'TurnMonitorOff', 'Close', 'Exit')]
         [string]$AfterPlayback,
@@ -248,24 +251,29 @@ function Set-MpcOption {
         Set-ItemProperty $REG_SETTINGS 'Balance' (Int32ToUInt32 $Balance)
     }
 
-    # -- Looping --
-    if ($PSBoundParameters.ContainsKey('LoopMode')) {
-        switch ($LoopMode) {
-            'Off' {
-                Set-ItemProperty $REG_SETTINGS 'Loop' 0
-            }
+    # -- Playback --
+    if ($PSBoundParameters.ContainsKey('PlayMode')) {
+        switch ($PlayMode) {
             'File' {
-                Set-ItemProperty $REG_SETTINGS 'Loop' 1
+                Set-ItemProperty $REG_SETTINGS 'Loop' 0
                 Set-ItemProperty $REG_SETTINGS 'LoopMode' 0
             }
             'Playlist' {
+                Set-ItemProperty $REG_SETTINGS 'Loop' 0
+                Set-ItemProperty $REG_SETTINGS 'LoopMode' 1
+            }
+            'LoopFile' {
+                Set-ItemProperty $REG_SETTINGS 'Loop' 1
+                Set-ItemProperty $REG_SETTINGS 'LoopMode' 0
+            }
+            'LoopPlaylist' {
                 Set-ItemProperty $REG_SETTINGS 'Loop' 1
                 Set-ItemProperty $REG_SETTINGS 'LoopMode' 1
             }
         }
     }
-    if ($PSBoundParameters.ContainsKey('LoopCount')) {
-        Set-ItemProperty $REG_SETTINGS 'LoopNum' $LoopCount
+    if ($PSBoundParameters.ContainsKey('RepeatCount')) {
+        Set-ItemProperty $REG_SETTINGS 'LoopNum' $RepeatCount
     }
     if ($PSBoundParameters.ContainsKey('AfterPlayback')) {
         $a = 'DoNothing', 'PlayNextFile', 'Rewind', 'TurnMonitorOff', 'Close', 'Exit'
