@@ -224,7 +224,7 @@ end {
         $progress.PercentComplete = ($progressIndex - 1) / $inputItems.Count * 100
         Write-Progress @progress
 
-        $info = avprobe.exe $item -show_format -show_streams -of json -v 0 | ConvertFrom-Json
+        $info = ffprobe.exe $item -show_format -show_streams -of json -v error | ConvertFrom-Json
         if (-not ($info | Get-Member format) -or -not ($info | Get-Member streams)) {
             Write-Error -Message 'could not get video info' -TargetObject $item
             continue
