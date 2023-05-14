@@ -402,38 +402,56 @@ function global:timeit {
 }
 
 
-# Eject drive.
+<#
+.SYNOPSIS
+    Eject drive.
+.DESCRIPTION
+    Dismounts removable and optical drives.
+.PARAMETER InputObject
+    Drive letter with optional colon or path whose drive to eject. Can specify multiple values via the pipeline.
+.INPUTS
+    String
+.OUTPUTS
+    None
+#>
 function global:Dismount-RemovableDrive {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)]
-        [string]$Name # letter, drive or path
+        [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [Alias('FullName')]
+        [string]$InputObject
     )
-    $Drive = [System.IO.DriveInfo]::new($Name)
-    switch ($Drive.DriveType) {
-        'Unknown' {
-            Write-Error "Drive type is unknown: $Name."
+    process {
+        $Drive = [System.IO.DriveInfo]::new($InputObject)
+        switch ($Drive.DriveType) {
+            'Removable' {
+                break
+            }
+            'CDRom' {
+                break
+            }
+            'Unknown' {
+                Write-Error "Drive type is unknown: $InputObject."
+                return
+            }
+            'NoRootDirectory' {
+                Write-Error "Drive does not exist: $InputObject."
+                return
+            }
+            default {
+                Write-Error "Drive $($Drive.Name) is $($Drive.DriveType), not Removable/CDRom."
+                return
+            }
+        }
+        $ssfDRIVES = 0x11  # "My Computer"
+        $shell = New-Object -comObject Shell.Application
+        $driveObj = $shell.Namespace($ssfDRIVES).ParseName($Drive.Name)
+        if (-not $driveObj) {
+            Write-Error "Could not get shell object of drive $($Drive.Name)."
             return
         }
-        'NoRootDirectory' {
-            Write-Error "Drive does not exist: $Name."
-            return
-        }
-        'Removable' {
-        }
-        default {
-            Write-Error "Drive $($Drive.Name) is of type $($Drive.DriveType), not Removable."
-            return
-        }
+        $driveObj.InvokeVerb("Eject")  # NOTE: localized string
     }
-    $ssfDRIVES = 0x11  # "My Computer"
-    $shell = New-Object -comObject Shell.Application
-    $driveObj = $shell.Namespace($ssfDRIVES).ParseName($Drive.Name)
-    if (-not $driveObj) {
-        Write-Error "Could not get shell object of drive $($Drive.Name)."
-        return
-    }
-    $driveObj.InvokeVerb("Eject")  # NOTE: must be localized string
 }
 
 
