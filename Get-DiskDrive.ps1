@@ -55,7 +55,7 @@ Set-StrictMode -Version Latest
 Add-Type -TypeDefinition @"
     using int64 = System.Int64;
     public struct DiskDrive {
-        public string Name;
+        public string FullName;
         public string Label;
         public System.IO.DriveType Type;
         public string Format;
@@ -65,10 +65,10 @@ Add-Type -TypeDefinition @"
         public int64 UserFree;
         public double FreePercentage { get { return Size != 0 ? 100.0*Free/Size : 0; } }
         public double UserFreePercentage { get { return Size != 0 ? 100.0*UserFree/Size : 0; } }
-        public DiskDrive(string name, string label, System.IO.DriveType type, string format,
+        public DiskDrive(string path, string label, System.IO.DriveType type, string format,
             bool ready, int64 size, int64 free, int64 userFree)
         {
-            Name = name;
+            FullName = path;
             Label = label;
             Type = type;
             Format = format;
@@ -76,6 +76,12 @@ Add-Type -TypeDefinition @"
             Size = size;
             Free = free;
             UserFree = userFree;
+        }
+        public string Name {
+            get { return FullName.Substring(0, 2); }
+        }
+        public string LiteralPath {
+            get { return FullName; }
         }
     }
 "@
@@ -104,7 +110,7 @@ switch ($PSCmdlet.ParameterSetName) {
     Where-Object { $null -eq $DriveType -or $_.DriveType -in $DriveType } |
     SelectItems | Foreach-Object {
         [DiskDrive]::new(
-            $_.Name.Substring(0, 2),
+            $_.Name,
             $_.VolumeLabel,
             $_.DriveType,
             $_.DriveFormat,
