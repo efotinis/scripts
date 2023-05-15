@@ -1,24 +1,8 @@
-using module .\WindowUtil.psm1
+using module .\psmodules\WindowUtil\WindowUtil.psm1
 
 Set-StrictMode -Version Latest
 
-Import-Module $Env:Scripts\AnsiColor.psm1
-Import-Module $Env:Scripts\ConsoleUtil.psm1
-Import-Module $Env:Scripts\DateUtil.psm1
-Import-Module $Env:Scripts\EFUtil.psm1
-Import-Module $Env:Scripts\GogGalaxy.psm1
-Import-Module $Env:Scripts\FileSystemUtil.psm1
-Import-Module $Env:Scripts\MercurialUtil.psm1
-Import-Module $Env:Scripts\ModularPrompt.psm1
-Import-Module $Env:Scripts\MpcUtil.psm1
-Import-Module $Env:Scripts\NiceConvert.psm1
-Import-Module $Env:Scripts\NovaSearch.psm1
-Import-Module $Env:Scripts\NumericUtil.psm1
-Import-Module $Env:Scripts\PathUtil.psm1
-Import-Module $Env:Scripts\PipelineUtil.psm1
-Import-Module $Env:Scripts\ProgramCmdline.psm1
-Import-Module $Env:Scripts\StringUtil.psm1
-Import-Module $Env:Scripts\YoutubeUtil.psm1
+$Env:PSModulePath += ';D:\scripts\psmodules'
 
 Update-FormatData $Env:Scripts\EF.Format.ps1xml
 Update-FormatData $Env:Scripts\DataLength.Format.ps1xml
