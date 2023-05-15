@@ -13,6 +13,7 @@ Import-Module $Env:Scripts\ModularPrompt.psm1
 Import-Module $Env:Scripts\MpcUtil.psm1
 Import-Module $Env:Scripts\NiceConvert.psm1
 Import-Module $Env:Scripts\NovaSearch.psm1
+Import-Module $Env:Scripts\NumericUtil.psm1
 Import-Module $Env:Scripts\PathUtil.psm1
 Import-Module $Env:Scripts\PipelineUtil.psm1
 Import-Module $Env:Scripts\ProgramCmdline.psm1
