@@ -53,4 +53,49 @@ function Get-PrimeFactor {
 }
 
 
+<#
+.SYNOPSIS
+    Get nearest number multiple.
+
+.DESCRIPTION
+    Converts input to a nearest multiple of a specified value.
+
+.PARAMETER InputObject
+    Input floating point number. Can pass multiple values via the pipeline.
+
+.PARAMETER DoubleValue
+    Return Double values nearest to multiples of this floating point number.
+
+.PARAMETER IntegerValue
+    Return Int32 values nearest to multiples of this integer.
+
+.INPUTS
+    Double
+
+.OUTPUTS
+    Double / Int32
+#>
+function Get-NearestMultiple {
+    [CmdletBinding(DefaultParameterSetName = 'Floating')]
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [double]$InputObject,
+
+        [Parameter(Mandatory, Position = 0, ParameterSetName = 'Floating')]
+        [double]$DoubleValue,
+
+        [Parameter(ParameterSetName = 'Integer')]
+        [Alias('Int')]
+        [int]$IntegerValue
+    )
+    process {
+        if ($PSCmdlet.ParameterSetName -eq 'Floating') {
+            [System.Math]::Round($InputObject / $DoubleValue) * $DoubleValue
+        } else {
+            [int]($InputObject / $IntegerValue) * $IntegerValue
+        }
+    }
+}
+
+
 Export-ModuleMember -Function *-*
