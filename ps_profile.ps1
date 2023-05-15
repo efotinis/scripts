@@ -7,6 +7,7 @@ Import-Module $Env:Scripts\ConsoleUtil.psm1
 Import-Module $Env:Scripts\DateUtil.psm1
 Import-Module $Env:Scripts\EFUtil.psm1
 Import-Module $Env:Scripts\GogGalaxy.psm1
+Import-Module $Env:Scripts\FileSystemUtil.psm1
 Import-Module $Env:Scripts\MercurialUtil.psm1
 Import-Module $Env:Scripts\ModularPrompt.psm1
 Import-Module $Env:Scripts\MpcUtil.psm1
