@@ -271,25 +271,6 @@ function Remove-ModPromptItem {
 }
 
 
-Add-ModPromptItem -Id 'Admin' -Color 'w+/r' -Expression {
-    if (IsAdmin) {
-        'ADMIN:'
-    } else {
-        ''
-    }
-} -Description 'Elevated session indicator.'
-
-
-Add-ModPromptItem -Id 'Jobs' -Color 'w+/b' -Expression {
-    $a = @(Get-Job)
-    if ($a.Count -gt 0) {
-        "{0}j:" -f $a.Count
-    } else {
-        ''
-    }
-} -Description 'Number of background jobs, if any.'
-
-
 # Replace HOME of FileSystem location (PathInfo) with special token.
 function TildeHome ($Location) {
     if ($Location.Provider.Name -eq 'FileSystem') {
@@ -314,24 +295,45 @@ function GetTail ($Path) {
 }
 
 
-Add-ModPromptItem -Id 'Path' -Expression {
-    $loc = $ExecutionContext.SessionState.Path.CurrentLocation
-    $path = $loc.Path
-    $drive = Split-Path -Qualifier $path
-    $tail = script:GetTail $path
-    switch ($script:Options.PathDisplay) {
-        None { '' }
-        Full { $path }
-        FullTilde { script:TildeHome $loc }
-        Tail { $tail }
-        DriveTail { $drive + $tail }
-    }
-} -Description 'Current path. Configurable via PathDisplay.'
+function Reset-ModPrompt {
+    Remove-ModPromptItem -Id *
 
+    Add-ModPromptItem -Id 'Admin' -Color 'w+/r' -Expression {
+        if (IsAdmin) {
+            'ADMIN:'
+        } else {
+            ''
+        }
+    } -Description 'Elevated session indicator.'
 
-Add-ModPromptItem -Id 'Level' -Expression {
-    '>' * ($NestedPromptLevel + 1)
-} -Description 'Prompt nesting level. Top level is ">".'
+    Add-ModPromptItem -Id 'Jobs' -Color 'w+/b' -Expression {
+        $a = @(Get-Job)
+        if ($a.Count -gt 0) {
+            "{0}j:" -f $a.Count
+        } else {
+            ''
+        }
+    } -Description 'Number of background jobs, if any.'
+
+    Add-ModPromptItem -Id 'Path' -Expression {
+        $loc = $ExecutionContext.SessionState.Path.CurrentLocation
+        $path = $loc.Path
+        $drive = Split-Path -Qualifier $path
+        $tail = script:GetTail $path
+        switch ($script:Options.PathDisplay) {
+            None { '' }
+            Full { $path }
+            FullTilde { script:TildeHome $loc }
+            Tail { $tail }
+            DriveTail { $drive + $tail }
+        }
+    } -Description 'Current path. Configurable via PathDisplay.'
+
+    Add-ModPromptItem -Id 'Level' -Expression {
+        '>' * ($NestedPromptLevel + 1)
+    } -Description 'Prompt nesting level. Top level is ">".'
+
+}
 
 
 Export-ModuleMember *-*

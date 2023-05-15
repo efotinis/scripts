@@ -16,6 +16,10 @@ if ($Env:COMPUTERNAME -eq 'VOID') {
     chcp 65001  # Win10 can handle UTF-8
 }
 
+
+Reset-ModPrompt
+
+
 # shorthands and aliases
 function global:m ($i, $b, $c) {
     # multiply value by ten, preserving leading sign (if any);
