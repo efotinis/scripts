@@ -1,6 +1,7 @@
+#requires -Modules WindowUtil
+
 # Console utilities.
 
-Import-Module $Env:Scripts\WindowUtil.psm1
 
 Add-Type -Name Window -Namespace Console -MemberDefinition @'
 
@@ -119,4 +120,4 @@ function Switch-ConsoleFullScreen {
 }
 
 
-Export-ModuleMember *-*
+Export-ModuleMember -Function *-*
