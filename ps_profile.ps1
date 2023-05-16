@@ -1,6 +1,9 @@
 Set-StrictMode -Version Latest
 
-$Env:PSModulePath += ';D:\scripts\psmodules'
+$Env:PSModulePath += switch ($Env:COMPUTERNAME) {
+    'core' { ';D:\scripts\psmodules' }
+    'void' { ';C:\scripts\psmodules' }
+}
 
 Update-FormatData $Env:Scripts\EF.Format.ps1xml
 Update-FormatData $Env:Scripts\DataLength.Format.ps1xml
