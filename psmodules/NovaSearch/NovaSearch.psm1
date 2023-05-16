@@ -1,3 +1,5 @@
+#requires -Modules NiceConvert
+
 Update-FormatData -AppendPath "$PSScriptRoot\NovaSearch.Format.ps1xml"
 
 
@@ -160,19 +162,8 @@ function Get-NovaEngine {
 }
 
 
-if (Get-Command ConvertTo-NiceSize -ErrorAction Ignore) {
-    function PrettySize ([int64]$n) {
-        (ConvertTo-NiceSize $n) -replace 'B$','' -replace 'bytes?','B' -replace ' ',''
-    }
-} else {
-    function PrettySize ([int64]$n) {
-        if ($n -lt 1000) { '{0}B' -f $n }
-        elseif ($n -lt 1000kb) { '{0:f0}K' -f ($n / 1kb) }
-        elseif ($n -lt 1000mb) { '{0:f0}M' -f ($n / 1mb) }
-        elseif ($n -lt 1000gb) { '{0:f0}G' -f ($n / 1gb) }
-        elseif ($n -lt 1000tb) { '{0:f0}T' -f ($n / 1tb) }
-        else { '{0:f0}P' -f ($n / 1pb) }
-    }
+function PrettySize ([int64]$n) {
+    (ConvertTo-NiceSize $n) -replace 'B$','' -replace 'bytes?','B' -replace ' ',''
 }
 
 

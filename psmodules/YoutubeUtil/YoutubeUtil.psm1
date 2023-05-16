@@ -1,3 +1,5 @@
+#requires -Modules NiceConvert
+
 # YouTube-related functions.
 
 

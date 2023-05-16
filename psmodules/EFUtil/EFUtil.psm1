@@ -6,8 +6,3 @@ function hms2sec ([string]$s) {
     (($Hours * 60) + $Minutes) * 60 + $Seconds
 }
 #>
-
-
-Set-Alias PrettySize ConvertTo-NiceSize
-Set-Alias PrettySec ConvertTo-NiceSeconds
-Set-Alias PrettyDuration ConvertTo-NiceDuration

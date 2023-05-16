@@ -18,9 +18,9 @@
                     <TableRowEntry>
                         <TableColumnItems>
                             <TableColumnItem><ScriptBlock>'{0,4}:{1,-4}' -f $_.Width, $_.Height</ScriptBlock></TableColumnItem>
-                            <TableColumnItem><ScriptBlock>PrettyDuration $_.Duration</ScriptBlock></TableColumnItem>
+                            <TableColumnItem><ScriptBlock>ConvertTo-NiceDuration $_.Duration</ScriptBlock></TableColumnItem>
                             <TableColumnItem><PropertyName>Framerate</PropertyName><FormatString>N0</FormatString></TableColumnItem>
-                            <TableColumnItem><ScriptBlock>PrettySize $_.Length</ScriptBlock></TableColumnItem>
+                            <TableColumnItem><ScriptBlock>ConvertTo-NiceSize $_.Length</ScriptBlock></TableColumnItem>
                             <TableColumnItem><ScriptBlock>[IO.Path]::GetFileName($_.FullName)</ScriptBlock></TableColumnItem>
                         </TableColumnItems>
                     </TableRowEntry>
@@ -55,14 +55,14 @@
                             <TableColumnItem><ScriptBlock>$_.StreamCounts -replace '\d{2,}','*' -replace 0,'-' -join ''</ScriptBlock></TableColumnItem>
                             <TableColumnItem><ScriptBlock>'{0,4}:{1,-4}' -f $_.Width, $_.Height</ScriptBlock></TableColumnItem>
                             <TableColumnItem><PropertyName>Channels</PropertyName></TableColumnItem>
-                            <TableColumnItem><ScriptBlock>PrettyDuration $_.Duration</ScriptBlock></TableColumnItem>
+                            <TableColumnItem><ScriptBlock>ConvertTo-NiceDuration $_.Duration</ScriptBlock></TableColumnItem>
                             <TableColumnItem><PropertyName>Framerate</PropertyName><FormatString>N3</FormatString></TableColumnItem>
                             <TableColumnItem><ScriptBlock>$_.Bitrate / 1000</ScriptBlock><FormatString>N0</FormatString></TableColumnItem>
                             <TableColumnItem><PropertyName>Video</PropertyName></TableColumnItem>
                             <TableColumnItem><PropertyName>VTag</PropertyName></TableColumnItem>
                             <TableColumnItem><PropertyName>Audio</PropertyName></TableColumnItem>
                             <TableColumnItem><PropertyName>ATag</PropertyName></TableColumnItem>
-                            <TableColumnItem><ScriptBlock>PrettySize $_.Length</ScriptBlock></TableColumnItem>
+                            <TableColumnItem><ScriptBlock>ConvertTo-NiceSize $_.Length</ScriptBlock></TableColumnItem>
                             <TableColumnItem><ScriptBlock>[IO.Path]::GetFileName($_.FullName)</ScriptBlock></TableColumnItem>
                         </TableColumnItems>
                     </TableRowEntry>

@@ -25,8 +25,8 @@
                     if ($_.IsComplete) { 'k' } else { '-' }
                 ) -join ''
               </ScriptBlock></TableColumnItem>
-              <TableColumnItem><ScriptBlock>PrettySize $_.Logical</ScriptBlock></TableColumnItem>
-              <TableColumnItem><ScriptBlock>PrettySize $_.Delta</ScriptBlock></TableColumnItem>
+              <TableColumnItem><ScriptBlock>ConvertTo-NiceSize $_.Logical</ScriptBlock></TableColumnItem>
+              <TableColumnItem><ScriptBlock>ConvertTo-NiceSize $_.Delta</ScriptBlock></TableColumnItem>
               <TableColumnItem><PropertyName>Path</PropertyName></TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>
