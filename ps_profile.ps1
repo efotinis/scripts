@@ -63,12 +63,12 @@ function global:x {
     }
 }
 function global:z ($time) { & $Env:Scripts\suspend.py -l $time }
-Function global:.. { Set-Location .. }
-Function global:... { Set-Location ..\.. }
+function global:.. { Set-Location .. }
+function global:... { Set-Location ..\.. }
 function global:sld { Set-Location ~\Desktop }
 function global:slc { Set-Location -LiteralPath (Get-Clipboard) }
 function global:glc { Get-Location | % Path | Set-Clipboard }
-Function global:?? ($Cmd) { help $Cmd -Full }
+function global:?? ($Cmd) { help $Cmd -Full }
 function global:cdef ([string]$Name) { gcm $Name | % Definition }
 if ($Env:COMPUTERNAME -eq 'CORE') {
     # backup/list main Firefox profile
@@ -76,7 +76,6 @@ if ($Env:COMPUTERNAME -eq 'CORE') {
     function global:fxl { E:\backups\firefox\list_file_age.ps1 kgfe1h9i.default-1510666418771 }
 
 }
-function global:ss { nircmdc.exe screensaver }
 function global:fr ([int]$a, [int]$b) {
     # print simplified fraction a/b
     py -c '
@@ -87,9 +86,7 @@ print(fractions.Fraction(x, y))
     ' $a $b
 }
 Set-Alias -Scope global yd C:\tools\yt-dlp.exe
-Set-Alias -Scope global minf C:\tools\MediaInfo\MediaInfo.exe
 Set-Alias -Scope global 7z "$Env:ProgramFiles\7-Zip\7z.exe"
-Set-Alias -Scope global fn $Env:Scripts\filternames.ps1
 Set-Alias -Scope global go goto.ps1
 Set-Alias -Scope Global mc MinecraftUtil.ps1
 switch ($env:COMPUTERNAME) {
@@ -924,8 +921,7 @@ Set-Alias -Scope Global ecs Edit-ScriptInVSCode
 Set-Alias -Scope Global log ~\SimpleLog.ps1
 Set-Alias -Scope Global ?p  Show-CommandParameter.ps1
 Set-Alias -Scope global mpc Invoke-MediaPlayerClassic
-Set-Alias -Scope global fb2k Invoke-Foobar2000
-Set-Alias -Scope global ts  'C:\Users\Elias\Desktop\stuff\assorted\torrent search\Search-Torrent.ps1'
+Set-Alias -Scope global fb Invoke-Foobar2000
 Set-Alias -Scope global eatlines D:\projects\eatlines.exe
 Set-Alias -Scope global ff Get-DiskSizeFudgeFactor
 Set-Alias -Scope global espeak 'C:\Program Files (x86)\eSpeak\command_line\espeak.exe'
@@ -935,7 +931,7 @@ Set-Alias -Scope global drv Get-DiskDrive
 Set-Alias -Scope global sd Invoke-ShellDelete
 Set-Alias -Scope global ej global:Dismount-RemovableDrive
 Set-Alias -Scope global b64 ConvertFrom-Base64
-Set-Alias -Scope global winmerge 'C:\Program Files (x86)\WinMerge\WinMergeU.exe'
+Set-Alias -Scope global wm 'C:\Program Files (x86)\WinMerge\WinMergeU.exe'
 Set-Alias -Scope global icls Clear-HostInteractive
 Set-Alias -Scope global fscr Switch-ConsoleFullScreen
 Set-Alias -Scope global ot Get-ObjectType
