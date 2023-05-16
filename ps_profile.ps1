@@ -1,5 +1,3 @@
-using module .\psmodules\WindowUtil\WindowUtil.psm1
-
 Set-StrictMode -Version Latest
 
 $Env:PSModulePath += ';D:\scripts\psmodules'
