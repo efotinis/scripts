@@ -88,21 +88,6 @@ x, y = map(int, sys.argv[1:])
 print(fractions.Fraction(x, y))
     ' $a $b
 }
-Set-Alias -Scope global yd C:\tools\yt-dlp.exe
-Set-Alias -Scope global 7z "$Env:ProgramFiles\7-Zip\7z.exe"
-Set-Alias -Scope global go goto.ps1
-Set-Alias -Scope Global mc MinecraftUtil.ps1
-switch ($env:COMPUTERNAME) {
-    'core' {
-        Set-Alias -Scope global srip 'C:\Program Files (x86)\Streamripper\streamripper.exe'
-        Set-Alias -Scope global slink 'C:\Program Files\Python37\Scripts\streamlink.exe'
-    }
-    'lap7' {
-        Set-Alias -Scope global srip 'C:\tools\streamripper\streamripper.exe'
-        Set-Alias -Scope global slink 'C:\Program Files\Python36-32\Scripts\streamlink.exe'
-    }
-}
-Set-Alias -Scope global ddmver 'D:\docs\apps\dell display manager\check-version.ps1'
 
 
 function global:Set-DefaultConsoleTitle {
@@ -620,9 +605,6 @@ function global:Nth {
         }
     }
 }
-Set-Alias -Scope global rev Get-ReverseArray
-Set-Alias -Scope global shuf Get-ShuffleArray
-Set-Alias -Scope global pick Get-OrderedSubset
 
 
 # Create DateTime representing some hours/minutes/seconds ago from now.
@@ -912,36 +894,6 @@ filter global:IfExists ([switch]$Not) { if (($_ | Test-Path -PathType Any) -xor 
 }
 
 
-Set-Alias -Scope global gip Get-IfProperty
-Set-Alias -Scope global ndd New-DateDirectory
-Set-Alias -Scope global gft Get-FileTotal
-Set-Alias -Scope global ext Get-ExtensionInfo
-Set-Alias -Scope global ddg New-WebQuery
-Set-Alias -Scope Global ed  Edit-FileInNotepad
-Set-Alias -Scope Global ec  Edit-FileInVSCode
-Set-Alias -Scope Global eds Edit-ScriptInNotepad
-Set-Alias -Scope Global ecs Edit-ScriptInVSCode
-Set-Alias -Scope Global log ~\SimpleLog.ps1
-Set-Alias -Scope Global ?p  Show-CommandParameter.ps1
-Set-Alias -Scope global mpc Invoke-MediaPlayerClassic
-Set-Alias -Scope global fb Invoke-Foobar2000
-Set-Alias -Scope global eatlines D:\projects\eatlines.exe
-Set-Alias -Scope global ff Get-DiskSizeFudgeFactor
-Set-Alias -Scope global espeak 'C:\Program Files (x86)\eSpeak\command_line\espeak.exe'
-Set-Alias -Scope global nw ~\newwall.ps1
-Set-Alias -Scope global fst Get-FileNameSafeTimestamp
-Set-Alias -Scope global drv Get-DiskDrive
-Set-Alias -Scope global sd Invoke-ShellDelete
-Set-Alias -Scope global ej global:Dismount-RemovableDrive
-Set-Alias -Scope global b64 ConvertFrom-Base64
-Set-Alias -Scope global wm 'C:\Program Files (x86)\WinMerge\WinMergeU.exe'
-Set-Alias -Scope global icls Clear-HostInteractive
-Set-Alias -Scope global fscr Switch-ConsoleFullScreen
-Set-Alias -Scope global ot Get-ObjectType
-Set-Alias -Scope global gvi Get-VideoInfo
-Set-Alias -Scope global gec Get-ExtensionCategory
-
-
 # change default transfer protocols ("Ssl3, Tls"), both of which are insecure;
 # note that TLS v1.1 has also been deprecated
 [Net.ServicePointManager]::SecurityProtocol = 'Tls12, Tls13'
@@ -1068,3 +1020,51 @@ Set-PSReadLineOption -PromptText ' ',([char]0x203c)
 # if it did or what caused it to change. I only remember using Colortool
 # to mess with the console colors before noticing this.
 Set-PSReadLineColor -Selection n/w
+
+
+Set-Alias -Scope global yd 'C:\tools\yt-dlp.exe'
+Set-Alias -Scope global 7z "$Env:ProgramFiles\7-Zip\7z.exe"
+Set-Alias -Scope global ddmver 'D:\docs\apps\dell display manager\check-version.ps1'
+Set-Alias -Scope global eatlines 'D:\projects\eatlines.exe'
+Set-Alias -Scope global espeak 'C:\Program Files (x86)\eSpeak\command_line\espeak.exe'
+Set-Alias -Scope global wm 'C:\Program Files (x86)\WinMerge\WinMergeU.exe'
+$SRIP_DIR = switch ($env:COMPUTERNAME) {
+    'core' { 'C:\Program Files (x86)\Streamripper' }
+    'lap7' { 'C:\tools\streamripper' }
+}
+$SLNK_DIR = switch ($env:COMPUTERNAME) {
+    'core' { 'C:\Program Files\Python37\Scripts' }
+    'lap7' { 'C:\Program Files\Python36-32\Scripts' }
+}
+Set-Alias -Scope global srip "$SRIP_DIR\streamripper.exe"
+Set-Alias -Scope global slnk "$SLNK_DIR\streamlink.exe"
+Set-Alias -Scope global go goto.ps1
+Set-Alias -Scope Global mc MinecraftUtil.ps1
+Set-Alias -Scope global gip Get-IfProperty
+Set-Alias -Scope global ndd New-DateDirectory
+Set-Alias -Scope global gft Get-FileTotal
+Set-Alias -Scope global ext Get-ExtensionInfo
+Set-Alias -Scope global ddg New-WebQuery
+Set-Alias -Scope Global ed  Edit-FileInNotepad
+Set-Alias -Scope Global ec  Edit-FileInVSCode
+Set-Alias -Scope Global eds Edit-ScriptInNotepad
+Set-Alias -Scope Global ecs Edit-ScriptInVSCode
+Set-Alias -Scope Global log ~\SimpleLog.ps1
+Set-Alias -Scope Global ?p Show-CommandParameter.ps1
+Set-Alias -Scope global mpc Invoke-MediaPlayerClassic
+Set-Alias -Scope global fb Invoke-Foobar2000
+Set-Alias -Scope global ff Get-DiskSizeFudgeFactor
+Set-Alias -Scope global nw ~\newwall.ps1
+Set-Alias -Scope global fst Get-FileNameSafeTimestamp
+Set-Alias -Scope global drv Get-DiskDrive
+Set-Alias -Scope global sd Invoke-ShellDelete
+Set-Alias -Scope global ej Dismount-RemovableDrive
+Set-Alias -Scope global b64 ConvertFrom-Base64
+Set-Alias -Scope global icls Clear-HostInteractive
+Set-Alias -Scope global fscr Switch-ConsoleFullScreen
+Set-Alias -Scope global ot Get-ObjectType
+Set-Alias -Scope global gvi Get-VideoInfo
+Set-Alias -Scope global gec Get-ExtensionCategory
+Set-Alias -Scope global rev Get-ReverseArray
+Set-Alias -Scope global shuf Get-ShuffleArray
+Set-Alias -Scope global pick Get-OrderedSubset
