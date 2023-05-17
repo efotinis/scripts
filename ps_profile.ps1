@@ -607,60 +607,6 @@ function global:Nth {
 }
 
 
-# Create DateTime representing some hours/minutes/seconds ago from now.
-function global:TimeAgo {
-    [CmdletBinding()]
-    param(
-        [int]$Hours,
-        [int]$Minutes,
-        [int]$Seconds
-    )
-    (Get-Date) - [timespan]::new($Hours, $Minutes, $Seconds)
-}
-
-
-# Create DateTime representing some years/months/days/weeks ago from now.
-function global:DateAgo {
-    [CmdletBinding()]
-    param(
-        [int]$Years,
-        [int]$Months,
-        [int]$Days,
-        [int]$Weeks
-    )
-    $d = Get-Date
-    $Days += $Weeks * 7
-    $d.AddYears(-$Years).AddMonths(-$Months).AddDays(-$Days)
-}
-
-
-# Get the datetime of the next occurence of specified time.
-function global:NextTime {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory)]
-        [string]$Time  # 'HH[:]mm' format
-    )
-    if ($Time -notmatch '^\s*(\d\d):?(\d\d)\s*$') {
-        Write-Error "Invalid time string: $Time."
-        return
-    }
-    $h, $m = $Matches[1..2].ForEach([int])
-    if ($h -gt 23) {
-        Write-Error "Invalid hour: $h."
-        return
-    }
-    if ($m -gt 59) {
-        Write-Error "Invalid minute: $m."
-        return
-    }
-    $d = Get-Date
-    $t = [timespan]::new($h, $m, 0)
-    $tomorrow = $t -le $d.TimeOfDay
-    [datetime]::new($d.Year, $d.Month, $d.Day, $h, $m, 0).AddDays($tomorrow)
-}
-
-
 # Generate time/value objects of pipeline contents.
 # Useful for timing program output. If non-output streams (e.g. error) are also
 # needed, they should be merged with stdout beforehand (i.e. 2>&1).

@@ -389,4 +389,136 @@ function Group-DateSection {
 }
 
 
+<#
+.SYNOPSIS
+    Get a past time using time parts.
+
+.DESCRIPTION
+    Returns the current datetime some hours, minutes and seconds in the past. Any part can be negative to get a future time.
+
+.PARAMETER Hours
+    Number of hours.
+
+.PARAMETER Minutes
+    Number of minutes.
+
+.PARAMETER Seconds
+    Number of seconds.
+
+.INPUTS
+    None
+
+.OUTPUTS
+    DateTime
+#>
+function Get-TimeAgo {
+    [CmdletBinding()]
+    param(
+        [Parameter(Position = 0)]
+        [int]$Hours,
+
+        [Parameter(Position = 1)]
+        [int]$Minutes,
+
+        [Parameter(Position = 2)]
+        [int]$Seconds
+    )
+    (Get-Date) - [timespan]::new($Hours, $Minutes, $Seconds)
+}
+
+
+<#
+.SYNOPSIS
+    Get a past time using date parts.
+
+.DESCRIPTION
+    Returns the current datetime some years, months, days and weeks in the past. Any part can be negative to get a future time.
+
+.PARAMETER Years
+    Number of years.
+
+.PARAMETER Months
+    Number of months.
+
+.PARAMETER Days
+    Number of days.
+
+.PARAMETER Weeks
+    Number of weeks.
+
+.INPUTS
+    None
+
+.OUTPUTS
+    DateTime
+#>
+function Get-DateAgo {
+    [CmdletBinding()]
+    param(
+        [Parameter(Position = 0)]
+        [int]$Years,
+
+        [Parameter(Position = 1)]
+        [int]$Months,
+
+        [Parameter(Position = 2)]
+        [int]$Days,
+
+        [Parameter()]
+        [int]$Weeks
+    )
+    $d = Get-Date
+    $Days += $Weeks * 7
+    $d.AddYears(-$Years).AddMonths(-$Months).AddDays(-$Days)
+}
+
+
+#
+<#
+.SYNOPSIS
+    Get the next occurence of a specified time.
+
+.DESCRIPTION
+    Returns the next next point of time from now that has the specified time parts.
+
+.PARAMETER TimeOfDay
+    A TimeSpan object specifying the time parts. The Days member is ignored.
+
+.INPUTS
+    None
+
+.OUTPUTS
+    DateTime
+#>
+function Get-NextTime {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0)]
+        [timespan]$TimeOfDay
+    )
+    $TimeOfDay = [timespan]::new(
+        0,  # ignore Days
+        $TimeOfDay.Hours,
+        $TimeOfDay.Minutes,
+        $TimeOfDay.Seconds,
+        $TimeOfDay.Milliseconds
+    )
+    $d = Get-Date
+    $isTomorrow = $TimeOfDay -le $d.TimeOfDay
+    $d = [datetime]::new(
+        $d.Year,
+        $d.Month,
+        $d.Day,
+        $TimeOfDay.Hours,
+        $TimeOfDay.Minutes,
+        $TimeOfDay.Seconds,
+        $TimeOfDay.Milliseconds
+    )
+    if ($isTomorrow) {
+        $d = $d.AddDays(1)
+    }
+    Write-Output $d
+}
+
+
 Export-ModuleMember -Function *-*
