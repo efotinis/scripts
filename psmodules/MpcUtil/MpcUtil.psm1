@@ -89,7 +89,7 @@ function Get-MpcOption {
             $a = '25%', '50%', '100%', '200%', 'AutoFit', 'AutoFitIfLarger'
             if (-not $x.AutoZoom) {
                 'Off'
-            } elseif ($x.Zoom -ge -1 -and $x.Zoom -lt ($a.Count - 2)) {
+            } elseif ($x.Zoom -ge -1 -and $x.Zoom -lt $a.Count) {
                 $a[$x.Zoom + 1]
             } else {
                 $null
