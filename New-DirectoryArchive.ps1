@@ -87,7 +87,7 @@ foreach ($dir in $dirs) {
     }
     try {
         Push-Location $dir.FullName
-        Echo "creating archive: $outFile"
+        Write-Verbose "Creating archive: $outFile"
         7z a "-t$ArchiveType" -mtc=on -mx=0 -r $outFile * > $null
         $ok = $?
     }
@@ -95,7 +95,7 @@ foreach ($dir in $dirs) {
         Pop-Location
     }
     if ($ok -and $Purge) {
-        Echo "removing directory: $($dir.FullName)"
+        Write-Verbose "removing directory: $($dir.FullName)"
         Remove-Item -Recurse -Force $dir.FullName
     }
 }
