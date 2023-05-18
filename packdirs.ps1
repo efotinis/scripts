@@ -68,15 +68,27 @@ $Destination = [string](Resolve-Path $Destination)
 
 if ($Extension -and $Extension.Substring(0, 1) -ne '.') {
     $Extension = '.' + $Extension
+} else {
+    # NOTE: 7-Zip automatically adds the proper extension if not set,
+    # but we need it in advance to check if the output files exist
+    $Extension = switch ($ArchiveType) {
+        '7z' { '.7z' }
+        'zip' { '.zip' }
+        default { throw "No extension set for archive type: $ArchiveType" }
+    }
 }
 
 $dirs = Get-ChildItem -Directory -Path $Source -Filter $Filter
 foreach ($dir in $dirs) {
-    $OutFile = Join-Path $Destination ($dir.Name + $Extension)
+    $outFile = Join-Path $Destination ($dir.Name + $Extension)
+    if (Test-Path -LiteralPath $outFile -PathType Leaf) {
+        Write-Error "Output file laready exists: $outFile"
+        continue
+    }
     try {
         Push-Location $dir.FullName
-        Echo "creating archive: $OutFile"
-        7z a "-t$ArchiveType" -mtc=on -mx=0 -r $OutFile * > $null
+        Echo "creating archive: $outFile"
+        7z a "-t$ArchiveType" -mtc=on -mx=0 -r $outFile * > $null
         $ok = $?
     }
     finally {
