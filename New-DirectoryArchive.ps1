@@ -7,6 +7,8 @@
     The input directories are scanned recursively and the files are stored
     uncompressed.
 
+    Returns file objects of successfully created archives.
+
 .PARAMETER Source
     Source directory. Contains the input directories. Must exist.
 
@@ -25,6 +27,12 @@
 
 .PARAMETER Purge
     Remove source files if archive creation is succesful.
+
+.INPUTS
+    None
+
+.OUTPUTS
+    System.IO.FileInfo
 #>
 [CmdletBinding()]
 param(
@@ -91,6 +99,9 @@ foreach ($dir in $dirs) {
         Write-Verbose "Creating archive: $outFile"
         7z a "-t$ArchiveType" -mtc=on -mx=0 -r $outFile * > $null
         $ok = $?
+        if ($ok) {
+            Get-Item -LiteralPath $outFile
+        }
     }
     finally {
         Pop-Location
