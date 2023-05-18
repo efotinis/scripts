@@ -85,6 +85,7 @@ foreach ($dir in $dirs) {
         Write-Error "Output file laready exists: $outFile"
         continue
     }
+    $ok = $false
     try {
         Push-Location $dir.FullName
         Write-Verbose "Creating archive: $outFile"
