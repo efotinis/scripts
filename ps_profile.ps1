@@ -71,7 +71,8 @@ function global:... { Set-Location ..\.. }
 function global:sld { Set-Location ~\Desktop }
 function global:slc { Set-Location -LiteralPath (Get-Clipboard) }
 function global:glc { Get-Location | % Path | Set-Clipboard }
-function global:?? ($Cmd) { help $Cmd -Full }
+function global:?? ($Cmd) { help $Cmd -Detailed }
+function global:??? ($Cmd) { help $Cmd -Full }
 function global:cdef ([string]$Name) { gcm $Name | % Definition }
 if ($Env:COMPUTERNAME -eq 'CORE') {
     # backup/list main Firefox profile
@@ -975,6 +976,7 @@ $SLNK_DIR = switch ($env:COMPUTERNAME) {
 }
 Set-Alias -Scope global srip "$SRIP_DIR\streamripper.exe"
 Set-Alias -Scope global slnk "$SLNK_DIR\streamlink.exe"
+Set-Alias -Scope global od 'D:\scripts\overdisk.py'
 Set-Alias -Scope global go goto.ps1
 Set-Alias -Scope Global mc MinecraftUtil.ps1
 Set-Alias -Scope global gip Get-IfProperty

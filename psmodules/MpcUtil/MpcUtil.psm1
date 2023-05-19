@@ -1,3 +1,5 @@
+#requires -Modules PipelineUtil
+
 Set-StrictMode -Version Latest
 
 
@@ -89,7 +91,7 @@ function Get-MpcOption {
             $a = '25%', '50%', '100%', '200%', 'AutoFit', 'AutoFitIfLarger'
             if (-not $x.AutoZoom) {
                 'Off'
-            } elseif ($x.Zoom -ge -1 -and $x.Zoom -lt ($a.Count - 2)) {
+            } elseif ($x.Zoom -ge -1 -and $x.Zoom -lt $a.Count) {
                 $a[$x.Zoom + 1]
             } else {
                 $null
@@ -350,6 +352,9 @@ function Set-MpcOption {
     Displays MPC setting changes by polling the registry. Can be used for
     debugging.
 
+.PARAMETER Name
+    Name of setting to return. Supports multiple wildcards. Default is all.
+
 .PARAMETER IntervalSeconds
     Time in seconds between registry checks. Can be fractional. Default: 0.1s.
 
@@ -365,7 +370,11 @@ function Set-MpcOption {
 function Watch-MpcOption {
     [CmdletBinding()]
     param(
+        [SupportsWildcards()]
+        [string[]]$Name = '*',
+
         [float]$IntervalSeconds = 0.1,
+
         [switch]$ShowInitial
     )
     $a = @()
@@ -375,6 +384,7 @@ function Watch-MpcOption {
             Select-Object * -Exclude ps* |
             % psobject |
             % properties |
+            Get-IfProperty -Name 'Name' -LikeAny $Name |
             % { '{0}: {1}' -f $_.name, $_.value }
         $changes = Compare-Object $a $b | ? sideindicator -eq '=>'
         if ($changes -and $showNext) {
