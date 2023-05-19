@@ -353,25 +353,16 @@ function global:timeit {
     if ($Iterations -lt 1) {
         throw "iterations must be > 1"
     }
-    $sw = [System.Diagnostics.Stopwatch]::new()
-    $ticksAcc = 0
-    $ticksMin = [double]::MaxValue
+    $runTimes = @()
+    $t = [System.Diagnostics.Stopwatch]::new()
     for ($n = 0; $n -lt $Iterations; ++$n) {
-        $sw.Restart()
+        $t.Restart()
         & $Code
-        $sw.Stop()
-        $ticks = $sw.ElapsedTicks
-        $ticksAcc += $ticks
-        if ($ticks -lt $ticksMin) {
-            $ticksMin = $ticks
-        }
+        $t.Stop()
+        $runTimes += $t.Elapsed
+        Write-Verbose "Run #$($n + 1): $($t.Elapsed)"
     }
-    $freq = [System.Diagnostics.Stopwatch]::Frequency
-    $timeMin = ConvertTo-NiceSeconds ($ticksMin / $freq) -Decimals 6
-    $timeAvg = ConvertTo-NiceSeconds ($ticksAcc / $freq / $Iterations) -Decimals 6
-    Write-Host "min: $timeMin"
-    Write-Host "avg: $timeAvg"
-    Write-Host "iterations: $Iterations"
+    $runTimes | Measure-Stats -Property TotalSeconds
 }
 
 
