@@ -3,21 +3,21 @@
     Convert dimensions to look like common ratios.
 
 .DESCRIPTION
-    Simplies a width/height pair by selecting the denominator of a nearest common aspect ratio. This allows for quick comparison of slightly-off aspects. For example, a width:height of 740x540 yeilds a result of 4.11:3, making it obvious that the input is somewhere near 4:3.
+    Simplifies a width/height pair by selecting the denominator of a nearest common aspect ratio. This allows for quick comparison of slightly-off aspects. For example, a width:height of 740x540 yields a result of 4.11:3, making it obvious that the input is somewhere near 4:3.
 
-    If the specfied width is less than the height, a portrait orientation of is assumed and the common ratios are used as such. For example 1080x1920 is returned as 9:16.
+    If the specfied width is less than the height, portrait orientations of the common ratios are used. This results in, e.g. 1080x1920 being converted to 9:16.
 
 .PARAMETER Width
-    Input width. Can use the pipeline to pass one or objects with this property.
+    Input width. Can use the pipeline to pass one or more objects with this property.
 
 .PARAMETER Height
-    Input height. Can use the pipeline to pass one or objects with this property.
+    Input height. Can use the pipeline to pass one or more objects with this property.
 
 .PARAMETER Decimals
     Maximum number of numerator decimals. Default is 2.
 
 .PARAMETER CommonRatio
-    A list of ratios to use for reference. Can specify an array of 'width:height' strings or a single string concatenated with withspace. Default is '4:3 5:4 3:2 16:10 16:9'.
+    A list of ratios to use as reference. Can specify an array of 'width:height' strings or a single string concatenated with withspace. Default is '4:3 5:4 3:2 16:10 16:9'.
 
 .INPUTS
     None.
