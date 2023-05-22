@@ -1,3 +1,25 @@
+<#
+.SYNOPSIS
+    Convert dimensions to look like common ratios.
+
+.DESCRIPTION
+    Simplies a width/height pair by selecting the denominator of a nearest common aspect ratio. This allows for quick comparison of slightly-off aspects. For example, a width:height of 740x540 yeilds a result of 4.11:3, making it obvious that the input is somewhere near 4:3.
+
+.PARAMETER Width
+    Input width.
+
+.PARAMETER Height
+    Input height.
+
+.PARAMETER Decimals
+    Maximum number of numerator decimals. Default is 2.
+
+.INPUTS
+    None.
+
+.OUTPUTS
+    String.
+#>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory, ValueFromPipelineByPropertyName)]
@@ -72,21 +94,10 @@ process {
     $ratio = $Width / $Height
     $den = GetDenominator $ratio
     $num = $ratio * $den
-    #Write-Output "${num}:${den}"
 
     $num = [System.Math]::Round($num, $Decimals)
     $den = $den.ToString().PadRight($MAX_DENOM_WIDTH)
     $s = "${num}:${den}".PadLeft($OUT_WIDTH)
+
     Write-Output $s
-
-    <#
-    filter GroupDims {
-        if ($_.Name -notmatch '(\d+), (\d+)') {
-            Write-Error "Unexpected size: $($_.Name)"
-        } else {
-            [PSCustomObject]@{ Width = $Matches[1]; Height = $Matches[2]; }
-        }
-    }
-    #>
-
 }
