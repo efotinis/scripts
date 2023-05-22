@@ -88,15 +88,6 @@ begin {
         throw 'Invalid denominator limits data.'
     }
 
-    $MAX_DENOM_WIDTH = ($LIMITS | Measure-Object -Maximum -Property Denominator).Maximum.ToString().Length
-
-    $OUT_WIDTH = ( 5 + # semi-arbitrary, assuming something like '12345.67:1'
-        ($Decimals -gt 0) + # decimal point
-        $Decimals +
-        1 +  # colon
-        $MAX_DENOM_WIDTH
-    )
-
 }
 process {
     $isPortrait = $Width -lt $Height
@@ -109,8 +100,6 @@ process {
     $num = $ratio * $den
 
     $num = [System.Math]::Round($num, $Decimals)
-    #$den = $den.ToString().PadRight($MAX_DENOM_WIDTH)
-    #$s = "${num}:${den}".PadLeft($OUT_WIDTH)
     $s = if ($isPortrait) {
         "${den}:${num}"
     } else {
