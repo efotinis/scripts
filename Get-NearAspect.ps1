@@ -5,6 +5,8 @@
 .DESCRIPTION
     Simplies a width/height pair by selecting the denominator of a nearest common aspect ratio. This allows for quick comparison of slightly-off aspects. For example, a width:height of 740x540 yeilds a result of 4.11:3, making it obvious that the input is somewhere near 4:3.
 
+    If the specfied width is less than the height, a portrait orientation of is assumed and the common ratios are used as such. For example 1080x1920 is returned as 9:16.
+
 .PARAMETER Width
     Input width.
 
@@ -95,9 +97,13 @@ begin {
         $MAX_DENOM_WIDTH
     )
 
-
 }
 process {
+    $isPortrait = $Width -lt $Height
+    if ($isPortrait) {
+        $Width, $Height = $Height, $Width
+    }
+
     $ratio = $Width / $Height
     $den = GetDenominator $ratio
     $num = $ratio * $den
@@ -105,7 +111,11 @@ process {
     $num = [System.Math]::Round($num, $Decimals)
     #$den = $den.ToString().PadRight($MAX_DENOM_WIDTH)
     #$s = "${num}:${den}".PadLeft($OUT_WIDTH)
-    $s = "${num}:${den}"
+    $s = if ($isPortrait) {
+        "${den}:${num}"
+    } else {
+        "${num}:${den}"
+    }
 
     Write-Output $s
 }
