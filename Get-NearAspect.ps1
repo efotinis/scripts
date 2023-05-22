@@ -103,8 +103,9 @@ process {
     $num = $ratio * $den
 
     $num = [System.Math]::Round($num, $Decimals)
-    $den = $den.ToString().PadRight($MAX_DENOM_WIDTH)
-    $s = "${num}:${den}".PadLeft($OUT_WIDTH)
+    #$den = $den.ToString().PadRight($MAX_DENOM_WIDTH)
+    #$s = "${num}:${den}".PadLeft($OUT_WIDTH)
+    $s = "${num}:${den}"
 
     Write-Output $s
 }
