@@ -14,6 +14,9 @@
 .PARAMETER Decimals
     Maximum number of numerator decimals. Default is 2.
 
+.PARAMETER CommonRatio
+    A list of ratios to use for reference. Can specify an array of 'width:height' strings or a single string concatenated with withspace. Default is '4:3 5:4 3:2 16:10 16:9'.
+
 .INPUTS
     None.
 
@@ -29,14 +32,18 @@ param(
     [int]$Height,
 
     [ValidateRange(0, 10)]
-    [int]$Decimals = 2
+    [int]$Decimals = 2,
+
+    $CommonRatio = '4:3 5:4 3:2 16:10 16:9'
 )
 begin {
 
-    function CommonRatios {
-        #'4:3 5:4 3:2 16:10 16:9 17:9 21:9 32:9 1:1 4:1' -split '\s+' | % {
-        '4:3 5:4 3:2 16:10 16:9' -split '\s+' | % {
-            $w, $h = $_ -split ':',2
+    function ParseRatios ($Value) {
+        if ($Value -is [string]) {
+            $Value = $Value -split '\s+'
+        }
+        foreach ($s in $Value) {
+            $w, $h = $s -split ':',2
             [PSCustomObject]@{
                 Width = $w
                 Height = $h
@@ -46,7 +53,7 @@ begin {
     }
 
     function OrderedDenominatorUpperLimits {
-        $a = CommonRatios | Sort-Object -Property Ratio
+        $a = ParseRatios $CommonRatio | Sort-Object -Property Ratio
         for ($i = 0; $i -lt $a.Count - 1; ++$i) {
             [PSCustomObject]@{
                 # TODO: maybe use geometric mean instead?
