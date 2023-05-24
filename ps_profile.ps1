@@ -512,13 +512,13 @@ function global:Get-DiskSizeFudgeFactor {
 }
 
 
-function global:NiceSum ([string]$Property = 'length') {
-    ConvertTo-NiceSize ($input | measure -sum $Property | % sum)
+function global:nlen ([string]$Property = 'length') {
+    $input | measure -sum $Property | % sum | ConvertTo-NiceSize
 }
 
 
-function global:NiceDuration ([string]$Property = 'duration') {
-    ConvertTo-NiceDuration ($input | measure -sum $Property | % sum)
+function global:ndur ([string]$Property = 'duration') {
+    $input | measure -sum $Property | % sum | ConvertTo-NiceDuration
 }
 
 
