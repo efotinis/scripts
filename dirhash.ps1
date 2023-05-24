@@ -18,6 +18,9 @@
 .PARAMETER Filter
     Selects specific files for processing. Each file is passed to this scriptblock as $_ and is only processed if a true value is returned.
 
+.PARAMETER RelativePath
+    Directory to use for relative path output. If omitted, the current directory is used.
+
 .PARAMETER ProgressSeconds
     Seconds between progress output updates. If omitted, no progress is output.
 
@@ -36,10 +39,16 @@ param(
 
   [scriptblock]$Filter = { $true },
 
+  [string]$RelativePath,
+
   [double]$ProgressSeconds
 )
 
 $showProgress = $PSBoundParameters.ContainsKey('ProgressSeconds')
+
+if ($RelativePath -and -not (Test-Path -PathType Container -LiteralPath $RelativePath)) {
+    throw "Specified relative directory path does not exist: $RelativePath"
+}
 
 # select files to process and measure total length
 $totalBytes = 0
@@ -91,8 +100,18 @@ filter PostHash {
     $_
 }
 
-$files | PreHash | Get-FileHash -Algorithm $Algorithm | PostHash | % {
-    "$($_.hash) $(PathToRelative $_.path)"
+if ($RelativePath) {
+    Push-Location -LiteralPath $RelativePath
+    if (-not $?) {
+        throw "Could not set location to relative path: $RelativePath"
+    }
+}
+try {
+    $files | PreHash | Get-FileHash -Algorithm $Algorithm | PostHash | % {
+        "$($_.hash) $(PathToRelative $_.path)"
+    }
+} finally {
+    Pop-Location
 }
 
 if ($showProgress) {
