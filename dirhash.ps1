@@ -50,9 +50,13 @@ $files = foreach ($topDir in $Path) {
     }
 }
 
-# FIXME: doesn't work quite right
 function PathToRelative ([string]$Path) {
-    (Resolve-Path -Relative -LiteralPath $Path).Substring(2)
+    $s = Resolve-Path -Relative -LiteralPath $Path
+    if ($s.StartsWith('.\')) {
+        $s.Substring(2)
+    } else {
+        $s
+    }
 }
 
 
