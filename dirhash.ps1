@@ -1,18 +1,47 @@
 #requires -Modules NiceConvert
 
-# calculate hashes of all files recursively
-# and also prints relative paths
+<#
+.SYNOPSIS
+    Output file hashes of complete directories.
+
+.DESCRIPTION
+    Generate lines of text consisting of a hash and a file path.
+
+    Output file paths are relative to the current directory.
+
+.PARAMETER Path
+    One or more input directories. All their files are processed recursively. Default is the current directory.
+
+.PARAMETER Algorithm
+    Name of the algorithm to calculate hashes of. For valid values, see the Algorithm parameter of Get-FileHash. Default is 'SHA256'.
+
+.PARAMETER Filter
+    Selects specific files for processing. Each file is passed to this scriptblock as $_ and is only processed if a true value is returned.
+
+.PARAMETER ProgressSeconds
+    Seconds between progress output updates. If omitted, no progress is output.
+
+.INPUTS
+    None
+
+.OUTPUTS
+    String
+#>
 
 [CmdletBinding()]
 param(
   [string[]]$Path = '.',
-  [string]$Algorithm = 'sha256',
+
+  [string]$Algorithm = 'SHA256',
+
   [scriptblock]$Filter = { $true },
+
   [double]$ProgressSeconds
 )
 
 $showProgress = $PSBoundParameters.ContainsKey('ProgressSeconds')
 
+# select files to process and measure total length
 $totalBytes = 0
 $files = foreach ($topDir in $Path) {
     Get-ChildItem -Recurse -File -Path $topDir | ? $Filter | % {
@@ -21,6 +50,7 @@ $files = foreach ($topDir in $Path) {
     }
 }
 
+# FIXME: doesn't work quite right
 function PathToRelative ([string]$Path) {
     (Resolve-Path -Relative -LiteralPath $Path).Substring(2)
 }
