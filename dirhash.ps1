@@ -40,7 +40,7 @@ $progrTimer = [System.Diagnostics.Stopwatch]::new()
 $progrTimer.Start()
 
 filter PreHash {
-    if ($progrTimer.Elapsed.TotalSeconds -ge $ProgressSeconds) {
+    if ($showProgress -and $progrTimer.Elapsed.TotalSeconds -ge $ProgressSeconds) {
         $script:progress.CurrentOperation = PathToRelative $_.FullName
         $script:progress.Status = "Done: $script:doneFiles of $($files.Count); $(ConvertTo-NiceSize $script:doneBytes) of $(ConvertTo-NiceSize $totalBytes)"
         Write-Progress @script:progress
