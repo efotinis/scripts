@@ -271,4 +271,56 @@ function Get-UniqueCharacter {
 }
 
 
+<#
+.SYNOPSIS
+    Justify text position in string.
+
+.DESCRIPTION
+    Insert spaces before text matched by pattern to make it appear at the
+    specified position. Does nothing if text does not match or matches at
+    a lower position.
+
+.PARAMETER InputObject
+    Input string. Can use the pipeline to pass multiple inputs.
+
+.PARAMETER Pattern
+    The regular expression pattern to match text with.
+
+.PARAMETER Position
+    Position within input string to move matched text.
+
+.INPUTS
+    String(s).
+
+.OUTPUTS
+    String(s).
+#>
+function Get-JustifiedSubstring {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [string]$InputObject,
+
+        [Parameter(Mandatory, Position = 0)]
+        [string]$Pattern,
+
+        [Parameter(Mandatory, Position = 1)]
+        [int]$Position
+    )
+    begin {
+        $expr = [regex]$Pattern
+    }
+    process {
+        $m = $expr.Match($InputObject)
+        if ($m.Success) {
+            if ($m.Index -lt $Position) {
+                $_.Insert($m.Index, (' ' * ($Position - $m.Index)))
+            } else {
+                Write-Output $_
+            }
+        }
+    }
+}
+
+
 Export-ModuleMember -Function *-*
