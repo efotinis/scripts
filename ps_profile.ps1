@@ -7,7 +7,6 @@ $Env:PSModulePath += switch ($Env:COMPUTERNAME) {
 
 Update-FormatData $Env:Scripts\EF.Format.ps1xml
 Update-FormatData $Env:Scripts\DataLength.Format.ps1xml
-Update-FormatData $Env:Scripts\NovaSearch.Format.ps1xml
 
 Update-FormatData -Prepend $Env:Scripts\CoreOverrides.ps1xml
 
