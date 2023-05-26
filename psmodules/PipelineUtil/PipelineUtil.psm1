@@ -548,6 +548,10 @@ function Split-Array {
     }
     end {
         $totalCount = $items.Count
+        if ($totalCount -eq 0) {
+            Write-Warning 'No input items.'
+            return
+        }
         switch ($PSCmdlet.ParameterSetName) {
             'HeadSize' {
                 $HeadSize = [Math]::Min($HeadSize, $totalCount)
