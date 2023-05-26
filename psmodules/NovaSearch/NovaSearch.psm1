@@ -1,8 +1,5 @@
 #requires -Modules NiceConvert
 
-Update-FormatData -AppendPath "$PSScriptRoot\NovaSearch.Format.ps1xml"
-
-
 $script:NOVA_PATH = $null
 $script:ENGINES_PATH = "$Env:LOCALAPPDATA\NovaSearch\engines"
 $script:ENGINE_URL_TO_ID = $null
