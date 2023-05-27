@@ -132,6 +132,10 @@ Add-Type -TypeDefinition @"
             Engine = engine;
             Description = description;
         }
+
+        public bool IsMagnet {
+            get { return Link.StartsWith("magnet:"); }
+        }
     }
 "@
 

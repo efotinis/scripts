@@ -23,7 +23,7 @@
                             <TableColumnItem><ScriptBlock>$_.Seeds.ToString('N0')</ScriptBlock></TableColumnItem>
                             <TableColumnItem><ScriptBlock>$_.Leeches.ToString('N0')</ScriptBlock></TableColumnItem>
                             <TableColumnItem><ScriptBlock>ConvertTo-NiceSize $_.Size</ScriptBlock></TableColumnItem>
-                            <TableColumnItem><ScriptBlock>if ($_.Link.StartsWith('magnet:')) { '*' } else { ' ' } </ScriptBlock></TableColumnItem>
+                            <TableColumnItem><ScriptBlock>if ($_.IsMagnet) { '*' } else { ' ' } </ScriptBlock></TableColumnItem>
                             <TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
                         </TableColumnItems>
                     </TableRowEntry>
