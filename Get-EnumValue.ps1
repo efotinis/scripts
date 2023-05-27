@@ -38,7 +38,13 @@ process {
             $a.Hex = '0x' + $value.ToString('x')
         }
         if ($Binary) {
-            $a.Bin = [Convert]::ToString($value, 2).PadLeft(32, '0') -replace '0','.'
+            $s = [Convert]::ToString($value, 2).PadLeft(32, '0') -replace '0','.'
+            for ($i = 0; $i -lt 32; $i += 8) {
+                if ($s[$i] -eq '.') {
+                    $s = $s.Substring(0, $i) + ":" + $s.Substring($i + 1)
+                }
+            }
+            $a.Bin = $s
         }
         $a.Name = $name
         [PSCustomObject]$a
