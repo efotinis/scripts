@@ -29,18 +29,18 @@ param(
     [switch]$Binary
 )
 process {
-    $Type.GetEnumNames() | % {
-        $Value = [int]($Type::$_)
+    foreach ($name in $Type.GetEnumNames()) {
+        $value = $Type::$name -as [int]
         $a = [ordered]@{
-            Value = $Value
+            Value = $value
         }
         if ($Hexadecimal) {
-            $a.Hex = $Value.ToString('x8')
+            $a.Hex = '0x' + $value.ToString('x')
         }
         if ($Binary) {
-            $a.Bin = [Convert]::ToString($Value, 2).PadLeft(32, '0') -replace '0','.'
+            $a.Bin = [Convert]::ToString($value, 2).PadLeft(32, '0') -replace '0','.'
         }
-        $a.Name = $_
+        $a.Name = $name
         [PSCustomObject]$a
     }
 }
