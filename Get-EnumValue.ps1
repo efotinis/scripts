@@ -6,7 +6,7 @@
     Outputs the names and values of an enumeration.
 
 .PARAMETER Type
-    The enumeration type.
+    The enumeration type. Multiple items can be specified via the pipeline.
 
 .PARAMETER Hexadecimal
     Include hexadecimal representation of values in output.
@@ -28,17 +28,19 @@ param(
 
     [switch]$Binary
 )
-$Type.GetEnumNames() | % {
-    $Value = [int]($Type::$_)
-    $a = [ordered]@{
-        Value=$Value
+process {
+    $Type.GetEnumNames() | % {
+        $Value = [int]($Type::$_)
+        $a = [ordered]@{
+            Value = $Value
+        }
+        if ($Hexadecimal) {
+            $a.Hex = $Value.ToString('x8')
+        }
+        if ($Binary) {
+            $a.Bin = [Convert]::ToString($Value, 2).PadLeft(32, '0') -replace '0','.'
+        }
+        $a.Name = $_
+        [PSCustomObject]$a
     }
-    if ($Hexadecimal) {
-        $a.Hex = $Value.ToString('x8')
-    }
-    if ($Binary) {
-        $a.Bin = [Convert]::ToString($Value, 2).PadLeft(32, '0') -replace '0','.'
-    }
-    $a.Name = $_
-    [PSCustomObject]$a
 }
