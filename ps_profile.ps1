@@ -241,17 +241,6 @@ if ($host.name -eq 'ConsoleHost') {
 }
 
 
-# get the last known home WAN IP
-function global:HomeWan {
-    $tail = Get-Content $Env:SyncMain\data\wan.log | Select-Object -last 1
-    if ($tail -NotMatch '(\d+\.\d+\.\d+\.\d+)$') {
-        # TODO: show error message instead
-        throw 'no IP found in log tail'
-    }
-    $Matches[1]
-}
-
-
 function global:SnapshotDir ($Source, $Dest, $Name) {
     if (-not (Test-Path -Type Container $Source)) {
         Write-Error "source directory does not exist: $Source"
@@ -857,16 +846,13 @@ Set-PSReadLineKeyHandler `
         [Microsoft.PowerShell.PSConsoleReadLine]::AcceptLine()
         if ($line -eq '') {
             if ([console]::CapsLock) {
-                # TODO: Scroll window up 1 line if we were at the view bottom
+                # NOTE: It would be nice to detect if we scrolled one extra line
+                #       when at the bottom of the view, but there's no way to tell
+                #       if we just got there or we already were there.
                 Clear-HostUp -Count 2
              } else {
                 Clear-HostUp -Count 1
                 Write-Host ''
-                <#$Host.UI.RawUI.CursorPosition = [System.Management.Automation.Host.Coordinates]::new(
-                    0, $Host.UI.RawUI.CursorPosition.Y - 1
-                )
-                Write-Host -NoNewLine (' ' * $Host.UI.RawUI.BufferSize.Width)
-                #>
             }
         }
     }
