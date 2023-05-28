@@ -8,8 +8,8 @@
 .PARAMETER CommentHelp
     Template for comment-based help.
 
-.PARAMETER CmdletBinding
-    Template for cmdlet binding attribute.
+.PARAMETER CmdletParams
+    Template for cmdlet params.
 
 .PARAMETER NativeType
     Type name of native type template.
@@ -33,16 +33,16 @@
 param(
     [Parameter(ParameterSetName='CommentHelp')]
     [switch]$CommentHelp,
-    
-    [Parameter(ParameterSetName='CmdletBinding')]
-    [switch]$CmdletBinding,
-    
+
+    [Parameter(ParameterSetName='CmdletParams')]
+    [switch]$CmdletParams,
+
     [Parameter(ParameterSetName='NativeType')]
     [string]$NativeType,
-    
+
     [Parameter(ParameterSetName='NativeType')]
     [string[]]$Member,
-    
+
     [switch]$Full
 )
 
@@ -79,12 +79,15 @@ $CMTHELP_FULL = @'
 
 # -------- cmdlet binding --------
 
-$CMDBIND_SIMPLE = @'
-[CmdletBinding(DefaultParameterSetName='…',]
-param()
+$CLPARAMS_SIMPLE = @'
+[CmdletBinding(DefaultParameterSetName='…')]
+param(
+    [Parameter(Mandatory, ValueFromPipeline)]
+    $InputObject
+)
 '@
 
-$CMDBIND_FULL = @'
+$CLPARAMS_FULL = @'
 [CmdletBinding(
     ConfirmImpact='Medium',
     DefaultParameterSetName='…',
@@ -93,6 +96,8 @@ $CMDBIND_FULL = @'
     SupportsShouldProcess,
     PositionalBinding)]
 param(
+    [Parameter(Mandatory, ValueFromPipeline)]
+    $InputObject
 )
 '@
 
@@ -108,14 +113,14 @@ switch ($PSCmdlet.ParameterSetName) {
         }
     }
 
-    'CmdletBinding' {
+    'CmdletParams' {
         if ($Full) {
-            echo $CMDBIND_FULL
+            echo $CLPARAMS_FULL
         } else {
-            echo $CMDBIND_SIMPLE
+            echo $CLPARAMS_SIMPLE
         }
     }
-    
+
     'NativeType' {
         echo "public class $NativeType {"
         foreach ($m in $Member) {
