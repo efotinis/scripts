@@ -534,12 +534,43 @@ function global:GetReleaseYear {
 
 # Pipeline shorthands for count, first, last and indexed objects.
 function global:Count {
-    $Input | Measure-Object | % count
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+            $InputObject
+    )
+    end {
+        $Input | Measure-Object | % count
+    }
 }
-function global:First ([int]$Count = 1, [int]$Skip = 0) {
-    $Input | Select-Object -First $Count -Skip $Skip
+function global:First {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+            $InputObject,
+        [Parameter(Position = 0)]
+        [ValidateRange(0, [int]::MaxValue)]
+            [int]$Count = 1,
+        [Parameter(Position = 1)]
+        [ValidateRange(0, [int]::MaxValue)]
+            [int]$Skip = 0
+    )
+    end {
+        $Input | Select-Object -First $Count -Skip $Skip
+    }
 }
-function global:Last ([int]$Count = 1, [int]$Skip = 0) {
+function global:Last {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+            $InputObject,
+        [Parameter(Position = 0)]
+        [ValidateRange(0, [int]::MaxValue)]
+            [int]$Count = 1,
+        [Parameter(Position = 1)]
+        [ValidateRange(0, [int]::MaxValue)]
+            [int]$Skip = 0
+    )
     $Input | Select-Object -Last $Count -Skip $Skip
 }
 <#
