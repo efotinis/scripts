@@ -101,6 +101,9 @@ begin {
             public double Megapixel {
                 get { return (double)Width * Height / 1000000; }
             }
+            public double MP {
+                get { return Megapixel; }
+            }
             public double Aspect {
                 get { return Height != 0 ? (double)Width / Height : 0; }
             }
