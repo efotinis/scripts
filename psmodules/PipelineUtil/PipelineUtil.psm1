@@ -632,7 +632,7 @@ function Group-HeadTail {
     Returns arrays of items from the same positions in each input array, similar to Python's zip().
 
 .PARAMETER InputObject
-    Array of input arrays.
+    Array of input arrays. Can be specified either as an argument or via the pipeline.
 
 .PARAMETER IgnoreLonger
     Only return items up to the index of the shortest input array. This is the default behavior, however a warning is issued unless this switch is used.
@@ -641,7 +641,7 @@ function Group-HeadTail {
     Return all items, up to the length of the longest input array. Arrays with fewer items use this as a substitute.
 
 .INPUTS
-    None
+    Object[]
 
 .OUTPUTS
     Object[]
@@ -649,7 +649,7 @@ function Group-HeadTail {
 function Get-ZipArray {
     [CmdletBinding(DefaultParameterSetName = 'Ignore')]
     param(
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
         [object[]]$InputObject,
 
         [Parameter(ParameterSetName = 'Ignore')]
@@ -658,33 +658,45 @@ function Get-ZipArray {
         [Parameter(ParameterSetName = 'Fill')]
         [object]$FillShorter
     )
-
-    $m = $InputObject | Measure-Object -Minimum -Maximum Count
-    $minSize = $m.Minimum
-    $maxSize = $m.Maximum
-
-    if ($PSCmdlet.ParameterSetName -eq 'Ignore') {
-
-        for ($i = 0; $i -lt $minSize; ++$i) {
-            Write-Output (,@($InputObject | % { $_[$i] }))
+    begin {
+        $arrays = [System.Collections.ArrayList]::new()
+        $pipelineMode = -not $PSBoundParameters.ContainsKey('InputObject')
+    }
+    process {
+        if ($pipelineMode) {
+            [void]$arrays.Add($InputObject)
+        } else {
+            $arrays.AddRange($InputObject)
         }
+    }
+    end {
+        $m = $arrays | Measure-Object -Minimum -Maximum Count
+        $minSize = $m.Minimum
+        $maxSize = $m.Maximum
 
-        if ($minSize -lt $maxSize -and -not $IgnoreLonger) {
-            Write-Warning "Items from longer arrays were ignored."
+        if ($PSCmdlet.ParameterSetName -eq 'Ignore') {
+
+            for ($i = 0; $i -lt $minSize; ++$i) {
+                Write-Output (,@($arrays | % { $_[$i] }))
+            }
+
+            if ($minSize -lt $maxSize -and -not $IgnoreLonger) {
+                Write-Warning "Items from longer arrays were ignored."
+            }
+
+        } else {
+
+            for ($i = 0; $i -lt $maxSize; ++$i) {
+                Write-Output (,@($arrays | % {
+                    if ($i -lt $_.Count) {
+                        $_[$i]
+                    } else {
+                        $FillShorter
+                    }
+                }))
+            }
+
         }
-
-    } else {
-
-        for ($i = 0; $i -lt $maxSize; ++$i) {
-            Write-Output (,@($InputObject | % {
-                if ($i -lt $_.Count) {
-                    $_[$i]
-                } else {
-                    $FillShorter
-                }
-            }))
-        }
-
     }
 }
 
