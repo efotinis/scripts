@@ -646,44 +646,46 @@ function Group-HeadTail {
 .OUTPUTS
     Object[]
 #>
-[CmdletBinding(DefaultParameterSetName = 'Ignore')]
-param(
-    [Parameter(Mandatory)]
-    [object[]]$InputObject,
+function Get-ZipArray {
+    [CmdletBinding(DefaultParameterSetName = 'Ignore')]
+    param(
+        [Parameter(Mandatory)]
+        [object[]]$InputObject,
 
-    [Parameter(ParameterSetName = 'Ignore')]
-    [switch]$IgnoreLonger,
+        [Parameter(ParameterSetName = 'Ignore')]
+        [switch]$IgnoreLonger,
 
-    [Parameter(ParameterSetName = 'Fill')]
-    [object]$FillShorter
-)
+        [Parameter(ParameterSetName = 'Fill')]
+        [object]$FillShorter
+    )
 
-$m = $InputObject | Measure-Object -Minimum -Maximum Count
-$minSize = $m.Minimum
-$maxSize = $m.Maximum
+    $m = $InputObject | Measure-Object -Minimum -Maximum Count
+    $minSize = $m.Minimum
+    $maxSize = $m.Maximum
 
-if ($PSCmdlet.ParameterSetName -eq 'Ignore') {
+    if ($PSCmdlet.ParameterSetName -eq 'Ignore') {
 
-    for ($i = 0; $i -lt $minSize; ++$i) {
-        Write-Output (,@($InputObject | % { $_[$i] }))
+        for ($i = 0; $i -lt $minSize; ++$i) {
+            Write-Output (,@($InputObject | % { $_[$i] }))
+        }
+
+        if ($minSize -lt $maxSize -and -not $IgnoreLonger) {
+            Write-Warning "Items from longer arrays were ignored."
+        }
+
+    } else {
+
+        for ($i = 0; $i -lt $maxSize; ++$i) {
+            Write-Output (,@($InputObject | % {
+                if ($i -lt $_.Count) {
+                    $_[$i]
+                } else {
+                    $FillShorter
+                }
+            }))
+        }
+
     }
-
-    if ($minSize -lt $maxSize -and -not $IgnoreLonger) {
-        Write-Warning "Items from longer arrays were ignored."
-    }
-
-} else {
-
-    for ($i = 0; $i -lt $maxSize; ++$i) {
-        Write-Output (,@($InputObject | % {
-            if ($i -lt $_.Count) {
-                $_[$i]
-            } else {
-                $FillShorter
-            }
-        }))
-    }
-
 }
 
 
