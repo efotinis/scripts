@@ -24,6 +24,12 @@ if ($Env:COMPUTERNAME -eq 'VOID') {
 Reset-ModPrompt
 
 
+$PSDefaultParameterValues['Write-FormattedMatch.ps1:Color'] = @{
+    Match='White'; MatchBg='DarkGray'; Text='Gray'; TextCtx='DarkGray'
+    Line='DarkCyan'; LineCtx='DarkGray'; Path='Green'
+}
+
+
 # shorthands and aliases
 function global:m ($i, $b, $c) {
     # multiply value by ten, preserving leading sign (if any);
