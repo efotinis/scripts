@@ -13,8 +13,8 @@
     Source directory. Contains the input directories. Must exist.
 
 .PARAMETER Destination
-    Destination directory. Output archives are placed there. Must exist.
-    Default is the source directory.
+    Destination directory. Output archives are placed there.
+    Will be created if needed. Default is the source directory.
 
 .PARAMETER Filter
     Optional wildcard filter for selecting input directories.
@@ -54,7 +54,6 @@ param(
 
 Set-StrictMode -version latest
 
-# TODO: create destination if it does not exist
 # TODO: replace Source/Filter with InputObject (directory object)
 
 if (-not (Test-Path $Source -Type Container)) {
@@ -65,14 +64,18 @@ if (-not (Test-Path $Source -Type Container)) {
 if (-not $Destination) {
     $Destination = $Source
 }
-if (-not (Test-Path $Destination -Type Container)) {
-    Write-Error "destination dir does not exist: $Destination"
+
+$d = Get-Item -Force -LiteralPath $Destination -ErrorAction SilentlyContinue
+if (-not $d) {
+    if (-not ($d = New-Item -Path $Destination -ItemType Container -Force)) {
+        return
+    }
+} elseif (-not $d.PSIsContainer) {
+    Write-Error "destination path is a file"
     return
 }
-
-# convert to normalized, absolute path, since the current location is changed
-# when invoking 7-Zip
-$Destination = [string](Resolve-Path $Destination)
+# absolute path needed for 7-Zip invocation, since the CWD is changed
+$Destination = $d.FullName
 
 if ($Extension -and $Extension.Substring(0, 1) -ne '.') {
     $Extension = '.' + $Extension
