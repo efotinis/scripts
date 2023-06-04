@@ -6,6 +6,7 @@
     Returns groups of adjacent objects that have a property sum less than or equal to a specified threshold. If a single object exceeds the threshold, it is returned in a group of its own and a warning is issued.
 
     The returned objects contain these properties:
+        - Count     Number of items in the group.
         - Sum       The value sum of the group items.
         - Group     The objects of the group.
 
@@ -48,6 +49,7 @@ begin {
     $total = 0
     function Flush {
         [PSCustomObject]@{
+            Count = $items.Count
             Sum = $total
             Group = @($items)
         }
