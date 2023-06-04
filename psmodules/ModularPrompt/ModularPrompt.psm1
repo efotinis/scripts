@@ -11,6 +11,7 @@ $script:Options = @{
     #   - 'FullTilde': Whole path with HOME replacement (in FileSystem only).
     #   - 'Tail': Last component.
     #   - 'DriveTail': Drive and last component.
+    #   - 'Drive': Drive only.
     #   - 'None': Nothing.
     PathDisplay = 'DriveTail'
 
@@ -59,7 +60,7 @@ function Set-ModPromptOption {
     param(
         [string]$DefaultColor,
 
-        [ValidateSet('Full', 'FullTilde', 'Tail', 'DriveTail', 'None')]
+        [ValidateSet('Full', 'FullTilde', 'Tail', 'DriveTail', 'Drive', 'None')]
         [string]$PathDisplay
     )
     if ($PSBoundParameters.ContainsKey('DefaultColor')) {
@@ -326,6 +327,7 @@ function Reset-ModPrompt {
             FullTilde { script:TildeHome $loc }
             Tail { $tail }
             DriveTail { $drive + $tail }
+            Drive { $drive }
         }
     } -Description 'Current path. Configurable via PathDisplay.'
 
