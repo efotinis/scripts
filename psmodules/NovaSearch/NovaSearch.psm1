@@ -136,6 +136,10 @@ Add-Type -TypeDefinition @"
         public bool IsMagnet {
             get { return Link.StartsWith("magnet:"); }
         }
+
+        public int Peers {
+            get { return Seeds + Leeches; }
+        }
     }
 "@
 
