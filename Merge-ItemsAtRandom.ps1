@@ -11,7 +11,7 @@
 
 .EXAMPLE
     > .\Merge-ItemsAtRandom.ps1 (1,2,3),('aa','bb'),(100,200,300)
-        
+
     1
     100
     2
@@ -32,51 +32,10 @@
 #>
 
 param(
-    [object[][]]$InputObject,
-    
-    [switch]$Alt
+    [object[][]]$InputObject
 )
 
 Set-StrictMode -Version Latest
-
-
-<#
-
-1 0 aaa
-0 0 10
-0 1 20
-0 2 30
-1 1 bbb
-0 3 40
-0 4 50
-
-#>
-
-
-if ($Alt) {
-    Write-Error 'bad algo; this just return the first elements in a random order, then the second, etc.'
-    return
-    <#
-    $items = [System.Collections.ArrayList]::new()
-    $collIndex = 0
-    foreach ($coll in $InputObject) {
-        $itemIndex = 0
-        foreach ($item in $coll) {
-            [void]$items.Add(@(
-                $collIndex
-                $itemIndex
-                $item
-            ))
-            $itemIndex += 1
-        }
-        $collIndex += 1
-    }
-    Get-Random -InputObject $items -Count $items.Count | 
-        sort { $_[1] } | 
-        % { "$($_[0]) $($_[1]) $($_[2])" }
-    return
-    #>
-}
 
 $available = [System.Collections.ArrayList]::new()
 
@@ -101,5 +60,3 @@ while ($available) {
         $available.RemoveAt($i);
     }
 }
-
-
