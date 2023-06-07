@@ -706,23 +706,22 @@ function Get-ZipArray {
     Merge arrays by picking each next available item from a random array.
 
 .DESCRIPTION
-    Given a list of object lists, return items in order from each list, but
-    randomly selecting a list every time, until all items and lists are exhausted.
+    Given an array of arrays, return items in order from each array, but randomly selecting an array every time, until all items in all arrays are exhausted.
+
+    This in effect merges multiple arrays randomly, while keeping the original relative order of each array's items.
 
 .PARAMETER InputObject
-    A array of arrays of arbitrary objects.
+    An array of object arrays. Can be specified either as a positional parameter or passed via the pipeline.
 
 .EXAMPLE
-    > .\Merge-ItemsAtRandom.ps1 (1,2,3),('aa','bb'),(100,200,300)
+    Merge the numbers 1-5 and the letters 'a'-'c'. Notice that in the result, both the numbers and the letters are in order.
 
-    1
-    100
-    2
-    200
-    3
-    aa
-    bb
-    300
+    > $num = 1..5
+    > $chr = [char[]]'abc'
+    > $a = $num,$chr | Get-RandomInterleave
+    > $a -join ''
+
+    12a3b4c5
 
 .NOTES
     Similar question for C#:
