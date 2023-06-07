@@ -746,18 +746,17 @@ function Get-RandomInterleave {
         }
     }
     end {
+        # store index, size and next item of non-empty input items
         $available = [System.Collections.ArrayList]::new()
-        $collIndex = 0
-        foreach ($coll in $arrays) {
-            $collSize = $coll.Count
-            if ($collSize -gt 0) {
+        for ($i = 0; $i -lt $arrays.Count; ++$i) {
+            $size = $arrays[$i].Count
+            if ($size -gt 0) {
                 [void]$available.Add(@{
-                    index=$collIndex    # collection index in $arrays
-                    size=$collSize      # size of above collection
-                    next=0              # index of next pending item
+                    index = $i
+                    size = $size
+                    next = 0
                 })
             }
-            $collIndex += 1
         }
         while ($available) {
             $i = Get-Random $available.Count
