@@ -1,4 +1,4 @@
-#requires -Modules AnsiColor
+#requires -Modules ColorUtil
 
 [CmdletBinding()]
 param(
