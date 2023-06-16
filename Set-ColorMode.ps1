@@ -80,7 +80,7 @@ $LIGHT = @{
 }
 
 function Apply ($Scheme) {
-    $fg, $bg = Get-ColorAttribute $Scheme.Console
+    $fg, $bg = ConvertTo-ConsoleColor $Scheme.Console
     if ($null -ne $fg) {
         [Console]::ForegroundColor = $fg
     }

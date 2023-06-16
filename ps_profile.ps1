@@ -197,54 +197,18 @@ function global:Get-ExtensionInfo {
 
 if ($host.name -eq 'ConsoleHost') {
 
-    # customize output stream colors
-    function ConClr ($type, $fg, $bg = $host.UI.RawUI.BackgroundColor) {
-        $host.PrivateData.$($type + 'ForegroundColor') = $fg
-        $host.PrivateData.$($type + 'BackgroundColor') = $bg
+    # customize stream colors
+    $a = @{
+        OutputSpec = 'w'
+        ErrorSpec = 'm+'
+        WarningSpec = 'y+'
+        DebugSpec = 'c+'
+        VerboseSpec = 'g+'
     }
-    ConClr Error   magenta
-    ConClr Warning yellow
-    ConClr Debug   cyan
-    ConClr Verbose green
-
-    # toggle black & white mode; useful when running programs that output
-    # colors and assuming a black background (e.g. pip)
-    function global:MonoClr {
-        if ([bool]$Env:MonoClr) {
-            $Env:MonoClr = $null
-        } else {
-            $host.UI.RawUI.BackgroundColor = 'black'
-            $Env:MonoClr = 'on'
-        }
-    }
-
-    # Convert a color attribute (e.g. "w/n") to a pair of fg/bg colors.
-    # Missing or invalid colors are set to $null.
-    function global:Get-ColorAttribute ([string]$Spec)
-    {
-        $Colors = @{
-            'n'='black';       'n+'='darkgray'
-            'b'='darkblue';    'b+'='blue'
-            'g'='darkgreen';   'g+'='green'
-            'c'='darkcyan';    'c+'='cyan'
-            'r'='darkred';     'r+'='red'
-            'm'='darkmagenta'; 'm+'='magenta'
-            'y'='darkyellow';  'y+'='yellow'
-            'w'='gray';        'w+'='white'
-        }
-        $fg, $bg = $Spec -split '/',2
-        if ($fg) { $Colors.Item($fg) } else { $null }
-        if ($bg) { $Colors.Item($bg) } else { $null }
-    }
+    Set-ConsoleColor @a
 
     function global:Color ([string]$Spec) {
-        $fore, $back = global:Get-ColorAttribute $Spec
-        if ($fore) {
-            $Host.UI.RawUI.ForegroundColor = $fore
-        }
-        if ($back) {
-            $Host.UI.RawUI.BackgroundColor = $back
-        }
+        Set-ConsoleColor -OutputSpec $Spec
     }
 
 }

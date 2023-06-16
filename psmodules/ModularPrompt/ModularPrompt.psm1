@@ -1,3 +1,5 @@
+#requires -Modules ColorUtil
+
 Set-StrictMode -Version Latest
 
 
@@ -29,7 +31,7 @@ $script:Components = [System.Collections.ArrayList]::new()
 
 
 function global:prompt {
-    $fgDef, $bgDef = global:Get-ColorAttribute $script:Options.DefaultColor
+    $fgDef, $bgDef = ConvertTo-ConsoleColor $script:Options.DefaultColor
     if ($null -eq $fgDef) {
         $fgDef = [System.Console]::ForegroundColor
     }
@@ -38,7 +40,7 @@ function global:prompt {
     }
     foreach ($c in $script:Components) {
         if ($null -ne $c.Expression) {
-            $fg, $bg = global:Get-ColorAttribute $c.Color
+            $fg, $bg = ConvertTo-ConsoleColor $c.Color
             $args = @{
                 Object = & $c.Expression
                 NoNewLine = $true
