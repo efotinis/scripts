@@ -701,6 +701,74 @@ function Get-ZipArray {
 }
 
 
+<#
+.SYNOPSIS
+    Merge arrays by picking each next available item from a random array.
+
+.DESCRIPTION
+    Given an array of arrays, return items in order from each array, but randomly selecting an array every time, until all items in all arrays are exhausted.
+
+    This in effect merges multiple arrays randomly, while keeping the original relative order of each array's items.
+
+.PARAMETER InputObject
+    An array of object arrays. Can be specified either as a positional parameter or passed via the pipeline.
+
+.EXAMPLE
+    Merge the numbers 1-5 and the letters 'a'-'c'. Notice that in the result, both the numbers and the letters are in order.
+
+    > $num = 1..5
+    > $chr = [char[]]'abc'
+    > $a = $num,$chr | Get-RandomInterleave
+    > $a -join ''
+
+    12a3b4c5
+
+.NOTES
+    Similar question for C#:
+        https://stackoverflow.com/questions/4577882/how-to-merge-2-sorted-listed-into-one-shuffled-list-while-keeping-internal-order
+#>
+function Get-RandomInterleave {
+    param(
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [object[]]$InputObject
+    )
+    begin {
+        Set-StrictMode -Version Latest
+        $arrays = [System.Collections.ArrayList]::new()
+        $pipelineMode = -not $PSBoundParameters.ContainsKey('InputObject')
+    }
+    process {
+        if ($pipelineMode) {
+            [void]$arrays.Add($InputObject)
+        } else {
+            $arrays.AddRange($InputObject)
+        }
+    }
+    end {
+        # store index, size and next item of non-empty input items
+        $available = [System.Collections.ArrayList]::new()
+        for ($i = 0; $i -lt $arrays.Count; ++$i) {
+            $size = $arrays[$i].Count
+            if ($size -gt 0) {
+                [void]$available.Add(@{
+                    index = $i
+                    size = $size
+                    next = 0
+                })
+            }
+        }
+        while ($available) {
+            $i = Get-Random $available.Count
+            $current = $available[$i]
+            $arrays[$current.index][$current.next]
+            if (++$current.next -ge $current.size) {
+                $available.RemoveAt($i);
+            }
+        }
+    }
+}
+
+
 # ----------------------------------------------------------------
 
 
