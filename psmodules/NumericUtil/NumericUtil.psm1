@@ -103,4 +103,50 @@ function Get-NearestMultiple {
 }
 
 
+<#
+.SYNOPSIS
+    Get prime numbers.
+
+.DESCRIPTION
+    Generate prime numbers using Eratosthene's Sieve.
+
+.PARAMETER Threshold
+    Upper limit for number checking. Only integers below this value are tested.
+
+.PARAMETER Start
+    Minimum number to start output.
+
+.INPUTS
+    Int32
+
+.OUTPUTS
+    Int32
+#>
+function Get-Prime {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, ValueFromPipeline, Position = 0)]
+        [int]$Threshold,
+
+        [int]$Start = 2
+    )
+
+    $a = [bool[]]::new($Threshold)
+    for ($i = 2; $i -lt $Threshold; ++$i) {
+        $a[$i] = $true
+    }
+
+    for ($i = 2; $i -lt $Threshold; ++$i) {
+        if ($a[$i] -eq $true) {
+            if ($i -ge $Start) {
+                Write-Output $i
+            }
+            for ($j = $i; $j -lt $Threshold; $j += $i) {
+                $a[$j] = $false
+            }
+        }
+    }
+}
+
+
 Export-ModuleMember -Function *-*
