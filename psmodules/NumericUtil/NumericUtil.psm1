@@ -3,7 +3,7 @@
     Perform prime factorization.
 
 .DESCRIPTION
-    Get the prime factors of an integer. Returns one or more object with these properties:
+    Get the prime factors of an integer. Returns one or more objects with these properties:
         - Factor    Prime factor.
         - Power     Factor power.
         - Product   Calculated value of Factor raised to Power.
@@ -13,8 +13,10 @@
 .PARAMETER InputObject
     Input number. Must be >= 2. Can be passed via the pipeline.
 
+    Note that, even though any integer type can be used (e.g. BigInteger), native types (e.g. Int32/Int64) are much faster to process.
+
 .INPUTS
-    Int32.
+    Integer
 
 .OUTPUTS
     PSCustomObject.
@@ -23,8 +25,7 @@ function Get-PrimeFactor {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, ValueFromPipeline)]
-        [ValidateRange(2, [int]::MaxValue)]
-        [int]$InputObject
+        $InputObject
     )
     begin {
         function Output ($Factor, $Power) {
@@ -37,7 +38,11 @@ function Get-PrimeFactor {
     }
     process {
         $value = $InputObject
-        $threshold = [Math]::Sqrt($value) -as [int]  # need not check higher than sqrt
+        if ($value -lt 2) {
+            Write-Error "Input must be >= 2."
+            return
+        }
+        $threshold = [Math]::Sqrt($value) -as $value.GetType()  # need not check higher than sqrt
         for ($n = 2; $value -gt 1 -and $n -lt $threshold; ++$n) {
             for ($m = 0; $value % $n -eq 0; ++$m) {
                 $value /= $n
