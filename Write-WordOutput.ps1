@@ -3,8 +3,8 @@
     Output unbroken words.
 
 .DESCRIPTION
-    Write a series of strings without breaking at the end of line.
-    
+    Write a series of strings without breaking them at the end of lines.
+
     Any single item that exceeds the width of the console will necessarily be broken.
 
 .PARAMETER InputObject
@@ -14,45 +14,58 @@
     Text to insert between items. Default is a single space character.
 
 .PARAMETER Width
-    Set the output width (>= 1). By default, the console buffer width is used.
+    Set the output width. If omitted or set to <= 0, the console buffer width is used.
+
+    In this mode, Write-Output is used to generate strings that are (when possible) one less than the specified width. This ensures that, when displayed on the console, no extra empty lines will ever be shown.
 
 .PARAMETER PSHost
-    Write directly to the output display using Write-Host. When this is set, the full width is available.
-    
-    By default, Write-Output is used to output strings that are one character less than the available width. This avoids displaying empty lines on the console.
+    Use Write-Host to write directly to the console using the whole buffer width.
 
 .INPUTS
     String
 
 .OUTPUTS
-    String / None
+    String (PSHost omitted)
+    None (PSHost specified)
 #>
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'Output')]
 param(
     [Parameter(Mandatory, ValueFromPipeline)]
     [AllowEmptyString()]
     [string]$InputObject,
-    
+
     [Parameter(Position = 0)]
     [string]$Separator = ' ',
-    
+
+    [Parameter(ParameterSetName = 'Output')]
+    [ValidateRange(1, [int]::MaxValue)]
     [int]$Width,
-    
+
+    [Parameter(ParameterSetName = 'Host')]
     [switch]$PSHost
 )
 begin {
-    $conWidth = if ($Width -gt 0) {
-        $Width
-    } else {
-        $Host.UI.RawUI.BufferSize.Width
+    switch ($PSCmdlet.ParameterSetName) {
+        'Output' {
+            $hostMode = $false
+            $outWidth = if ($Width -gt 0) {
+                $Width
+            } else {
+                $Host.UI.RawUI.BufferSize.Width
+            }
+        }
+        'Host' {
+            $hostMode = $true
+            $outWidth = $Host.UI.RawUI.BufferSize.Width
+        }
     }
     $sepLen = $Separator.Length
     $line = [System.Text.StringBuilder]::new()
 
-    function Flush ([bool]$WithoutEol) {
-        if (-not $PSHost) {
+    function Flush {
+        if (-not $hostMode) {
             Write-Output $line.ToString()
-        } elseif ($WithoutEol) {
+        } elseif ($line.Length -eq $outWidth) {
             Write-Host -NoNewLine $line
         } else {
             Write-Host $line
@@ -64,11 +77,11 @@ begin {
         $n = $line.Length
         $sep = if ($n) { $Separator } else { '' }
         $newLen = $n + $sep.Length + $Item.Length
-        if ($newLen -lt $conWidth) {
+        if ($newLen -lt $outWidth) {
             [void]$line.Append($sep + $Item)
-        } elseif ($PSHost -and ($newLen -eq $conWidth)) {
+        } elseif ($hostMode -and ($newLen -eq $outWidth)) {
             [void]$line.Append($sep + $Item)
-            Flush $true
+            Flush
         } else {
             Flush
             [void]$line.Append($Item)
