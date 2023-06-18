@@ -63,14 +63,16 @@ begin {
     $line = [System.Text.StringBuilder]::new()
 
     function Flush {
-        if (-not $hostMode) {
-            Write-Output $line.ToString()
-        } elseif ($line.Length -eq $outWidth) {
-            Write-Host -NoNewLine $line
-        } else {
-            Write-Host $line
+        if ($line.Length) {
+            if (-not $hostMode) {
+                Write-Output $line.ToString()
+            } elseif ($line.Length -eq $outWidth) {
+                Write-Host -NoNewLine $line
+            } else {
+                Write-Host $line
+            }
+            [void]$line.Clear()
         }
-        [void]$line.Clear()
     }
 
     function Add ([string]$Item) {
@@ -92,7 +94,5 @@ process {
     Add $InputObject
 }
 end {
-    if ($line.Length) {
-        Flush
-    }
+    Flush
 }
