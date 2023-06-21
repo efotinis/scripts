@@ -12,6 +12,7 @@ Prerequisites:
 * PowerShell 5.1
 * Python 3.7 or higher
 * Several Python modules, including `requests`, `beautifulsoup4`, `pillow`, etc. Check the import statements in each Python script for more details.
+* There are some additional dependancies, like `ffmpeg` and `7-Zip`. I'll try to document them eventually.
 
 [Mercurial]: https://www.mercurial-scm.org/
 [hg-git]: https://hg-git.github.io/
