@@ -24,6 +24,9 @@
 .PARAMETER AllowOvershoot
     Groups are returned when the value sum becomes greater than or equal to the threshold. No warnings are generated in this case.
 
+.PARAMETER NoElement
+    Omit the members of each group from the results.
+
 .INPUTS
     Object
 
@@ -31,7 +34,7 @@
     PSCustomObject
 
 .EXAMPLE
-    PS> ls G:\youtube\AVGN\ | .\Group-SumThreshold.ps1 length 4.37gb
+    PS> ls G:\youtube\AVGN\ | Group-SumThreshold length 4.37gb
 
     Count        Sum Group
     -----        --- -----
@@ -53,17 +56,22 @@ param(
     [double]$Value,
 
     [Alias('Over')]
-    [switch]$AllowOvershoot
+    [switch]$AllowOvershoot,
+
+    [switch]$NoElement
 )
 begin {
     $items = [System.Collections.ArrayList]::new()
     $total = 0
     function Flush {
-        [PSCustomObject]@{
+        $ret = [PSCustomObject]@{
             Count = $items.Count
             Sum = $total
-            Group = @($items)
         }
+        if (-not $NoElement) {
+            $ret | Add-Member -NotePropertyName Group -NotePropertyValue @($items)
+        }
+        Write-Output $ret
         if ($total -gt $Value -and -not $AllowOvershoot) {
             Write-Warning "Sum exceeds threshold: $total > $Value"
         }
