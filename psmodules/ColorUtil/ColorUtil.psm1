@@ -1,4 +1,4 @@
-# ANSI color sequence utiities.
+# Color utiities.
 
 
 Set-StrictMode -Version Latest
@@ -252,6 +252,57 @@ function ConvertTo-AnsiColor {
         }
         Write-Output (MakeSequence $a $Substitute)
     }
+}
+
+
+# Convert a color attribute (e.g. "w/n") to a pair of console colors.
+# Missing or invalid colors are set to $null.
+function GetColorAttribute ([string]$Spec)
+{
+    $Colors = @{
+        'n'='black';       'n+'='darkgray'
+        'b'='darkblue';    'b+'='blue'
+        'g'='darkgreen';   'g+'='green'
+        'c'='darkcyan';    'c+'='cyan'
+        'r'='darkred';     'r+'='red'
+        'm'='darkmagenta'; 'm+'='magenta'
+        'y'='darkyellow';  'y+'='yellow'
+        'w'='gray';        'w+'='white'
+    }
+    $fg, $bg = $Spec -split '/',2
+    if ($fg) { $Colors.Item($fg) } else { $null }
+    if ($bg) { $Colors.Item($bg) } else { $null }
+}
+
+
+function NiceColor ([System.ConsoleColor]$Color) {
+    $a = @{
+        'Black' = 'n';       'DarkGray' = 'n+'
+        'DarkBlue' = 'b';    'Blue' = 'b+'
+        'DarkGreen' = 'g';   'Green' = 'g+'
+        'DarkCyan' = 'c';    'Cyan' = 'c+'
+        'DarkRed' = 'r';     'Red' = 'r+'
+        'DarkMagenta' = 'm'; 'Magenta' = 'm+'
+        'DarkYellow' = 'y';  'Yellow' = 'y+'
+        'Gray' = 'w';        'White' = 'w+'
+    }
+    $a["$Color"]
+}
+
+
+function ConvertFrom-ConsoleColor ($Fore, $Back) {
+    $f = if ($null -eq $Fore) { '' } else { script:NiceColor $Fore }
+    $b = if ($null -eq $Back) { '' } else { script:NiceColor $Back }
+    if ($f -or $b) {
+        "$f/$b"
+    } else {
+        ''
+    }
+}
+
+
+function ConvertTo-ConsoleColor ($Spec) {
+    script:GetColorAttribute $Spec
 }
 
 

@@ -1,3 +1,5 @@
+#requires -Modules ColorUtil
+
 function Get-LogItem {
     [CmdletBinding()]
     param(

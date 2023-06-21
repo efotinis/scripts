@@ -1,4 +1,4 @@
-#requires -Modules WindowUtil
+#requires -Modules WindowUtil, ColorUtil
 
 # Console utilities.
 
@@ -116,6 +116,60 @@ function Switch-ConsoleFullScreen {
         $Env:FullScrPreviousWidth = $Host.UI.RawUI.BufferSize.Width
         cols $maxWidth
         [void][Console.Window]::ShowWindow($conWnd, $SW_MAXIMIZE)
+    }
+}
+
+
+function Get-ConsoleColor {
+    [ordered]@{
+        OutputSpec = script:GetNiceStreamSpec 'Output'
+        ErrorSpec = script:GetNiceStreamSpec 'Error'
+        WarningSpec = script:GetNiceStreamSpec 'Warning'
+        VerboseSpec = script:GetNiceStreamSpec 'Verbose'
+        DebugSpec = script:GetNiceStreamSpec 'Debug'
+        # NOTE: no special color for Information
+    }
+}
+
+
+function Set-ConsoleColor {
+    [CmdletBinding()]
+    param(
+        [string]$OutputSpec = '',
+        [string]$ErrorSpec = '',
+        [string]$WarningSpec = '',
+        [string]$VerboseSpec = '',
+        [string]$DebugSpec = ''
+    )
+    foreach ($name in @('Output', 'Error', 'Warning', 'Verbose', 'Debug')) {
+        $paramName = $name + 'Spec'
+        if ($PSBoundParameters.ContainsKey($paramName)) {
+            script:SetNiceStreamSpec $name $PSBoundParameters.$paramName
+        }
+    }
+}
+
+
+function GetNiceStreamSpec ($Name) {
+    $f, $b = if ($Name -eq 'Output') {
+        $Host.UI.RawUI.ForegroundColor
+        $Host.UI.RawUI.BackgroundColor
+    } else {
+        $Host.PrivateData.$($Name + 'ForegroundColor')
+        $Host.PrivateData.$($Name + 'BackgroundColor')
+    }
+    ConvertFrom-ConsoleColor $f $b
+}
+
+
+function SetNiceStreamSpec ($Name, $Spec) {
+    $f, $b = ConvertTo-ConsoleColor $Spec
+    if ($Name -eq 'Output') {
+        if ($null -ne $f) { $Host.UI.RawUI.ForegroundColor = $f }
+        if ($null -ne $b) { $Host.UI.RawUI.BackgroundColor = $b }
+    } else {
+        if ($null -ne $f) { $Host.PrivateData.$($Name + 'ForegroundColor') = $f }
+        if ($null -ne $b) { $Host.PrivateData.$($Name + 'BackgroundColor') = $b }
     }
 }
 
