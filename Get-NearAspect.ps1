@@ -24,6 +24,25 @@
 
 .OUTPUTS
     String.
+
+.EXAMPLE
+    PS> Get-NearAspect 740 540
+    4.11:3
+
+    PS> Get-NearAspect -Width 1024 -Height 780
+    3.94:3
+
+    The above simple invocations make it apparent that the specified dimensions are near a 4:3 ratio.
+
+.EXAMPLE
+    PS> ls G:\films | Get-ExtensionCategory video | Get-VideoInfo | Get-NearAspect -Decimals 0 | group -n
+
+    Count Name
+    ----- ----
+        2 21:9
+        1 16:9
+
+    You can pass any object with Width/Height properties. Here we list the contents of a directory, select the video files, extract the video information and display the approximate ratios without decimals, showing there's two films in ~21:9 and one in ~16:9.
 #>
 [CmdletBinding()]
 param(

@@ -29,6 +29,17 @@
 
 .OUTPUTS
     PSCustomObject
+
+.EXAMPLE
+    PS> ls G:\youtube\AVGN\ | .\Group-SumThreshold.ps1 length 4.37gb
+
+    Count        Sum Group
+    -----        --- -----
+        6 4146021523 {Season 01.mp4, Season 02.mp4, Season 03...
+        7 4299735285 {Season 07.mp4, Season 08.mp4, Season 09...
+        2 1812239236 {Season 14.mp4, Season 15.mp4}
+
+    This example demonstrates grouping a set of files to fit in DVDs. We specify `length` (i.e. file size) as the counting value and 4.37 GiB as the maximum group size (nominal DVD capacity). This results in three groups with varying number of files each. Note that no warnings were generated, therefore no group size exceeded the DVD size.
 #>
 [CmdletBinding()]
 param(
