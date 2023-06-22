@@ -1,9 +1,38 @@
+<#
+.SYNOPSIS
+    Show parameter aliases.
+
+.DESCRIPTION
+    Gets parameter aliases of the specified commands in an easy to understand format.
+
+    Also useful for PowerShell versions where a bug prevents aliases from been shown in Get-Help output.
+
+.PARAMETER Command
+    One or more command names or aliases. Wildcards allowed.
+
+.PARAMETER All
+    Include common parameters and parameters without aliases.
+
+.INPUTS
+    None
+
+.OUTPUTS
+    PSCustomObject
+
+.EXAMPLE
+    PS> Get-ParameterAlias ls
+
+    Command             Parameter   Aliases
+    -------             ---------   -------
+    ls -> Get-ChildItem LiteralPath {PSPath}
+    ls -> Get-ChildItem Recurse     {s}
+#>
+
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory, HelpMessage='One or more command names or aliases. Wildcards allowed.')]
+    [Parameter(Mandatory)]
     [string[]] $Command,
-    
-    [Parameter(HelpMessage='Include common parameters and parameters without aliases.')]
+
     [switch] $All
 )
 

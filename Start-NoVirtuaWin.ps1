@@ -1,5 +1,25 @@
 <#
+.SYNOPSIS
     Temporarily disable VirtuaWin while running an executable.
+
+.DESCRIPTION
+    Starts a program by first disabling desktop switching in VirtuaWin. This is useful for fullscreen applications, like games, where accidental desktop switching may be undesirable.
+
+    The script waits for the started process to end before re-enabling desktop switching.
+
+    Note that this script assumes that desktop switching is always enabled beforehand.
+
+.PARAMETER FilePath
+    Path of executable to run using Start-Process.
+
+.PARAMETER ArgumentList
+    Optional list of string arguments to pass to the executable.
+
+.INPUTS
+    None
+
+.OUTPUTS
+    None
 #>
 
 [CmdletBinding()]
