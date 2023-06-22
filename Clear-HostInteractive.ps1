@@ -1,3 +1,29 @@
+<#
+.SYNOPSIS
+    Clear console buffer below specified line.
+
+.DESCRIPTION
+    Clears the console contents from a selected line all the way down to the end of the buffer. This is useful when a command produces a lot of unneeded results and they need to be cleared, while preserving output from previous commands.
+
+    The starting line can be selected interactively by moving a blinking line indicator with the keyboard. Available keyboard actions:
+
+        - Enter             Clear buffer and exit.
+        - Esc               Exit without clearing.
+        - Up/Down           Move 1 line.
+        - Shift-Up/Down     Move 5 lines. Only works on legacy console.
+        - PgUp/PgDn         Move 1 page (window height).
+        - Ctrl-PgUp/PgDn    Move to start of previous/next paragraph (block of consecutive, non-empty lines).
+
+.INPUTS
+    None
+
+.OUTPUTS
+    None
+#>
+
+[CmdletBinding()]
+param()
+
 function GetKey {
     $info = [Console]::ReadKey($true)
     [PSCustomObject]@{
@@ -9,18 +35,18 @@ function GetKey {
 
 function WaitKey {
     $rect = [System.Management.Automation.Host.Rectangle]::new(
-        0, 
-        [Console]::CursorTop, 
-        [Console]::BufferWidth - 1, 
+        0,
+        [Console]::CursorTop,
+        [Console]::BufferWidth - 1,
         [Console]::CursorTop
     )
     $origin = [System.Management.Automation.Host.Coordinates]::new(
-        0, 
+        0,
         [Console]::CursorTop
     )
     $filler = [System.Management.Automation.Host.BufferCell]::new(
-        '-', 
-        $Host.UI.RawUI.ForegroundColor, 
+        '-',
+        $Host.UI.RawUI.ForegroundColor,
         $Host.UI.RawUI.BackgroundColor,
         [System.Management.Automation.Host.BufferCellType]::Complete
     )
@@ -93,14 +119,14 @@ for (;;) {
     }
     elseif ($k.Key -eq 'Enter' -and $k.Mods -eq 0) {
         $rect = [System.Management.Automation.Host.Rectangle]::new(
-            0, 
-            [Console]::CursorTop, 
-            [Console]::BufferWidth - 1, 
+            0,
+            [Console]::CursorTop,
+            [Console]::BufferWidth - 1,
             $LAST_ROW
         )
         $fill = [System.Management.Automation.Host.BufferCell]::new(
-            ' ', 
-            $Host.UI.RawUI.ForegroundColor, 
+            ' ',
+            $Host.UI.RawUI.ForegroundColor,
             $Host.UI.RawUI.BackgroundColor,
             [System.Management.Automation.Host.BufferCellType]::Complete
         )
@@ -127,16 +153,4 @@ for (;;) {
         }
         [Console]::CursorTop = [Math]::Min($i, $LAST_ROW)
     }
-    # A,B: range of lines to clear and shift content after B up
 }
-
-
-<#
-hasmods (on, off, ignore)
-
-hasmods (on, mask)
-
-want:
-    nothing or Shift, not Alt/Ctrl
-    if 
-#>
