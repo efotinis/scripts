@@ -29,9 +29,9 @@ param(
     [Parameter(Mandatory)]
     [string]$Url,
 
-    [string]$Destination = '.',
+    [string]$Title,
 
-    [string]$Title = $null
+    [string]$Destination = '.'
 )
 
 Set-StrictMode -Version Latest
