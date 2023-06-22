@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Clear console buffer below specified line.
+    Clear console buffer below selected line.
 
 .DESCRIPTION
     Clears the console contents from a selected line all the way down to the end of the buffer. This is useful when a command produces a lot of unneeded results and they need to be cleared, while preserving output from previous commands.
@@ -98,24 +98,32 @@ function IsEmpty ($Row) {
 $LAST_ROW = [Console]::BufferHeight - 1
 
 # Key/position testing.
-function NoTop { [Console]::CursorTop -gt 0 }
-function NoBottom { [Console]::CursorTop -lt $LAST_ROW }
+function NoTop {
+    [Console]::CursorTop -gt 0
+}
+function NoBottom {
+    [Console]::CursorTop -lt $LAST_ROW
+}
 function IsKey($Info, $Name, $Mods = 0) {
     $Info.Key -eq $Name -and $Info.Mods -eq $Mods
 }
 
 # Paragraph locating.
 function SkipBackEmpty ($i) {
-    while ($i -ge 0 -and (IsEmpty $i)) { --$i }; $i
+    while ($i -ge 0 -and (IsEmpty $i)) { --$i }
+    $i
 }
 function SkipBackNonEmpty ($i) {
-    while ($i -ge 0 -and (-not (IsEmpty $i))) { --$i }; $i
+    while ($i -ge 0 -and (-not (IsEmpty $i))) { --$i }
+    $i
 }
 function SkipNextNonEmpty ($i) {
-    while ($i -le $LAST_ROW -and (-not (IsEmpty $i))) { ++$i }; $i
+    while ($i -le $LAST_ROW -and (-not (IsEmpty $i))) { ++$i }
+    $i
 }
 function SkipNextEmpty ($i) {
-    while ($i -le $LAST_ROW -and (IsEmpty $i)) { ++$i }; $i
+    while ($i -le $LAST_ROW -and (IsEmpty $i)) { ++$i }
+    $i
 }
 
 
