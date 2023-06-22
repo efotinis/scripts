@@ -16,7 +16,7 @@
 .PARAMETER Title
     Title of the webpage to be used as the name of the shortcut file. Any charcters that are not valid for file-system names are replaced.
 
-    If omitted, the webpage is parsed and the actual page title is used.
+    If omitted, the webpage is parsed to get the real page title. For PowerShell versions up to 5.1 this can be done natively. For later PowerShell versions, an internal Python script is used, which requires requests and beautifulsoup4.
 
 .INPUTS
     None
@@ -36,15 +36,31 @@ param(
 
 Set-StrictMode -Version Latest
 
-if (-not $Title) {
-    # NOTE: can't use HtmlWebResponseObject.ParseHtml anymore;
-    # see: https://github.com/PowerShell/PowerShell/issues/5364
-    $Title = py -c @'
-# print webpage title
+# Get webpage title natively or using Python.
+function GetPageTitle ([string]$Uri) {
+    if ($PSVersionTable.PSVersion -le '5.1') {
+        # NOTE: Only PowerShell versions <=5.1 support page parsing.
+        # See https://github.com/PowerShell/PowerShell/issues/5364
+        $a = Invoke-WebRequest -Uri $Uri
+        $a.ParsedHtml.title
+    } else {
+        $PYSCRIPT = @'
 import sys, requests, bs4
 url, = sys.argv[1:]
-print(bs4.BeautifulSoup(requests.get(url).content).title.get_text(strip=True), end='')
-'@ $Url
+html = requests.get(url).content
+title = bs4.BeautifulSoup(html).title.get_text(strip=True)
+print(title, end='')
+'@
+        python -c $PYSCRIPT $Uri
+    }
+}
+
+if (-not $Title) {
+    $Title = GetPageTitle $Url
+}
+if (-not $Title) {
+    Write-Error "Could not determine webpage title: $Url"
+    return
 }
 
 $Path = Join-Path $Destination ((Get-SafeFileName $Title) + '.url')
