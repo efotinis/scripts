@@ -22,7 +22,7 @@
     None
 
 .OUTPUTS
-    None
+    System.IO.FileInfo
 #>
 
 param(
@@ -68,11 +68,12 @@ if (-not $Title) {
     return
 }
 
-$Path = Join-Path $Destination ((Get-SafeFileName $Title) + '.url')
+$path = Join-Path $Destination ((Get-SafeFileName $Title) + '.url')
 
-$Content = (
-    '[InternetShortcut]',
-    ('URL=' + $Url)
+Out-File -Encoding Unicode -LiteralPath $path -InputObject @(
+    '[InternetShortcut]'
+    'URL=' + $Url
 )
-
-Set-Content -Encoding Unicode -LiteralPath $Path -Value $Content
+if ($?) {
+    Get-Item -LiteralPath $path
+}
