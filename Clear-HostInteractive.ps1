@@ -24,6 +24,8 @@
 [CmdletBinding()]
 param()
 
+
+# Get next available console key.
 function GetKey {
     $info = [Console]::ReadKey($true)
     [PSCustomObject]@{
@@ -33,6 +35,8 @@ function GetKey {
     }
 }
 
+
+# Show blinking line indicator, until a key is pressed, which is then returned.
 function WaitKey {
     $rect = [System.Management.Automation.Host.Rectangle]::new(
         0,
@@ -79,6 +83,7 @@ $originalCursorTop = [Console]::CursorTop
 $originalWindowTop = [Console]::WindowTop
 
 
+# Test whether specified buffer row has no non-whitespace characters.
 function IsEmpty ($Row) {
     $rect = [System.Management.Automation.Host.Rectangle]::new(
         0,
@@ -92,65 +97,86 @@ function IsEmpty ($Row) {
 
 $LAST_ROW = [Console]::BufferHeight - 1
 
-for (;;) {
+# Key/position testing.
+function NoTop { [Console]::CursorTop -gt 0 }
+function NoBottom { [Console]::CursorTop -lt $LAST_ROW }
+function IsKey($Info, $Name, $Mods = 0) {
+    $Info.Key -eq $Name -and $Info.Mods -eq $Mods
+}
+
+# Paragraph locating.
+function SkipBackEmpty ($i) {
+    while ($i -ge 0 -and (IsEmpty $i)) { --$i }; $i
+}
+function SkipBackNonEmpty ($i) {
+    while ($i -ge 0 -and (-not (IsEmpty $i))) { --$i }; $i
+}
+function SkipNextNonEmpty ($i) {
+    while ($i -le $LAST_ROW -and (-not (IsEmpty $i))) { ++$i }; $i
+}
+function SkipNextEmpty ($i) {
+    while ($i -le $LAST_ROW -and (IsEmpty $i)) { ++$i }; $i
+}
+
+
+# Interactive line selection loop.
+# Returns int if Enter is pressed, or $null for Esc.
+function SelectLine { for (;;) {
     $k = WaitKey
-    if ($k.Key -eq 'Escape') {
+    if ((IsKey $k 'Escape')) {
         [Console]::WindowTop = $originalWindowTop
         [Console]::CursorTop = $originalCursorTop
-        break
+        return
     }
-    elseif ($k.Key -eq 'UpArrow' -and $k.Mods -eq 0 -and [Console]::CursorTop -gt 0) {
+    elseif ((IsKey $k 'UpArrow') -and (NoTop)) {
         [Console]::CursorTop -= 1
     }
-    elseif ($k.Key -eq 'DownArrow' -and $k.Mods -eq 0 -and [Console]::CursorTop -lt $LAST_ROW) {
+    elseif ((IsKey $k 'DownArrow') -and (NoBottom)) {
         [Console]::CursorTop += 1
     }
-    elseif ($k.Key -eq 'UpArrow' -and $k.Mods -eq 'Shift' -and [Console]::CursorTop -gt 0) {
+    elseif ((IsKey $k 'UpArrow' 'Shift') -and (NoTop)) {
         [Console]::CursorTop = [Math]::Max(0, [Console]::CursorTop - 5)
     }
-    elseif ($k.Key -eq 'DownArrow' -and $k.Mods -eq 'Shift' -and [Console]::CursorTop -lt $LAST_ROW) {
+    elseif ((IsKey $k 'DownArrow' 'Shift') -and (NoBottom)) {
         [Console]::CursorTop = [Math]::Min($LAST_ROW, [Console]::CursorTop + 5)
     }
-    elseif ($k.Key -eq 'PageUp' -and $k.Mods -eq 0 -and [Console]::CursorTop -gt 0) {
+    elseif ((IsKey $k 'PageUp') -and (NoTop)) {
         [Console]::CursorTop = [Math]::Max(0, [Console]::CursorTop - [Console]::WindowHeight)
     }
-    elseif ($k.Key -eq 'PageDown' -and $k.Mods -eq 0 -and [Console]::CursorTop -lt $LAST_ROW) {
+    elseif ((IsKey $k 'PageDown') -and (NoBottom)) {
         [Console]::CursorTop = [Math]::Min($LAST_ROW, [Console]::CursorTop + [Console]::WindowHeight)
     }
-    elseif ($k.Key -eq 'Enter' -and $k.Mods -eq 0) {
-        $rect = [System.Management.Automation.Host.Rectangle]::new(
-            0,
-            [Console]::CursorTop,
-            [Console]::BufferWidth - 1,
-            $LAST_ROW
-        )
-        $fill = [System.Management.Automation.Host.BufferCell]::new(
-            ' ',
-            $Host.UI.RawUI.ForegroundColor,
-            $Host.UI.RawUI.BackgroundColor,
-            [System.Management.Automation.Host.BufferCellType]::Complete
-        )
-        $Host.UI.RawUI.SetBufferContents($rect, $fill)
-        break
+    elseif ((IsKey $k 'Enter')) {
+        return [Console]::CursorTop
     }
-    elseif ($k.Key -eq 'PageUp' -and $k.Mods -eq 'Control' -and [Console]::CursorTop -gt 0) {
+    elseif ((IsKey $k 'PageUp' 'Control') -and (NoTop)) {
         $i = [Console]::CursorTop - 1
-        while ($i -ge 0 -and (IsEmpty $i)) {
-            --$i
-        }
-        while ($i -ge 0 -and (-not (IsEmpty $i))) {
-            --$i
-        }
+        $i = SkipBackEmpty $i
+        $i = SkipBackNonEmpty $i
         [Console]::CursorTop = $i + 1
     }
-    elseif ($k.Key -eq 'PageDown' -and $k.Mods -eq 'Control' -and [Console]::CursorTop -lt $LAST_ROW) {
+    elseif ((IsKey $k 'PageDown' 'Control') -and (NoBottom)) {
         $i = [Console]::CursorTop + 1
-        while ($i -le $LAST_ROW -and (-not (IsEmpty $i))) {
-            ++$i
-        }
-        while ($i -le $LAST_ROW -and (IsEmpty $i)) {
-            ++$i
-        }
+        $i = SkipNextNonEmpty $i
+        $i = SkipNextEmpty $i
         [Console]::CursorTop = [Math]::Min($i, $LAST_ROW)
     }
+}}
+
+
+$i = SelectLine
+if ($null -ne $i) {
+    $rect = [System.Management.Automation.Host.Rectangle]::new(
+        0,
+        $i,
+        [Console]::BufferWidth - 1,
+        $LAST_ROW
+    )
+    $fill = [System.Management.Automation.Host.BufferCell]::new(
+        ' ',
+        $Host.UI.RawUI.ForegroundColor,
+        $Host.UI.RawUI.BackgroundColor,
+        [System.Management.Automation.Host.BufferCellType]::Complete
+    )
+    $Host.UI.RawUI.SetBufferContents($rect, $fill)
 }
