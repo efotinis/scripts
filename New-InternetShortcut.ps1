@@ -55,6 +55,11 @@ print(title, end='')
     }
 }
 
+if (-not (Test-Path -LiteralPath $Destination -PathType Container)) {
+    Write-Error "Destination directory does not exist: $Destination"
+    return
+}
+
 if (-not $Title) {
     $Title = GetPageTitle $Url
 }
