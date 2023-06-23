@@ -1,3 +1,21 @@
+<#
+.SYNOPSIS
+    Get video info via FFPROBE.
+
+.DESCRIPTION
+    Parses FFPROBE output to provide information about video files.
+
+.PARAMETER Path
+
+.PARAMETER LiteralPath
+
+.INPUTS
+    String
+
+.OUTPUTS
+    VideoInfo
+#>
+
 [CmdletBinding(DefaultParameterSetName = 'Path')]
 param(
     [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName, Position=0, ParameterSetName = 'Path')]

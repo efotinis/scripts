@@ -1,11 +1,36 @@
+<#
+.SYNOPSIS
+    Show command parameter properties.
+
+.DESCRIPTION
+    Outputs tables of command parameter properties, including names, pipeline ability, positional index, etc.
+
+    A separate table is output for each parameter set, unless Simple is used.
+
+.PARAMETER Command
+    Name of command.
+
+.PARAMETER Simple
+    Output a single table combining parameters from all parameter sets.
+
+.PARAMETER Parameter
+    Displays the help text for the specified parameters instead. Overrides Simple. This is a shortcut for `Show-Help COMMAND -Parameter NAME`.
+
+.INPUTS
+    None
+
+.OUTPUTS
+    Table formatted data or PSCustomObject
+#>
+
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)]
     [string]$Command,
-    
+
     [switch]$Simple,
 
-    [string[]]$Parameter  # if omitted, show parameter attribute table
+    [string[]]$Parameter
 )
 
 
