@@ -1,10 +1,32 @@
 #requires -Modules ColorUtil
 
+<#
+.SYNOPSIS
+    Set various console colors to a named scheme.
+
+.DESCRIPTION
+    Sets color attributes for various console aspects.
+
+    Currently includes output stream color and PSReadLine colors.
+
+.PARAMETER Name
+    Name of color scheme to apply. Supported values:
+        - Light
+        - Dark
+        - Default
+
+.INPUTS
+    None
+
+.OUTPUTS
+    None
+#>
+
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)]
     [ValidateSet('Default', 'Light', 'Dark')]
-    [string]$SchemeName
+    [string]$Name
 )
 
 $DEFAULT = @{
@@ -97,4 +119,4 @@ function Apply ($Scheme) {
 }
 
 
-Apply (Get-Variable $SchemeName).Value
+Apply (Get-Variable $Name).Value
