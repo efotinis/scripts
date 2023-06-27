@@ -36,7 +36,7 @@ param(
     [Parameter(Mandatory, ValueFromPipeline)]
     $InputObject,
 
-    [Parameter(Mandatory, Position = 0)]
+    [Parameter(Position = 0)]
     [object[]]$Property = { $_ },
 
     [switch]$Sample
@@ -45,7 +45,7 @@ begin {
     Set-StrictMode -Version Latest
 
     class Counter {
-    
+
         [object]$Property
         [bool]$Sample
         [int]$Count = 0
@@ -53,7 +53,7 @@ begin {
         [double]$SumSq = 0.0
         [bool]$NullsFound = $false
         [bool]$NonDoublesFound = $false
-        
+
         Counter ($Property, [bool]$Sample) {
             $this.Property = $Property
             $this.Sample = $Sample
@@ -75,7 +75,7 @@ begin {
             $this.Sum += $value
             $this.SumSq += $value * $value
         }
-        
+
         [double] GetVariance () {
             $numerator = if ($this.Count) {
                 $this.SumSq - ($this.Sum * $this.Sum) / $this.Count
@@ -117,7 +117,7 @@ begin {
             }
         }
     }
-    
+
     $counters = @()
     foreach ($prop in $Property) {
         $counters += [Counter]::new($prop, $Sample)
