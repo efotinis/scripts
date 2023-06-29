@@ -473,13 +473,12 @@ function Get-DateAgo {
 }
 
 
-#
 <#
 .SYNOPSIS
     Get the next occurence of a specified time.
 
 .DESCRIPTION
-    Returns the next next point of time from now that has the specified time parts.
+    Returns the next point of time from now that has the specified time parts.
 
 .PARAMETER TimeOfDay
     A TimeSpan object specifying the time parts. The Days member is ignored.
@@ -516,6 +515,53 @@ function Get-NextTime {
     )
     if ($isTomorrow) {
         $d = $d.AddDays(1)
+    }
+    Write-Output $d
+}
+
+
+<#
+.SYNOPSIS
+    Get the previous occurence of a specified time.
+
+.DESCRIPTION
+    Returns the last point of time from now that has the specified time parts.
+
+.PARAMETER TimeOfDay
+    A TimeSpan object specifying the time parts. The Days member is ignored.
+
+.INPUTS
+    None
+
+.OUTPUTS
+    DateTime
+#>
+function Get-PreviousTime {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0)]
+        [timespan]$TimeOfDay
+    )
+    $TimeOfDay = [timespan]::new(
+        0,  # ignore Days
+        $TimeOfDay.Hours,
+        $TimeOfDay.Minutes,
+        $TimeOfDay.Seconds,
+        $TimeOfDay.Milliseconds
+    )
+    $d = Get-Date
+    $isYesterday = $TimeOfDay -ge $d.TimeOfDay
+    $d = [datetime]::new(
+        $d.Year,
+        $d.Month,
+        $d.Day,
+        $TimeOfDay.Hours,
+        $TimeOfDay.Minutes,
+        $TimeOfDay.Seconds,
+        $TimeOfDay.Milliseconds
+    )
+    if ($isYesterday) {
+        $d = $d.AddDays(-1)
     }
     Write-Output $d
 }
