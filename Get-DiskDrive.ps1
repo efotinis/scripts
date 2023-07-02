@@ -25,7 +25,7 @@
     Return only drives of the specified type. Can specify one or more System.IO.DriveType enum values. If omitted, returns drives of all types.
 
 .PARAMETER IncludeNonReady
-    Include drives like optical drives without media. Introduces a slight delay.
+    Include devices like optical drives without media. Introduces a slight delay.
 
 .INPUTS
     None
@@ -105,18 +105,22 @@ switch ($PSCmdlet.ParameterSetName) {
 }
 
 
+filter Output {
+    [DiskDrive]::new(
+        $_.Name,
+        $_.VolumeLabel,
+        $_.DriveType,
+        $_.DriveFormat,
+        $_.IsReady,
+        $_.TotalSize,
+        $_.TotalFreeSpace,
+        $_.AvailableFreeSpace
+    )
+}
+
+
 [System.IO.DriveInfo]::GetDrives() |
     Where-Object { $IncludeNonReady -or $_.IsReady } |
     Where-Object { $null -eq $DriveType -or $_.DriveType -in $DriveType } |
-    SelectItems | Foreach-Object {
-        [DiskDrive]::new(
-            $_.Name,
-            $_.VolumeLabel,
-            $_.DriveType,
-            $_.DriveFormat,
-            $_.IsReady,
-            $_.TotalSize,
-            $_.TotalFreeSpace,
-            $_.AvailableFreeSpace
-        )
-    }
+    SelectItems |
+    Output
