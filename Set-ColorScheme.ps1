@@ -1,14 +1,43 @@
 #requires -Modules ColorUtil
 
+<#
+.SYNOPSIS
+    Set various console colors to a named scheme.
+
+.DESCRIPTION
+    Sets color attributes of various console aspects to predefined schemes.
+
+    Currently includes stream colors and PSReadLine colors.
+
+.PARAMETER Name
+    Name of color scheme to apply. Supported values:
+        - Light
+        - Dark
+        - Default
+
+.INPUTS
+    None
+
+.OUTPUTS
+    None
+#>
+
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)]
     [ValidateSet('Default', 'Light', 'Dark')]
-    [string]$SchemeName
+    [string]$Name
 )
 
+
 $DEFAULT = @{
-    Console = 'w/n'
+    Console = @{
+        Output = 'w/n'
+        Error = 'm+/n'
+        Warning = 'y+/n'
+        Debug = 'c+/n'
+        Verbose = 'g+/n'
+    }
     ReadLine = @{
         Command = 'y+'
         Comment = 'g'
@@ -32,7 +61,13 @@ $DEFAULT = @{
 }
 
 $DARK = @{
-    Console = 'w/n'
+    Console = @{
+        Output = 'w/n'
+        Error = 'm+/n'
+        Warning = 'y+/n'
+        Debug = 'c+/n'
+        Verbose = 'g+/n'
+    }
     ReadLine = @{
         Command = 'y+'
         Comment = 'm'
@@ -56,7 +91,13 @@ $DARK = @{
 }
 
 $LIGHT = @{
-    Console = 'n/w'
+    Console = @{
+        Output = 'n/w'
+        Error = 'm+/w'
+        Warning = 'y+/w'
+        Debug = 'c+/w'
+        Verbose = 'g+/w'
+    }
     ReadLine = @{
         Command = 'y/w'
         Comment = 'g+/w'
@@ -80,13 +121,11 @@ $LIGHT = @{
 }
 
 function Apply ($Scheme) {
-    $fg, $bg = ConvertTo-ConsoleColor $Scheme.Console
-    if ($null -ne $fg) {
-        [Console]::ForegroundColor = $fg
+    $a = @{}
+    foreach ($e in $Scheme.Console.GetEnumerator()) {
+        $a[$e.Key + 'Spec'] = $e.Value
     }
-    if ($null -ne $bg) {
-        [Console]::BackgroundColor = $bg
-    }
+    Set-ConsoleColor @a
     $clrs = @{}
     foreach ($e in $Scheme.ReadLine.GetEnumerator()) {
         # HACK: cast to string is required;
@@ -97,4 +136,4 @@ function Apply ($Scheme) {
 }
 
 
-Apply (Get-Variable $SchemeName).Value
+Apply (Get-Variable $Name).Value
