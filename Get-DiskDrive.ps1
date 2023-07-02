@@ -21,6 +21,8 @@
 .PARAMETER Label
     Return only drives with a matching label. Supports wildcards.
 
+    When no matching label is found, an error is generated, but only if no wildcards were used. This matches the behavior of standard cmdlets, like Get-Item.
+
 .PARAMETER DriveType
     Return only drives of the specified type. Can specify one or more System.IO.DriveType enum values. If omitted, returns drives of all types.
 
@@ -119,8 +121,18 @@ filter Output {
 }
 
 
+$MatchedItems = $null
+
 [System.IO.DriveInfo]::GetDrives() |
     Where-Object { $IncludeNonReady -or $_.IsReady } |
     Where-Object { $null -eq $DriveType -or $_.DriveType -in $DriveType } |
     SelectItems |
+    Tee-Object -Variable MatchedItems |
     Output
+
+if ($PSCmdlet.ParameterSetName -eq 'Label' -and
+    -not [WildcardPattern]::ContainsWildcardCharacters($Label) -and
+    -not $MatchedItems)
+{
+    Write-Error "No drive with label: $Label"
+}
