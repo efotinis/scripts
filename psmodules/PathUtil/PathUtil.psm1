@@ -42,12 +42,38 @@ function Get-SafeFileName ([string]$Name, [char]$Replacement = '_') {
 }
 
 
-# Timestamp in filename-safe format.
-function Get-FileNameSafeTimestamp ([switch]$Utc, [switch]$DateOnly) {
-    $fmt = 'FileDate'
-    if (-not $DateOnly) { $fmt += 'Time' }
-    if ($Utc) { $fmt += 'Universal' }
-    Get-Date -Format $fmt
+<#
+.SYNOPSIS
+    Timestamp in filename-safe format.
+.DESCRIPTION
+    Convert a datetime object to a filename-safe timestamp string. The output format is '<date>T<time>[Z]', where date is 'yyMMdd' and time is 'hhmmssffff'.
+.PARAMETER InputObject
+    Input datetime object. Can pass multiple values via the pipeline. If omitted, the current time is used.
+.PARAMETER Utc
+    Output in universal time format with a trailing 'Z' character.
+.PARAMETER DateOnly
+    Output only the date part.
+.INPUTS
+    datetime
+.OUTPUTS
+    string
+#>
+function Get-FileNameSafeTimestamp {
+    [CmdletBinding()]
+    param(
+        [Parameter(ValueFromPipeline)]
+        [datetime]$InputObject = (Get-Date),
+
+        [switch]$Utc,
+
+        [switch]$DateOnly
+    )
+    process {
+        $fmt = 'FileDate'
+        if (-not $DateOnly) { $fmt += 'Time' }
+        if ($Utc) { $fmt += 'Universal' }
+        Get-Date -Date $InputObject -Format $fmt
+    }
 }
 
 
