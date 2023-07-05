@@ -1,3 +1,25 @@
+<#
+.SYNOPSIS
+    Convert 'yyyyMMdd' to datetime.
+
+.DESCRIPTION
+    Converts a compact date string in the format 'yyyyMMdd' to a DateTime object.
+
+    The time part of the output date is set to midnight.
+
+.PARAMETER Date
+    Input date string. Can pass multiple values via the pipeline.
+
+.INPUTS
+    string
+
+.OUTPUTS
+    datetime
+
+.EXAMPLE
+    PS> '19780227' | ConvertFrom-CompactDate  # my dirthdate
+    Monday, February 27, 1978 00:00:00
+#>
 function ConvertFrom-CompactDate {
     [CmdletBinding()]
     param(
@@ -14,6 +36,28 @@ function ConvertFrom-CompactDate {
 }
 
 
+<#
+.SYNOPSIS
+    Convert datetime to 'yyyyMMdd'.
+
+.DESCRIPTION
+    Converts a DateTime object to a compact date string in the format 'yyyyMMdd'.
+
+    The time part of the input date is ignored.
+
+.PARAMETER Date
+    Input datetime object. Can pass multiple values via the pipeline.
+
+.INPUTS
+    datetime
+
+.OUTPUTS
+    string
+
+.EXAMPLE
+    PS> Get-Date | ConvertTo-CompactDate
+    20230705
+#>
 function ConvertTo-CompactDate {
     [CmdletBinding()]
     param(
@@ -26,15 +70,45 @@ function ConvertTo-CompactDate {
 }
 
 
-# Convert from 'M/d/(yy)yy' or 'M.d.(yy)yy' to DateTime.
-# 2-digit years are assumed to be 20xx.
+<#
+.SYNOPSIS
+    Convert US-style date to datetime.
+
+.DESCRIPTION
+    Converts a string of a US-style date to a datetime object. The following formats are recognized:
+        - M/d/yy
+        - M/d/yyyy
+        - M.d.yy
+        - M.d.yyyy
+    Years with 2 digits are assumed to be in the 2000s.
+
+.PARAMETER Date
+    Input date string. Can pass multiple values via the pipeline.
+
+.PARAMETER Scan
+      Search for any matching substring within input.
+
+.INPUTS
+    string
+
+.OUTPUTS
+    datetime
+
+.EXAMPLE
+    PS> ConvertFrom-USDate 7.4.1776
+    Thursday, July 4, 1776 00:00:00
+
+.EXAMPLE
+    PS> '12/25/23' | ConvertFrom-USDate
+    Sunday, December 25, 2023 00:00:00
+#>
 function ConvertFrom-USDate {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, ValueFromPipeline)]
         [string]$Date,
 
-        [switch]$Scan  # match substring anywhere within input
+        [switch]$Scan
     )
     begin {
         $s1 = '(\d{1,2})/(\d{1,2})/(\d{2,4})'
@@ -65,6 +139,42 @@ function ConvertFrom-USDate {
 }
 
 
+<#
+.SYNOPSIS
+    Convert datetime to string denoting year, quarter or month.
+
+.DESCRIPTION
+    Converts a datetime to a coarser date section (year, quarter or month) string.
+
+    See Type parameter for output string formats.
+
+.PARAMETER Date
+    Input datetime. Can pass multiple values via the pipeline.
+
+.PARAMETER Type
+    Output date section type. Possible values with output formats:
+        - Year      'yyyy'
+        - Quarter   'yyyy-Qn', where n is 1..4
+        - Month     'yyyy-MM'
+
+.INPUTS
+    datetime
+
+.OUTPUTS
+    string
+
+.EXAMPLE
+    PS> Get-Date | ConvertTo-DateSection -Type Quarter
+    2023-Q3
+
+    Given a current date of July 5, 2023, the above returns the 3rd quarter of 2023.
+
+.EXAMPLE
+    PS> ConvertTo-DateSection -Date '2000-12-25' -Type Month
+    2000-12
+
+    Here the Christmas date of 2000 is converted to year and month.
+#>
 function ConvertTo-DateSection {
     [CmdletBinding()]
     param(
@@ -97,6 +207,31 @@ function ConvertTo-DateSection {
 }
 
 
+<#
+.SYNOPSIS
+    Convert string denoting year, quarter or month to datetime.
+
+.DESCRIPTION
+    Converts a string of a coarse date section (year, quarter or month) to a datetime object.
+
+    The type of the date section is automatically detected with default components as follows:
+        - 'yyyy'    January 1st of year
+        - 'yyyy-Qn' January, April, July or October 1st of year.
+        - 'yyyy-MM' Month 1st of year.
+
+.PARAMETER Section
+    Input date section. Can specify multiple values via the pipeline.
+
+.INPUTS
+    string
+
+.OUTPUTS
+    datetime
+
+.EXAMPLE
+    PS> ConvertFrom-DateSection '2023-q3'
+    Saturday, July 1, 2023 00:00:00
+#>
 function ConvertFrom-DateSection {
     [CmdletBinding()]
     param(
@@ -128,6 +263,33 @@ function ConvertFrom-DateSection {
 }
 
 
+<#
+.SYNOPSIS
+    Convert to next date section.
+
+.DESCRIPTION
+    Converts a date section (year, quarter or month) to the corresponding next section.
+
+.PARAMETER Section
+    Input date section. Can specify multiple values via the pipeline.
+
+    Supported formats and result:
+        - Year      'yyyy', returns next year
+        - Quarter   'yyyy-Qn', where n is 1..4, returns next quarter
+        - Month     'yyyy-MM', returns next month
+
+.INPUTS
+    string
+
+.OUTPUTS
+    string
+
+.EXAMPLE
+    PS> Get-NextDateSection '2023-Q4'
+    2024-Q1
+
+    Given the 4th quarter of a year returns the 1st quarter of the next year.
+#>
 function Get-NextDateSection {
     [CmdletBinding()]
     param(
@@ -167,6 +329,33 @@ function Get-NextDateSection {
 }
 
 
+<#
+.SYNOPSIS
+    Convert to previous date section.
+
+.DESCRIPTION
+    Converts a date section (year, quarter or month) to the corresponding previous section.
+
+.PARAMETER Section
+    Input date section. Can specify multiple values via the pipeline.
+
+    Supported formats and result:
+        - Year      'yyyy', returns previous year
+        - Quarter   'yyyy-Qn', where n is 1..4, returns previous quarter
+        - Month     'yyyy-MM', returns previous month
+
+.INPUTS
+    string
+
+.OUTPUTS
+    string
+
+.EXAMPLE
+    PS> Get-PreviousDateSection '2024-Q1'
+    2023-Q4
+
+    Given the 1st quarter of a year returns the 4th quarter of the previous year.
+#>
 function Get-PreviousDateSection {
     [CmdletBinding()]
     param(
@@ -206,6 +395,26 @@ function Get-PreviousDateSection {
 }
 
 
+<#
+.SYNOPSIS
+    Get type of date section.
+
+.DESCRIPTION
+    Determines whether a date section string corresponds to a year, quarter or month.
+
+.PARAMETER Section
+    Input date section string. Can specify multiple values via the pipeline.
+
+.INPUTS
+    string
+
+.OUTPUTS
+    string
+
+.EXAMPLE
+    PS> Get-DateSectionType 2023-q3
+    Quarter
+#>
 function Get-DateSectionType {
     [CmdletBinding()]
     param(
@@ -231,6 +440,44 @@ function Get-DateSectionType {
 }
 
 
+<#
+.SYNOPSIS
+    Get date sections in specified range.
+
+.DESCRIPTION
+    Given a starting and ending date section, this function generates all sections within that range, including the start and end.
+
+    Note that the sections must be of the same type, i.e. year, quarter or month.
+
+    If the starting section is greater than than the ending, the output sections are in reverse calendar order.
+
+.PARAMETER From
+    Starting date section.
+
+.PARAMETER To
+    Ending date section.
+
+.INPUTS
+    None
+
+.OUTPUTS
+    string
+
+.EXAMPLE
+    PS> Get-DateSectionRange '2023-Q3' '2024-Q2'
+    2023-Q3
+    2023-Q4
+    2024-Q1
+    2024-Q2
+
+    The above example demonstrates specifying two quarters in different years.
+
+.EXAMPLE
+    PS> (Get-DateSectionRange '2023-06' '2023-01') -join ', '
+    2023-06, 2023-05, 2023-04, 2023-03, 2023-02, 2023-01
+
+    The above concatenates of the first six months of 2023 in reverse order.
+#>
 function Get-DateSectionRange {
     [CmdletBinding()]
     param(
@@ -483,6 +730,8 @@ function Get-DateAgo {
 .PARAMETER TimeOfDay
     A TimeSpan object specifying the time parts. The Days member is ignored.
 
+    Note that a string in the form of "hh:mm[:ss[.ff]]" can also be used. For more details, see the Remarks section at <https://learn.microsoft.com/en-us/dotnet/api/system.timespan.parse>.
+
 .INPUTS
     None
 
@@ -529,6 +778,8 @@ function Get-NextTime {
 
 .PARAMETER TimeOfDay
     A TimeSpan object specifying the time parts. The Days member is ignored.
+
+    Note that a string in the form of "hh:mm[:ss[.ff]]" can also be used. For more details, see the Remarks section at <https://learn.microsoft.com/en-us/dotnet/api/system.timespan.parse>.
 
 .INPUTS
     None
