@@ -966,7 +966,7 @@ $SLNK_DIR = switch ($env:COMPUTERNAME) {
 }
 Set-Alias -Scope global srip "$SRIP_DIR\streamripper.exe"
 Set-Alias -Scope global slnk "$SLNK_DIR\streamlink.exe"
-Set-Alias -Scope global od 'D:\scripts\overdisk.py'
+Set-Alias -Scope global od overdisk.py
 Set-Alias -Scope global go goto.ps1
 Set-Alias -Scope Global mc MinecraftUtil.ps1
 Set-Alias -Scope global gip Get-IfProperty
