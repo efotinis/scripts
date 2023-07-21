@@ -67,7 +67,7 @@ class ExtStats(object):
 
 class Item(object):
     """Base directory item."""
-    
+
     def __init__(self, path, data):
         self.name = data.name
         self.size = data.size
@@ -78,15 +78,15 @@ class Item(object):
 
 class File(Item):
     """File item."""
-    
+
     def __init__(self, path, data, status=None):
         Item.__init__(self, path, data)
-            
+
     def add_list_stats(self, stats, filter_obj):
         if filter_obj.test(self.name):
             stats.files += 1
             stats.bytes += self.size
-        
+
     def add_ext_stats(self, stats_dict, filter_obj):
         if filter_obj.test(self.name):
             ext = os.path.splitext(self.name)[1].lower()
@@ -95,9 +95,9 @@ class File(Item):
             stats.bytes += self.size
 
 
-class Dir(Item):        
+class Dir(Item):
     """Directory item."""
-    
+
     def __init__(self, path, data, scanlinks, scanerrors, status=None):
         Item.__init__(self, path, data)
         if status:
@@ -106,7 +106,7 @@ class Dir(Item):
             self.children = []
         else:
             self.get_children(path, scanlinks, scanerrors, status)
-        
+
     def get_children(self, path, scanlinks, scanerrors, status=None):
         self.children = []
         try:
@@ -123,7 +123,7 @@ class Dir(Item):
             status.static_print(msg)
             scanerrors[-1].messages.append(msg)
             return
-            
+
     def get_sub_dir(self, name):
         """Return an immediate subdir."""
         if name in ('', '.'):
@@ -133,7 +133,7 @@ class Dir(Item):
                 return c
         else:
             raise PathError('no child named "%s"' % name)
-        
+
     def get_sub_path(self, path):
         """Return a subdir, 1 or more levels deeper, but never higher.
         "path" must be relative, without any ".." tokens."""
@@ -144,18 +144,18 @@ class Dir(Item):
             return self.get_sub_dir(s1).get_sub_path(s2)
         else:
             return self.get_sub_dir(path)
-        
+
     def get_list_stats(self, filter_obj):
         """Return total dir, files and bytes recursively."""
         stats = ListStats()
         self.add_list_stats(stats, filter_obj)
         return stats
-    
+
     def add_list_stats(self, stats, filter_obj):
         stats.dirs += 1
         for c in self.children:
             c.add_list_stats(stats, filter_obj)
-            
+
     def add_ext_stats(self, stats_dict, filter_obj):
         for c in self.children:
             c.add_ext_stats(stats_dict, filter_obj)
@@ -176,7 +176,7 @@ Commands:
   SCANERR [op]  Show accumulated errors for each scan operation. An additional
                 param 'op' can be used:
                 - N > 0: show the errors of the last N scans (may exceed count)
-                - N < 0: show the errors from the (-N)th last scan (must not 
+                - N < 0: show the errors from the (-N)th last scan (must not
                   exceed count)
                 - "ALL": show all errors
                 - "COUNT": show error group count
@@ -194,7 +194,7 @@ Commands:
   LISTORDER [listcol]
   EXTORDER [extcol]
                 Set (or show) sort order for DIR, LIST and EXTCNT. Default:'s'.
-  UNIT [unit]   Set (or show) size unit. One of "bkmgtpe*". Default is '*', 
+  UNIT [unit]   Set (or show) size unit. One of "bkmgtpe*". Default is '*',
                 meaning per-item automatic selection.
   ALIAS [name[=[value]]]
                 Set (or show) one or more simply command aliases.
@@ -242,7 +242,7 @@ def split_cmd(s):
     # remove trailing space; the leading space, if any, is needed
     if a and a[-1] is None:
         del a[-1]
-        
+
     # combine consequtive strings, adding a new one when None is found
     ret = []
     for s in a:
@@ -336,9 +336,9 @@ class State(object):
         self.tail_count = 0         # listing tail count
         self.aliases = {            # simple command aliases
             '?': 'help', 'cd': 'chdir', 'd': 'dir', 'l': 'list', 'e': 'extcnt',
-            'r': 'root', 's': 'scan', 'se': 'scanerr', 'g': 'go', 'f': 'filter', 
-            't': 'tail', 'lo': 'listorder', 'do': 'dirorder', 'eo': 'extorder', 
-            'u': 'unit', 'cs': 'colsep', 
+            'r': 'root', 's': 'scan', 'se': 'scanerr', 'g': 'go', 'f': 'filter',
+            't': 'tail', 'lo': 'listorder', 'do': 'dirorder', 'eo': 'extorder',
+            'u': 'unit', 'cs': 'colsep',
             'a': 'alias', 'q': 'quit'
         }
         self.colsep = '  '          # table column separator
@@ -346,7 +346,7 @@ class State(object):
 
 class CmdDispatcher(object):
     """Command dispatcher."""
-    
+
     def __init__(self, state):
         self.state = state
         self.entries = {
@@ -373,7 +373,7 @@ class CmdDispatcher(object):
             'cls': cmd_cls,
             'quit': cmd_quit,
         }
-        
+
     def dispatch(self, cmd, params):
         func = self.entries.get(cmd.lower())
         if func is None:
@@ -539,7 +539,7 @@ def locate_dir(state, new_path):
     else:
         rel_path = walk_path(state, *setup_dir_change(state, new_path))
     return rel_path, state.root.get_sub_path(rel_path)
-    
+
 
 def date_to_str(n):
     a = list(time.localtime(n))[:5]
@@ -931,15 +931,15 @@ def cmd_quit(state, params):
 def parse_args():
     ap = argparse.ArgumentParser(description='interactive OverDisk CLI')
     ap.add_argument(
-        'root', 
-        nargs='?', 
-        metavar='DIR', 
+        'root',
+        nargs='?',
+        metavar='DIR',
         default='.',
         help='the initial root dir; default: "%(default)s"'
     )
     ap.add_argument(
         '-l',
-        '--scan-links', 
+        '--scan-links',
         action='store_true',
         help='scan directory symlinks and junctions; unless specified, '
              'container names are visible, but are not scanned for subitems'
@@ -986,12 +986,16 @@ def main(args):
 
     while True:
         try:
-            USE_AUTOCOMPLETE = True
-            if USE_AUTOCOMPLETE:
-                acmgr.completer = lambda s: get_candidate_paths(state, s)
-                s = acmgr.input(get_prompt(state))
-            else:
-                s = raw_input(get_prompt(state)).strip()
+            try:
+                USE_AUTOCOMPLETE = True
+                if USE_AUTOCOMPLETE:
+                    acmgr.completer = lambda s: get_candidate_paths(state, s)
+                    s = acmgr.input(get_prompt(state))
+                else:
+                    s = raw_input(get_prompt(state)).strip()
+            except KeyboardInterrupt:
+                print('Ctrl-C detected', file=sys.stderr)
+                break
 
             params = split_cmd(s)
             if not params:
@@ -1002,6 +1006,8 @@ def main(args):
             cmd_dispatcher.dispatch(cmd, params)
         except (CmdError, PathError) as x:
             print('ERROR: ' + str(x))
+        except KeyboardInterrupt:
+            print('interrupted', file=sys.stderr)
         finally:
             print('')
 
