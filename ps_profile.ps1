@@ -547,22 +547,22 @@ function global:Last {
 .SYNOPSIS
     Select from pipeline by index.
 .DESCRIPTION
-    Get the n-th (0-based) pipeline object(s). If Ordered is not set, this is
-    the same as `Select-Object -Index ...`: objects are matched in pipeline
-    order and duplicate indexes are ignored.
+    Get or skip the n-th (0-based) pipeline objects. Can optionally select the same object multiple times.
 .PARAMETER InputObject
     Input objects. Must be specified using the pipeline.
 .PARAMETER Index
-    List of indexes of input objects to be returned.
+    List of input objects indexes (0-based) to return (or skip). Invalid indexes are ignored.
 .PARAMETER Ordered
-    Forces the returned objects to match the indexes exactly as specified and
-    allows duplicate indexes to return the same object multiple times.
+    Forces the returned objects to match the indexes exactly as specified and allows duplicate indexes to return the same object multiple times. If this is omitted, items are returned by increasing index and duplicate indexes are ignored, similar to `Select-Object -Index ...`.
+.PARAMETER Skip
+    Skip (instead of selecting) the specified indexes.
 .INPUTS
-    Objects.
+    Object
 .OUTPUTS
-    Objects.
+    Object
 #>
 function global:Nth {
+    [CmdletBinding(DefaultParameterSetName = 'Select')]
     param(
         [Parameter(Mandatory, ValueFromPipeline)]
         $InputObject,
@@ -570,7 +570,11 @@ function global:Nth {
         [Parameter(Mandatory, Position = 0)]
         [int[]]$Index,
 
-        [switch]$Ordered
+        [Parameter(ParameterSetName = 'Select')]
+        [switch]$Ordered,
+
+        [Parameter(ParameterSetName = 'Skip')]
+        [switch]$Skip
     )
     begin {
         $items = [System.Collections.ArrayList]::new()
@@ -579,14 +583,23 @@ function global:Nth {
         [void]$items.Add($InputObject)
     }
     end {
-        if (-not $Ordered) {
+        if ($Skip) {
+            $skipIndexes = [System.Collections.Generic.HashSet[int]]$Index
+            $i = 0
+            foreach ($item in $items) {
+                if ($i -notin $skipIndexes) {
+                    Write-Output $item
+                }
+                ++$i
+            }
+        } elseif (-not $Ordered) {
             $items | Select-Object -Index $Index
         } else {
             $output = [object[]]::new($Index.Count)
             for ($i = 0; $i -lt $Index.Count; ++$i) {
                 $output[$i] = $items[$Index[$i]]
             }
-            $output
+            Write-Output $output
         }
     }
 }
