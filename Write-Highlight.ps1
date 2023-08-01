@@ -39,6 +39,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory, ValueFromPipeline)]
+    [AllowEmptyString()]
     [string]$InputObject,
 
     [Parameter(Mandatory, Position = 0)]
