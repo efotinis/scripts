@@ -64,8 +64,10 @@ begin {
     }
 }
 process {
-    $clrIndex = 0
+    # Use an array of 0-based color indexes (-1 for non-colored) for each
+    # character in the input string. It's not very efficient, but it works.
     $charClrs = @(-1) * $InputObject.Length
+    $clrIndex = 0
     foreach ($p in $Pattern) {
         foreach ($m in $p.Matches($InputObject)) {
             $end = $m.Index + $m.Length
@@ -75,6 +77,7 @@ process {
         }
         ++$clrIndex
     }
+    # Output groups of subsequent characters having the same color.
     $i = 0
     $end = $InputObject.Length
     while ($i -lt $end) {
@@ -82,7 +85,6 @@ process {
         do {
             ++$j
         } while ($j -lt $end -and $charClrs[$j] -eq $c)
-        Write-Verbose $c
         if ($c -ge 0) {
             $fg, $bg = ConvertTo-ConsoleColor $Color[$c]
         } else {
