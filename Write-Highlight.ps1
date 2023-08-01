@@ -20,6 +20,9 @@
 
     Each subsequent pattern overwrites any previously applied colors. See also Reverse.
 
+.PARAMETER CaseSensitive
+    Force case sensitivity in patterns.
+
 .PARAMETER Reverse
     Apply patterns in reverse specified order.
 
@@ -42,7 +45,9 @@ param(
     [string[]]$Color,
 
     [Parameter(Mandatory, Position = 1)]
-    [regex[]]$Pattern,
+    [string[]]$Pattern,
+
+    [switch]$CaseSensitive,
 
     [switch]$Reverse,
 
@@ -62,20 +67,27 @@ begin {
         $Color = $Color | Get-ReverseArray
         $Pattern = $Pattern | Get-ReverseArray
     }
+    function GetMatches([int]$Index, [string]$Text) {
+        $patt = $Pattern[$Index]
+        $opt = if ($CaseSensitive) {
+            0
+        } else {
+            'IgnoreCase'
+        }
+        [regex]::Matches($Text, $patt, $opt)
+    }
 }
 process {
     # Use an array of 0-based color indexes (-1 for non-colored) for each
     # character in the input string. It's not very efficient, but it works.
     $charClrs = @(-1) * $InputObject.Length
-    $clrIndex = 0
-    foreach ($p in $Pattern) {
-        foreach ($m in $p.Matches($InputObject)) {
+    for ($clrIndex = 0; $clrIndex -lt $Color.Count; ++$clrIndex) {
+        foreach ($m in (GetMatches $clrIndex $InputObject)) {
             $end = $m.Index + $m.Length
             for ($i = $m.Index; $i -lt $end; ++$i) {
                 $charClrs[$i] = $clrIndex
             }
         }
-        ++$clrIndex
     }
     # Output groups of subsequent characters having the same color.
     $i = 0
