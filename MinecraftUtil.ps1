@@ -95,15 +95,15 @@ param(
             $_ -in (Get-Content -LiteralPath D:\games\MultiMC\instances\instgroups.json | ConvertFrom-Json).groups.Vanilla.instances
         })]#>
         [Parameter(ParameterSetName="Play", Position=0)]
-        [Parameter(ParameterSetName="Backup", Position=0, Mandatory)]
-        [Parameter(ParameterSetName="Restore", Position=0, Mandatory)]
+        [Parameter(ParameterSetName="Backup", Position=0, valueFromPipelineByPropertyName, Mandatory)]
+        [Parameter(ParameterSetName="Restore", Position=0, valueFromPipelineByPropertyName, Mandatory)]
         [Parameter(ParameterSetName="ListInstance", Position=0)]
         [Parameter(ParameterSetName="ListWorld", Position=0, valueFromPipelineByPropertyName, Mandatory)]
         [Alias('Id')]
         [string]$Instance,
 
-        [Parameter(ParameterSetName="Backup", Position=1, Mandatory)]
-        [Parameter(ParameterSetName="Restore", Position=1, Mandatory)]
+        [Parameter(ParameterSetName="Backup", Position=1, valueFromPipelineByPropertyName, Mandatory)]
+        [Parameter(ParameterSetName="Restore", Position=1, valueFromPipelineByPropertyName, Mandatory)]
         [Parameter(ParameterSetName="ListWorld", Position=0)]
         [string]$World,
 
