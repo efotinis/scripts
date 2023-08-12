@@ -7,6 +7,9 @@ import os
 import random
 import sys
 import urllib.parse
+import warnings
+
+import urllib3
 
 import dlmgr
 import efutil
@@ -28,6 +31,8 @@ def parse_args():
         help='output dir; default is "%(default)s"')
     add('-s', dest='shuffle', action='store_true',
         help='shuffle input URLs order before downloading')
+    add('-V', '--no-verify', dest='noverify', action='store_true',
+        help='skip server certificate validation')
 
     args = ap.parse_args()
 
@@ -58,6 +63,16 @@ def output_result_line(path, status):
     print(status.rjust(8), path)
 
 
+@contextlib.contextmanager
+def disable_ssl_warnings():
+    """Source: https://stackoverflow.com/a/69434599"""
+    import warnings
+    import urllib3
+    with warnings.catch_warnings():
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        yield
+
+
 if __name__ == '__main__':
     args = parse_args()
 
@@ -70,12 +85,19 @@ if __name__ == '__main__':
             local = os.path.basename(urllib.parse.urlsplit(url).path)
             local = os.path.join(args.outdir, local)
             try:
-                if dlmgr.download_with_resume(url, local, dlmgr.Status(), counters=counters):
-                    output_result_line(url, 'done')
-                    okcount += 1
-                else:
-                    output_result_line(url, 'skipped')
-                    skipcount += 1
+                with warnings.catch_warnings():
+                    if args.noverify:
+                        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+                    kwargs = {
+                        'counters': counters,
+                        'verify': not args.noverify
+                    }
+                    if dlmgr.download_with_resume(url, local, dlmgr.Status(), **kwargs):
+                        output_result_line(url, 'done')
+                        okcount += 1
+                    else:
+                        output_result_line(url, 'skipped')
+                        skipcount += 1
             except Exception as err:
                 output_result_line(url, 'failed')
                 print('could not get "%s"; dest: "%s"; reason: "%s"' % (url, local, err), file=sys.stderr)

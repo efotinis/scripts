@@ -101,9 +101,9 @@ def timed_iter_content(resp, size):
         t = time.clock()
         yield data, t - last_t
         last_t = t
-        
 
-def download_with_resume(remote, local, status, counters=None, blocksize=65536):
+
+def download_with_resume(remote, local, status, counters=None, blocksize=65536, verify=True):
     """Download web resource with resume support.
 
     Returns True if downloaded successfully (or simply renamed completed partial)
@@ -113,6 +113,10 @@ def download_with_resume(remote, local, status, counters=None, blocksize=65536):
 
     If a Counters object is passed, downloaded bytes and elapsed time are
     accumulated, even on errors.
+
+    To disable SSL Certificate validation, use verify=False. Note that urllib3
+    will still emit InsecureRequestWarning, which the caller can disable with
+    `requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)`.
     """
 
     if os.path.exists(local):
@@ -120,7 +124,7 @@ def download_with_resume(remote, local, status, counters=None, blocksize=65536):
 
     TIMEOUT = 10
 
-    with contextlib.closing(requests.head(remote, stream=True, timeout=TIMEOUT)) as r:
+    with contextlib.closing(requests.head(remote, stream=True, verify=verify, timeout=TIMEOUT)) as r:
         canresume = 'bytes' in r.headers.get('Accept-Ranges', '')
         remotesize = int(r.headers['Content-Length']) if 'Content-Length' in r.headers else None
 
@@ -152,7 +156,7 @@ def download_with_resume(remote, local, status, counters=None, blocksize=65536):
             h = {}
         localsize = localsize or 0
 
-        with contextlib.closing(requests.get(remote, headers=h, stream=True, timeout=TIMEOUT)) as r:
+        with contextlib.closing(requests.get(remote, headers=h, stream=True, verify=verify, timeout=TIMEOUT)) as r:
             f.seek(0, os.SEEK_END)
             startpos = localsize
             starttime = time.monotonic()
