@@ -10,15 +10,41 @@ param(
     [int[]]$Group,      # bucket limits (upper, inclusive);
                         # need not be ordered or unique
 
+    #[Parameter(Mandatory)]
+    [ValidateSet('TimeSeconds', 'TimeMinutes', 'SizeBytes', 'SizeMiB')]
+    [string]$ValueType
+
+    <#
     [switch]$Time,      # treat input as seconds; output as 'hhh:mm:ss'
     [switch]$Minutes,   # treat groups as minutes; implies -Time
 
     [switch]$Size,      # treat input as size; output as 'N.NN ?B'
     [switch]$Mb         # treat groups as MiB; implies -Size
+    #>
 )
 
 Set-StrictMode -Version Latest
 
+switch ($ValueType) {
+    'TimeSeconds' {
+        $multiplier = 1
+        Set-Alias valueFormatter ConvertTo-NiceDuration
+    }
+    'TimeMinutes' {
+        $multiplier = 60
+        Set-Alias valueFormatter ConvertTo-NiceDuration
+    }
+    'SizeBytes' {
+        $multiplier = 1
+        Set-Alias valueFormatter ConvertTo-NiceSize
+    }
+    'SizeMiB' {
+        $multiplier = 1mb
+        Set-Alias valueFormatter ConvertTo-NiceSize
+    }
+}
+
+<#
 $multiplier = 1
 if ($Minutes) {
     $Time = $true
@@ -38,7 +64,7 @@ if ($Size) {
 if ($Time) {
     Set-Alias valueFormatter ConvertTo-NiceDuration
 }
-
+#>
 
 # Create new list of buckets, consisting of upper limit and empty array.
 # TODO: maybe optimize array to ArrayList, since it's getting appended often

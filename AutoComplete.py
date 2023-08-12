@@ -24,6 +24,7 @@ CTRLUP    = '\xe0\x8d'
 CTRLDOWN  = '\xe0\x91'
 CTRLLEFT  = '\xe0s'
 CTRLRIGHT = '\xe0t'
+CTRL_C = '\x03'
 
 ESC = '\x1b'
 TAB = '\t'
@@ -71,7 +72,7 @@ class ConsoleBuffer:
         coords = self.obj.GetConsoleScreenBufferInfo()['CursorPosition']
         return coords.X, coords.Y
 
-    def setCursor(self, x, y):        
+    def setCursor(self, x, y):
         self.obj.SetConsoleCursorPosition(win32console.PyCOORDType(x, y))
 
     def write(self, s):
@@ -241,6 +242,8 @@ class _Input:
                 self.line = ''
                 self.pos = 0
                 self.updateText(oldLen)
+            elif s == CTRL_C:
+                raise KeyboardInterrupt
 
     def handleTab(self, completerFunc):
         shift = isPressed(win32con.VK_SHIFT)
