@@ -34,6 +34,11 @@
 
 .OUTPUTS
     None
+
+.EXAMPLE
+    PS> Get-Help gci -Detailed | oss | Write-Highlight r,g '(?<!\b)-[A-Z]\w+','[A-Z]\w+-[A-Z]\w+' -CaseSensitive
+
+    Highlights the detailed help output for `gci`, showing options (e.g. -Path) in red and cmdlets (e.g Get-ChildItem) in green.
 #>
 
 [CmdletBinding()]
