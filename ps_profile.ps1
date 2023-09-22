@@ -474,13 +474,29 @@ function global:Get-DiskSizeFudgeFactor {
 }
 
 
-function global:nlen ([string]$Property = 'length') {
-    $input | measure -sum $Property | % sum | ConvertTo-NiceSize
+function global:nlen ([string[]]$Property = @('length'), [switch]$ValueOnly) {
+    $h = [ordered]@{}
+    $input | measure -sum $Property | % {
+        $h[$_.Property] = $_.Sum | ConvertTo-NiceSize
+    }
+    if ($ValueOnly) {
+        $h.Values
+    } else {
+        [PSCustomObject]$h
+    }
 }
 
 
-function global:ndur ([string]$Property = 'duration') {
-    $input | measure -sum $Property | % sum | ConvertTo-NiceDuration
+function global:ndur ([string[]]$Property = @('duration'), [switch]$ValueOnly) {
+    $h = [ordered]@{}
+    $input | measure -sum $Property | % {
+        $h[$_.Property] = $_.Sum | ConvertTo-NiceDuration
+    }
+    if ($ValueOnly) {
+        $h.Values
+    } else {
+        [PSCustomObject]$h
+    }
 }
 
 
