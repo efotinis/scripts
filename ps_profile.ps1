@@ -98,6 +98,16 @@ x, y = map(int, sys.argv[1:])
 print(fractions.Fraction(x, y))
     ' $a $b
 }
+function global:ffmpeg_docs {
+    gcm ffmpeg | Split-Path | Join-Path -ChildPath ..\doc\ffmpeg.html | ii
+}
+function global:CharRange ([string]$First, [string]$Last) {
+    $step = if ([char]$First -le [char]$Last) { 1 } else { -1 }
+    $end = [int][char]$Last + $step
+    for ($n = [int][char]$First; $n -ne $end; $n += $step) {
+        Write-Output ([char]$n)
+    }
+}
 
 
 function global:Set-DefaultConsoleTitle {
