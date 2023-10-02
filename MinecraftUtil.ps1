@@ -417,7 +417,7 @@ switch ($PSCmdlet.ParameterSetName) {
         FindDocs $Notes
     }
     'WikiSearch' {
-        $url = 'https://minecraft.gamepedia.com/index.php?search={0}' -f (
+        $url = 'https://minecraft.wiki/?search={0}' -f (
             [uri]::EscapeDataString($WikiSearch)
         )
         Start-Process $url
