@@ -408,9 +408,21 @@ switch ($PSCmdlet.ParameterSetName) {
         }
     }
     'Backup' {
+        if (-not $Instance) {
+            throw "No instance specified."
+        }
+        if (-not $World) {
+            throw "No world specified."
+        }
         backup.ps1 $Instance $World
     }
     'Restore' {
+        if (-not $Instance) {
+            throw "No instance specified."
+        }
+        if (-not $World) {
+            throw "No world specified."
+        }
         backup.ps1 $Instance $World -RestoreLast
     }
     'Notes' {
