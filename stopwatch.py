@@ -11,7 +11,7 @@ class StopWatch:
     Use timefunc to specify a custom function returning seconds.
     """
 
-    def __init__(self, timefunc=time.clock, autostart=False):
+    def __init__(self, timefunc=time.monotonic, autostart=False):
         self.timefunc = timefunc
         self.reset(autostart)
 
