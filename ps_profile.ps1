@@ -1049,3 +1049,4 @@ Set-Alias -Scope global gec Get-ExtensionCategory
 Set-Alias -Scope global rev Get-ReverseArray
 Set-Alias -Scope global shuf Get-ShuffleArray
 Set-Alias -Scope global pick Get-OrderedSubset
+Set-Alias -Scope global gir Get-InRangeProperty
