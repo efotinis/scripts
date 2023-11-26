@@ -510,6 +510,19 @@ function global:ndur ([string[]]$Property = @('duration'), [switch]$ValueOnly) {
 }
 
 
+function global:Get-Bitrate ([int64]$Size, [string]$Duration, [switch]$ValueOnly) {
+    $sec = ConvertFrom-NiceDuration $Duration
+    $kbps = ($Size * 8 / 1000) / $sec -as [int]
+    if ($ValueOnly) {
+        $kbps
+    } else {
+        [PSCustomObject]@{
+            Kbps = $kbps
+        }
+    }
+}
+
+
 # Extract year from paths of the form: "...\title (year).ext".
 function global:GetReleaseYear {
     [CmdletBinding()]
