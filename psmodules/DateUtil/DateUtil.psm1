@@ -818,4 +818,168 @@ function Get-PreviousTime {
 }
 
 
+<#
+    ISO week date algorithms based on:
+        https://en.wikipedia.org/wiki/ISO_week_date
+    Specifically, the 12:13, 16 November 2023 revision:
+        https://en.wikipedia.org/w/index.php?title=ISO_week_date&oldid=1185390589
+#>
+
+
+# ISO day of week (0=Sun..6=Sat) for December 31 of specified year.
+function ISODec31Dow ([int]$Year) {
+    [int]($Year `
+        + [System.Math]::Floor($Year / 4) `
+        - [System.Math]::Floor($Year / 100) `
+        + [System.Math]::Floor($Year / 400)
+    ) % 7
+}
+
+
+function IsLongISOYear ([int]$Year) {
+    # if it ends on a Thursday or previous one ends on a Wednesday
+    (ISODec31Dow $Year) -eq 4 -or (ISODec31Dow ($Year-1)) -eq 3
+}
+
+
+<#
+.SYNOPSIS
+    Get number of ISO weeks in a year.
+
+.DESCRIPTION
+    Gets the number of ISO weeks in the specified year. Most years are called short and have 52 weeks. The others are long with 53 weeks and appear roughly every 5.6 years.
+
+.PARAMETER Year
+    Input year. Can specify multiple values via the pipeline.
+
+.INPUTS
+    int
+
+.OUTPUTS
+    int
+#>
+function Get-ISOWeeksInYear {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [int]$Year
+    )
+    process {
+        if (IsLongISOYear $Year) {
+            53
+        } else {
+            52
+        }
+    }
+}
+
+
+# Convert .NET day-of-week (0=Sun..6=Sat) to ISO (1=Mon..7=Sun)
+function DowToISO ([System.DayOfWeek]$Dow) {
+    if ($Dow -eq 0) { 7 } else { [int]$dow }
+}
+
+
+function DaysInYear ([int]$Year) {
+    if ([datetime]::IsLeapYear($Year)) { 366 } else { 365 }
+}
+
+
+<#
+.SYNOPSIS
+    Convert date object to ISO week date.
+
+.DESCRIPTION
+    Converts the date compoment of a datetime object to an ISO week date string. Output format is "YYYY-W<nn>-<m>", where <nn> is the ISO week number (01..53) of the year, and <m> is the ISO day of the week (1=Mon..7=Sun).
+
+.PARAMETER Date
+    Input datetime object. Only the date component is used. Can specify multiple values via the pipeline.
+
+.INPUTS
+    datetime
+
+.OUTPUTS
+    string
+
+.EXAMPLE
+    PS> '2027-01-01' | ConvertTo-ISOWeekDate
+    2026-W53-5
+
+    Here a string is passing that gets converted to a datetime. Notice that for some years, the beginning days of January belong to the last week of the previous year.
+#>
+function ConvertTo-ISOWeekDate {
+    [CmdletBinding()]
+    param(
+        [Parameter(ValueFromPipeline)]
+        [datetime]$Date
+    )
+    process {
+        $y = $Date.Year
+        $doy = $Date.DayOfYear
+        $dow = DowToISO $Date.DayOfWeek
+        $w = [int][System.Math]::Floor((10 + $doy - $dow) / 7)
+        if ($w -lt 1) {
+            --$y
+            $woy = Get-ISOWeeksInYear $y
+        } elseif ($w -gt 52 -and $w -gt (Get-ISOWeeksInYear $y)) {
+            ++$y
+            $woy = 1
+        } else {
+            $woy = $w
+        }
+        '{0:D4}-W{1:D2}-{2}' -f $y,$woy,$dow
+    }
+}
+
+
+<#
+.SYNOPSIS
+    Convert ISO week date to date object.
+
+.DESCRIPTION
+    Converts an ISO week date string to a datetime object (date compoment only). Input format is "YYYY-W<nn>-<m>", where <nn> is the ISO week number (01..53) of the year, and <m> is the ISO day of the week (1=Mon..7=Sun).
+
+.PARAMETER Date
+    Input ISO week date string. Leading and trailing whitespace is ignored. Can specify multiple values via the pipeline.
+
+.INPUTS
+    string
+
+.OUTPUTS
+    datetime
+
+.EXAMPLE
+    PS> '2020-W09-4' | ConvertFrom-ISOWeekDate
+    Thursday, February 27, 2020 00:00:00
+#>
+function ConvertFrom-ISOWeekDate {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [string]$Date
+    )
+    process {
+        if ($Date -NotMatch '^\s*(\d{4})-W(\d\d)-([1-7])\s*$') {
+            Write-Error "Invalid ISO week date: $Date"
+            return
+        }
+        $y, $woy, $dow = $Matches[1..3].ForEach([int])
+        if ($woy -eq 0 -or $woy -gt (Get-ISOWeeksInYear $y)) {
+            Write-Error "Invalid ISO week: $Date"
+            return
+        }
+        $jan4dow = DowToISO ([datetime]::new($y, 1, 4).DayOfWeek)
+        $d = 7 * $woy + $dow - ($jan4dow + 3)
+        if ($d -lt 1) {
+            $doy = $d + (DaysInYear $y - 1)
+        } elseif ($d -gt ($days = DaysInYear $y)) {
+            $doy = $d - $days
+        } else {
+            $doy = $d
+        }
+        [datetime]::new($y, 1, 1).AddDays($d - 1)
+    }
+}
+
+
 Export-ModuleMember -Function *-*
