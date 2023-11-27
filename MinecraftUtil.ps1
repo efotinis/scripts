@@ -99,12 +99,13 @@ param(
         [Parameter(ParameterSetName="Restore", Position=0, valueFromPipelineByPropertyName, Mandatory)]
         [Parameter(ParameterSetName="ListInstance", Position=0)]
         [Parameter(ParameterSetName="ListWorld", Position=0, valueFromPipelineByPropertyName, Mandatory)]
-        [Alias('Id')]
+        [Alias('InstanceId')]
         [string]$Instance,
 
         [Parameter(ParameterSetName="Backup", Position=1, valueFromPipelineByPropertyName, Mandatory)]
         [Parameter(ParameterSetName="Restore", Position=1, valueFromPipelineByPropertyName, Mandatory)]
         [Parameter(ParameterSetName="ListWorld", Position=0)]
+        [Alias('WorldId')]
         [string]$World,
 
     [Parameter(ParameterSetName="Notes", Mandatory)]
@@ -167,6 +168,9 @@ Add-Type -TypeDefinition @"
         public datetime LastLaunch;
         public timespan TotalPlayed;
         public timespan LastPlayed;
+        public string InstanceId {
+            get { return Id; }
+        }
     };
 
     public struct MinecraftWorld {
@@ -203,6 +207,9 @@ Add-Type -TypeDefinition @"
         public double DamageTaken;
         public int Deaths;
         public object Stats;
+        public string WorldId {
+            get { return Id; }
+        }
     };
 
     public struct MinecraftVersion {
@@ -408,16 +415,28 @@ switch ($PSCmdlet.ParameterSetName) {
         }
     }
     'Backup' {
+        if (-not $Instance) {
+            throw "No instance specified."
+        }
+        if (-not $World) {
+            throw "No world specified."
+        }
         backup.ps1 $Instance $World
     }
     'Restore' {
+        if (-not $Instance) {
+            throw "No instance specified."
+        }
+        if (-not $World) {
+            throw "No world specified."
+        }
         backup.ps1 $Instance $World -RestoreLast
     }
     'Notes' {
         FindDocs $Notes
     }
     'WikiSearch' {
-        $url = 'https://minecraft.gamepedia.com/index.php?search={0}' -f (
+        $url = 'https://minecraft.wiki/?search={0}' -f (
             [uri]::EscapeDataString($WikiSearch)
         )
         Start-Process $url

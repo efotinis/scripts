@@ -98,6 +98,16 @@ x, y = map(int, sys.argv[1:])
 print(fractions.Fraction(x, y))
     ' $a $b
 }
+function global:ffmpeg_docs {
+    gcm ffmpeg | Split-Path | Join-Path -ChildPath ..\doc\ffmpeg.html | ii
+}
+function global:CharRange ([string]$First, [string]$Last) {
+    $step = if ([char]$First -le [char]$Last) { 1 } else { -1 }
+    $end = [int][char]$Last + $step
+    for ($n = [int][char]$First; $n -ne $end; $n += $step) {
+        Write-Output ([char]$n)
+    }
+}
 
 
 function global:Set-DefaultConsoleTitle {
@@ -496,6 +506,19 @@ function global:ndur ([string[]]$Property = @('duration'), [switch]$ValueOnly) {
         $h.Values
     } else {
         [PSCustomObject]$h
+    }
+}
+
+
+function global:Get-Bitrate ([int64]$Size, [string]$Duration, [switch]$ValueOnly) {
+    $sec = ConvertFrom-NiceDuration $Duration
+    $kbps = ($Size * 8 / 1000) / $sec -as [int]
+    if ($ValueOnly) {
+        $kbps
+    } else {
+        [PSCustomObject]@{
+            Kbps = $kbps
+        }
     }
 }
 
@@ -1026,3 +1049,4 @@ Set-Alias -Scope global gec Get-ExtensionCategory
 Set-Alias -Scope global rev Get-ReverseArray
 Set-Alias -Scope global shuf Get-ShuffleArray
 Set-Alias -Scope global pick Get-OrderedSubset
+Set-Alias -Scope global gir Get-InRangeProperty
